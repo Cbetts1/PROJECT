@@ -97,6 +97,8 @@ llm_fallback() {
     input="$*"
     input_lower=$(echo "$input" | tr '[:upper:]' '[:lower:]')
 
+    # NOTE: case patterns below intentionally omit spaces (e.g. *how*you* instead of
+    # *how are you*) because POSIX sh (dash) does not allow spaces in case patterns.
     case "$input_lower" in
         *hello*|*hi*|*hey*)
             echo "Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?" ;;
