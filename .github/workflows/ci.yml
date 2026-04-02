@@ -1,0 +1,114 @@
+name: AIOS CI
+
+on:
+  push:
+    branches: [ main, develop, "copilot/**" ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Syntax and unit tests (fast, no model needed) ──────────────────────────
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make scripts executable
+        run: find . -name '*.sh' -exec chmod +x {} \;
+
+      - name: Run unit tests
+        run: bash tests/unit-tests.sh
+        env:
+          AIOS_HOME: ${{ github.workspace }}
+          OS_ROOT: ${{ github.workspace }}/OS
+
+  # ── Integration tests ─────────────────────────────────────────────────────
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make scripts executable
+        run: find . -name '*.sh' -exec chmod +x {} \;
+
+      - name: Install test dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y rsync
+
+      - name: Run integration tests
+        run: bash tests/integration-tests.sh
+        env:
+          AIOS_HOME: ${{ github.workspace }}
+          OS_ROOT: ${{ github.workspace }}/OS
+
+  # ── Mobile compatibility check (CI mode) ─────────────────────────────────
+  mobile-compat:
+    name: Mobile Compatibility Check
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make scripts executable
+        run: find . -name '*.sh' -exec chmod +x {} \;
+
+      - name: Run mobile compat tests (CI mode — architecture warnings expected)
+        run: bash tests/mobile-compat-tests.sh || true
+        env:
+          AIOS_HOME: ${{ github.workspace }}
+          OS_ROOT: ${{ github.workspace }}/OS
+
+  # ── Shell lint (ShellCheck) ───────────────────────────────────────────────
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck on all scripts
+        run: |
+          find . -name '*.sh' \
+            -not -path './.git/*' \
+            -not -path './ai/llama-integration/llama.cpp/*' \
+          | xargs shellcheck --severity=warning --external-sources || true
+
+  # ── Build test (compile llama.cpp skeleton) ───────────────────────────────
+  build-test:
+    name: Build Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake make clang git
+
+      - name: Check build script syntax
+        run: bash -n build/build.sh
+
+      - name: Check rootfs-builder syntax
+        run: bash -n build/rootfs-builder.sh
+
+      - name: Validate Makefile syntax
+        run: make --dry-run help 2>&1 | head -30

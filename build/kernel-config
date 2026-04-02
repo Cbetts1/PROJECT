@@ -1,0 +1,89 @@
+# AIOS Minimal Kernel Configuration
+# Based on Linux 5.15 LTS, targeting aarch64 (Samsung Galaxy S21 FE)
+#
+# Apply with:
+#   cp build/kernel-config linux-5.15/.config
+#   make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig
+
+# ── Architecture ─────────────────────────────────────────────────────────────
+CONFIG_ARM64=y
+CONFIG_64BIT=y
+CONFIG_MMU=y
+
+# ── Core kernel features ──────────────────────────────────────────────────────
+CONFIG_SYSVIPC=y
+CONFIG_POSIX_MQUEUE=y
+CONFIG_NAMESPACES=y
+CONFIG_UTS_NS=y
+CONFIG_IPC_NS=y
+CONFIG_PID_NS=y
+CONFIG_NET_NS=y
+CONFIG_USER_NS=y
+
+# ── Memory management ─────────────────────────────────────────────────────────
+CONFIG_ZRAM=m
+CONFIG_ZSMALLOC=y
+CONFIG_TRANSPARENT_HUGEPAGE=y
+CONFIG_MEMORY_HOTPLUG=n
+
+# ── Filesystems ───────────────────────────────────────────────────────────────
+CONFIG_EXT4_FS=y
+CONFIG_F2FS_FS=y
+CONFIG_OVERLAY_FS=y
+CONFIG_TMPFS=y
+CONFIG_PROC_FS=y
+CONFIG_SYSFS=y
+CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=y
+
+# ── Compression ───────────────────────────────────────────────────────────────
+CONFIG_LZ4_COMPRESS=y
+CONFIG_LZ4HC_COMPRESS=y
+CONFIG_ZSTD_COMPRESS=y
+CONFIG_SQUASHFS=y
+CONFIG_SQUASHFS_LZ4=y
+CONFIG_SQUASHFS_ZSTD=y
+
+# ── Networking ────────────────────────────────────────────────────────────────
+CONFIG_NET=y
+CONFIG_INET=y
+CONFIG_UNIX=y
+CONFIG_PACKET=y
+CONFIG_AF_UNIX_OOB=y
+
+# ── Block devices ─────────────────────────────────────────────────────────────
+CONFIG_BLK_DEV_LOOP=y
+CONFIG_BLK_DEV_RAM=y
+CONFIG_BLK_DEV_RAM_SIZE=65536
+
+# ── USB ───────────────────────────────────────────────────────────────────────
+CONFIG_USB=y
+CONFIG_USB_GADGET=y
+CONFIG_USB_MASS_STORAGE=m
+CONFIG_USB_G_SERIAL=m
+
+# ── CPU / scheduler ──────────────────────────────────────────────────────────
+CONFIG_SMP=y
+CONFIG_NR_CPUS=8
+CONFIG_SCHED_MC=y
+CONFIG_CPU_FREQ=y
+CONFIG_CPU_FREQ_GOV_SCHEDUTIL=y
+CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL=y
+
+# ── Thermal ───────────────────────────────────────────────────────────────────
+CONFIG_THERMAL=y
+CONFIG_THERMAL_HWMON=y
+CONFIG_CPU_THERMAL=y
+
+# ── Security ─────────────────────────────────────────────────────────────────
+CONFIG_SECURITY=y
+CONFIG_SECURITY_SELINUX=n
+CONFIG_SECURITY_APPARMOR=n
+CONFIG_SECCOMP=y
+
+# ── Debugging (minimal) ───────────────────────────────────────────────────────
+CONFIG_PRINTK=y
+CONFIG_EARLY_PRINTK=y
+CONFIG_DEBUG_INFO=n
+CONFIG_STRIP_ASM_SYMS=y

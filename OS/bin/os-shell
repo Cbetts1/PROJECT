@@ -71,6 +71,10 @@ banner() {
 
 help_cmd() {
     cat << 'EOH'
+AI Commands:
+  ai.ask <text>        - send prompt to Llama inference engine
+  sysinfo              - show system information
+
 Hybrid Memory Commands:
   recall <text>        - hybrid recall (context + semantic + symbolic)
   recall.best <text>   - best single answer
@@ -126,6 +130,16 @@ while true; do
         mem.delete ) shift; mem_delete "$1"; aura_say "Memory deleted." ;;
         mem.tag ) shift; key="$1"; shift; mem_tag "$key" "$*"; aura_say "Tagged." ;;
         mem.list ) mem_list ;;
+        ai.ask )
+            shift
+            AI_SCRIPT="${AIOS_HOME:-$(dirname "$0")/../..}/ai/shell-interface/ai-ask.sh"
+            if [ -f "$AI_SCRIPT" ]; then
+                bash "$AI_SCRIPT" "$*"
+            else
+                aura_say "AI inference not available. Run: bash ai/llama-integration/build.sh"
+            fi
+            ;;
+        sysinfo ) bash "${OS_ROOT:-/}/bin/sysinfo" 2>/dev/null || uname -a ;;
         help ) help_cmd ;;
         exit ) aura_say "Goodbye."; exit 0 ;;
         * ) aura_say "Unknown command: $cmd" ;;

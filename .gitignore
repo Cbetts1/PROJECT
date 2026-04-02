@@ -1,4 +1,29 @@
+# ── Model weights (large binary files) ───────────────────────────────────────
 llama_model/*.gguf
 llama_model/*.bin
 llama_model/*.pt
 llama_model/*.safetensors
+llama_model/*.ggml
+
+# ── Build artifacts ───────────────────────────────────────────────────────────
+ai/llama-integration/llama.cpp/
+ai/llama-integration/bin/
+build/aios-rootfs.squashfs
+*.img
+
+# ── Overlay runtime directories (populated at runtime) ───────────────────────
+OS/overlay/upper/
+OS/overlay/work/
+OS/overlay/merged/
+
+# ── Runtime state files ───────────────────────────────────────────────────────
+OS/var/run/
+OS/var/log/*.log
+OS/var/events/
+
+# ── Temp / editor files ───────────────────────────────────────────────────────
+*.tmp
+*.editbak
+*.swp
+*~
+.DS_Store

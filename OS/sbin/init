@@ -1,36 +1,106 @@
 #!/bin/sh
+# AIOS init — Portable AI Operating System boot process
+# Supports hosted mode (Termux/Android) and standalone mode.
 
-OS_ROOT="/data/data/com.termux/files/home/OS"
+# ── Resolve AIOS root ─────────────────────────────────────────────────────────
+# Allow override via environment; fall back to standard locations.
+AIOS_HOME="${AIOS_HOME:-$(cd "$(dirname "$0")/../.." 2>/dev/null && pwd)}"
+if [ -z "$OS_ROOT" ]; then
+    if [ -d "$AIOS_HOME/OS" ]; then
+        OS_ROOT="$AIOS_HOME/OS"
+    elif [ -d "/data/data/com.termux/files/home/aios/OS" ]; then
+        OS_ROOT="/data/data/com.termux/files/home/aios/OS"
+    else
+        OS_ROOT="/OS"
+    fi
+fi
 
 BOOT_TARGET="$OS_ROOT/etc/boot.target"
 RUNLEVEL_DIR="$OS_ROOT/etc/rc2.d"
 BOOT_LOG="$OS_ROOT/var/boot.time"
+BOOT_LOG_FILE="$OS_ROOT/var/log/boot.log"
 
-echo "[BOOT] Universal OS init starting..."
+# ── Ensure runtime directories ────────────────────────────────────────────────
+mkdir -p "$OS_ROOT/var/log" \
+         "$OS_ROOT/var/run" \
+         "$OS_ROOT/var/service" \
+         "$OS_ROOT/proc/aura/context" \
+         "$OS_ROOT/proc/aura/memory" \
+         "$OS_ROOT/overlay/upper" \
+         "$OS_ROOT/overlay/work" \
+         "$OS_ROOT/overlay/merged" \
+         2>/dev/null
 
-mkdir -p "$OS_ROOT/var" 2>/dev/null
+echo "[BOOT] AIOS init starting..." | tee -a "$BOOT_LOG_FILE"
 date +"%Y-%m-%d %H:%M:%S" > "$BOOT_LOG"
+date +%s >> "$BOOT_LOG"
 
+# ── Load main configuration ───────────────────────────────────────────────────
+AIOS_CONF="$AIOS_HOME/config/aios.conf"
+ENABLE_INFERENCE_ON_BOOT="true"
+ENABLE_SYNC_DAEMON="true"
+ENABLE_OVERLAY_ON_BOOT="false"
+
+[ -f "$AIOS_CONF" ] && . "$AIOS_CONF"
+
+# ── Boot target ───────────────────────────────────────────────────────────────
 if [ -f "$BOOT_TARGET" ]; then
     TARGET=$(cat "$BOOT_TARGET")
-    echo "[BOOT] Target: $TARGET"
+    echo "[BOOT] Target: $TARGET" | tee -a "$BOOT_LOG_FILE"
 else
     TARGET="default"
-    echo "[BOOT] No boot.target found, using default"
+    echo "[BOOT] No boot.target found, using default" | tee -a "$BOOT_LOG_FILE"
 fi
 
-for script in "$RUNLEVEL_DIR"/S*; do
-    echo "[BOOT] Running $(basename "$script")"
-    sh "$script"
+# ── Run init.d scripts ────────────────────────────────────────────────────────
+for script in "$OS_ROOT/etc/init.d"/banner \
+              "$OS_ROOT/etc/init.d"/devices \
+              "$OS_ROOT/etc/init.d"/os-kernel; do
+    if [ -f "$script" ]; then
+        echo "[BOOT] Running $(basename "$script")" | tee -a "$BOOT_LOG_FILE"
+        sh "$script" start 2>/dev/null || true
+    fi
 done
 
-if [ -d "$OS_ROOT/proc/aura" ]; then
-    echo "[BOOT] Initializing Aura subsystem..."
-    echo "boot" > "$OS_ROOT/proc/aura/context/window"
-    echo "1" > "$OS_ROOT/proc/aura/memory"
-    echo "1" > "$OS_ROOT/proc/aura/tasks"
-    echo "1" > "$OS_ROOT/proc/aura/semantic"
+# Run any additional rc2.d scripts
+if [ -d "$RUNLEVEL_DIR" ]; then
+    for script in "$RUNLEVEL_DIR"/S*; do
+        [ -f "$script" ] || continue
+        echo "[BOOT] Running $(basename "$script")" | tee -a "$BOOT_LOG_FILE"
+        sh "$script" start 2>/dev/null || true
+    done
 fi
 
-echo "[BOOT] Universal OS boot complete."
-exec /bin/sh
+# ── Initialize Aura subsystem ─────────────────────────────────────────────────
+echo "[BOOT] Initializing Aura subsystem..." | tee -a "$BOOT_LOG_FILE"
+echo "boot" > "$OS_ROOT/proc/aura/context/window"
+[ -f "$OS_ROOT/etc/aura/memory.index"   ] || touch "$OS_ROOT/etc/aura/memory.index"
+[ -f "$OS_ROOT/etc/aura/semantic.index" ] || touch "$OS_ROOT/etc/aura/semantic.index"
+
+# ── Start inference daemon (optional) ────────────────────────────────────────
+if [ "$ENABLE_INFERENCE_ON_BOOT" = "true" ] && \
+   [ -f "$AIOS_HOME/ai/inference-engine/start-daemon.sh" ]; then
+    echo "[BOOT] Starting Llama inference daemon..." | tee -a "$BOOT_LOG_FILE"
+    AIOS_HOME="$AIOS_HOME" OS_ROOT="$OS_ROOT" \
+        bash "$AIOS_HOME/ai/inference-engine/start-daemon.sh" --background 2>/dev/null || \
+        echo "[BOOT] Inference daemon skipped (model not ready)" | tee -a "$BOOT_LOG_FILE"
+fi
+
+# ── Start sync daemon (optional) ─────────────────────────────────────────────
+if [ "$ENABLE_SYNC_DAEMON" = "true" ] && \
+   [ -f "$AIOS_HOME/mirror/sync-daemon.sh" ]; then
+    echo "[BOOT] Starting sync daemon..." | tee -a "$BOOT_LOG_FILE"
+    AIOS_HOME="$AIOS_HOME" OS_ROOT="$OS_ROOT" \
+        bash "$AIOS_HOME/mirror/sync-daemon.sh" start 2>/dev/null || \
+        echo "[BOOT] Sync daemon skipped" | tee -a "$BOOT_LOG_FILE"
+fi
+
+echo "[BOOT] AIOS boot complete. Launching Aura shell." | tee -a "$BOOT_LOG_FILE"
+
+# ── Launch Aura AI shell ──────────────────────────────────────────────────────
+export OS_ROOT AIOS_HOME
+if [ -f "$OS_ROOT/bin/os-shell" ]; then
+    exec sh "$OS_ROOT/bin/os-shell"
+else
+    exec /bin/sh
+fi
