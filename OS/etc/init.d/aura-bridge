@@ -1,0 +1,36 @@
+#!/bin/sh
+
+OS_ROOT="${OS_ROOT:-/}"
+export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+
+HEALTH="$OS_ROOT/var/service/aura-bridge.health"
+LOG="$OS_ROOT/var/log/bridge.log"
+
+health() { mkdir -p "$(dirname "$HEALTH")"; echo "$1" > "$HEALTH"; }
+
+. "$OS_ROOT/lib/aura-bridge/detect.mod"
+
+case "$1" in
+    start)
+        echo "[aura-bridge] Starting bridge detection..."
+        mkdir -p "$OS_ROOT/mirror" "$OS_ROOT/proc/aura/bridge"
+        bridge_write_status
+        host=$(detect_host_os)
+        echo "[aura-bridge] Host OS: $host"
+        health "status=running
+host_os=$host
+time=$(date +%s)"
+        echo "[aura-bridge] Ready."
+        ;;
+    stop)
+        health "status=stopped
+time=$(date +%s)"
+        echo "[aura-bridge] Stopped."
+        ;;
+    status)
+        cat "$HEALTH" 2>/dev/null || echo "aura-bridge: not started"
+        ;;
+    *)
+        echo "Usage: aura-bridge {start|stop|status}"
+        ;;
+esac

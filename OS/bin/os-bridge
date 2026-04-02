@@ -1,0 +1,83 @@
+#!/bin/sh
+# os-bridge — Bridge control for cross-OS device connectivity
+
+OS_ROOT="${OS_ROOT:-/}"
+export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+
+. "$OS_ROOT/lib/aura-bridge/detect.mod"
+. "$OS_ROOT/lib/aura-bridge/ios.mod"
+. "$OS_ROOT/lib/aura-bridge/android.mod"
+. "$OS_ROOT/lib/aura-bridge/linux.mod"
+
+cmd="${1:-help}"
+shift
+
+case "$cmd" in
+    detect)
+        bridge_summary
+        ;;
+    ios)
+        subcmd="${1:-info}"; shift
+        case "$subcmd" in
+            info)    ios_device_info ;;
+            pair)    ios_pair ;;
+            mount)   ios_mount ;;
+            umount|unmount) ios_unmount ;;
+            files)   ios_list_files "$@" ;;
+            shell)   ios_shell ;;
+            *)       echo "Usage: os-bridge ios {info|pair|mount|unmount|files|shell}" ;;
+        esac
+        ;;
+    android)
+        subcmd="${1:-devices}"; shift
+        case "$subcmd" in
+            devices) android_devices ;;
+            info)    android_device_info "$@" ;;
+            mount)   android_mount "$@" ;;
+            shell)   android_shell "$@" ;;
+            push)    android_push "$@" ;;
+            pull)    android_pull "$@" ;;
+            *)       echo "Usage: os-bridge android {devices|info|mount|shell|push|pull}" ;;
+        esac
+        ;;
+    linux|host)
+        subcmd="${1:-info}"; shift
+        case "$subcmd" in
+            info)    linux_host_info ;;
+            mount)   linux_mount_host ;;
+            ssh)     linux_ssh_connect "$@" ;;
+            sshfs)   linux_ssh_mount "$@" ;;
+            *)       echo "Usage: os-bridge linux {info|mount|ssh|sshfs}" ;;
+        esac
+        ;;
+    status)
+        cat "$OS_ROOT/proc/aura/bridge/status" 2>/dev/null || echo "Bridge not initialized."
+        ;;
+    help|*)
+        cat << 'EOH'
+os-bridge — Cross-OS device bridge
+
+Usage: os-bridge <command> [options]
+
+Commands:
+  detect              Detect host OS and connected devices
+  status              Show current bridge status
+  ios info            Show connected iPhone/iPad info
+  ios pair            Pair with iOS device
+  ios mount           Mount iOS filesystem (requires ifuse)
+  ios unmount         Unmount iOS filesystem
+  ios files [path]    List files on iOS device
+  ios shell           Open SSH tunnel to iOS device
+  android devices     List connected Android devices
+  android info        Show Android device info
+  android mount       Mirror Android filesystem via ADB
+  android shell       Open ADB shell on Android device
+  android push <f>    Push file to Android device
+  android pull <f>    Pull file from Android device
+  linux info          Show host Linux/macOS info
+  linux mount         Mirror host filesystem
+  linux ssh <host>    SSH into remote Linux/macOS host
+  linux sshfs <host>  Mount remote filesystem via SSHFS
+EOH
+        ;;
+esac

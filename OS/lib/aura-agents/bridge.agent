@@ -1,0 +1,18 @@
+agent_name="bridge"
+agent_help="Monitors cross-OS bridge connections and device events."
+
+agent_bridge_connect() {
+    device="$*"
+    echo "[agent:bridge] Device connected: $device"
+    os-bridge detect 2>/dev/null
+}
+
+agent_bridge_disconnect() {
+    device="$*"
+    echo "[agent:bridge] Device disconnected: $device"
+}
+
+agent_bridge_event() {
+    evt="$*"
+    echo "[agent:bridge] Bridge event: $evt"
+}

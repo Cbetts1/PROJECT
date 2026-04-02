@@ -1,0 +1,51 @@
+#!/bin/sh
+# os-mirror — Mirror/unmount cross-OS device filesystems
+
+OS_ROOT="${OS_ROOT:-/}"
+export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+
+. "$OS_ROOT/lib/aura-bridge/detect.mod"
+. "$OS_ROOT/lib/aura-bridge/ios.mod"
+. "$OS_ROOT/lib/aura-bridge/android.mod"
+. "$OS_ROOT/lib/aura-bridge/linux.mod"
+. "$OS_ROOT/lib/aura-bridge/mirror.mod"
+
+cmd="${1:-status}"
+shift
+
+case "$cmd" in
+    mount)   mirror_mount "$@" ;;
+    unmount|umount) mirror_unmount "$@" ;;
+    status)  mirror_status ;;
+    ls)      mirror_ls "$@" ;;
+    auto)    mirror_detect_and_mount ;;
+    help|*)
+        cat << 'EOH'
+os-mirror — Cross-OS filesystem mirror
+
+Usage: os-mirror <command> [target] [options]
+
+Commands:
+  auto              Auto-detect and mount all available devices
+  mount <target>    Mount a device: ios | android | linux | ssh <host>
+  unmount <target>  Unmount: ios | android | linux | all
+  status            Show mirror status and mounted devices
+  ls [target] [path] List files in mirrored directory
+
+Targets:
+  ios        Apple iOS device (requires libimobiledevice + ifuse)
+  android    Android device (requires ADB with USB debugging)
+  linux      Host Linux/macOS filesystem
+  ssh        Remote host via SSHFS
+  auto       All available devices
+
+Examples:
+  os-mirror auto
+  os-mirror mount ios
+  os-mirror mount android
+  os-mirror mount ssh user@hostname
+  os-mirror ls ios /Documents
+  os-mirror unmount all
+EOH
+        ;;
+esac

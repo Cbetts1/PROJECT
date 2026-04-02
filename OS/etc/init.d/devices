@@ -1,11 +1,24 @@
+#!/bin/sh
+
 OS_ROOT="${OS_ROOT:-/}"
 HEALTH="$OS_ROOT/var/service/devices.health"
-health() { echo "$1" > "$HEALTH"; }
 
-#!/bin/sh
+health() { mkdir -p "$(dirname "$HEALTH")"; echo "$1" > "$HEALTH"; }
 
 case "$1" in
   start)
-    echo "[dev] Preparing /dev..."
+    echo "[dev] Setting up virtual device nodes..."
+    mkdir -p "$OS_ROOT/dev"
+    [ -e "$OS_ROOT/dev/null" ]   || ln -sf /dev/null   "$OS_ROOT/dev/null"   2>/dev/null
+    [ -e "$OS_ROOT/dev/zero" ]   || ln -sf /dev/zero   "$OS_ROOT/dev/zero"   2>/dev/null
+    [ -e "$OS_ROOT/dev/random" ] || ln -sf /dev/random "$OS_ROOT/dev/random" 2>/dev/null
+    echo "[dev] Device nodes ready."
+    health "status=ok"
+    ;;
+  stop)
+    health "status=stopped"
+    ;;
+  *)
+    echo "Usage: devices {start|stop}"
     ;;
 esac

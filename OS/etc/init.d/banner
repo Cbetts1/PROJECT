@@ -1,19 +1,30 @@
+#!/bin/sh
+
 OS_ROOT="${OS_ROOT:-/}"
 HEALTH="$OS_ROOT/var/service/banner.health"
-health() { echo "$1" > "$HEALTH"; }
 
-#!/bin/sh
+health() { mkdir -p "$(dirname "$HEALTH")"; echo "$1" > "$HEALTH"; }
 
 case "$1" in
   start)
-    echo "=== OS Boot ==="
-    if [ -n "$OS_ROOT" ] && [ -f "$OS_ROOT/etc/os-release" ]; then
+    echo "================================"
+    echo "       AIOS-Lite v0.1"
+    echo "  AI-Augmented Operating System"
+    echo "================================"
+    if [ -f "$OS_ROOT/etc/os-release" ]; then
       . "$OS_ROOT/etc/os-release"
-    elif [ -f /etc/os-release ]; then
-      . /etc/os-release
     fi
-    echo "Name: $PRETTY_NAME"
-    echo "Version: $VERSION_ID"
-    echo "Kernel: $(uname -r)"
+    echo "Name:    ${PRETTY_NAME:-AIOS-Lite}"
+    echo "Version: ${VERSION_ID:-0.1}"
+    echo "Kernel:  $(uname -r 2>/dev/null || echo unknown)"
+    echo "Arch:    $(uname -m 2>/dev/null || echo unknown)"
+    echo "================================"
+    health "status=ok"
+    ;;
+  stop)
+    health "status=stopped"
+    ;;
+  *)
+    echo "Usage: banner {start|stop}"
     ;;
 esac

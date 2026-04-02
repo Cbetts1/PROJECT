@@ -2,3 +2,8 @@ llama_model/*.gguf
 llama_model/*.bin
 llama_model/*.pt
 llama_model/*.safetensors
+OS/mirror/ios/*
+OS/mirror/android/*
+OS/mirror/linux/ssh_*
+OS/var/log/*.log.1
+OS/proc/aura/bridge/status
