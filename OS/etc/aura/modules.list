@@ -2,3 +2,5 @@
 core
 sysinfo
 bus
+bridge
+llm

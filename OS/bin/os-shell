@@ -1,6 +1,7 @@
 #!/bin/sh
 
 OS_ROOT="${OS_ROOT:-/}"
+export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
 
 IDENTITY="$OS_ROOT/proc/os.identity"
 STATEFILE="$OS_ROOT/proc/os.state"
@@ -15,30 +16,30 @@ TASKDIR="$OS_ROOT/lib/aura-tasks"
 MEMDIR="$OS_ROOT/lib/aura-memory"
 SEMDIR="$OS_ROOT/lib/aura-semantic"
 HYBDIR="$OS_ROOT/lib/aura-hybrid"
+LLMDIR="$OS_ROOT/lib/aura-llm"
+BRIDGEDIR="$OS_ROOT/lib/aura-bridge"
 
-MODLIST="$OS_ROOT/etc/aura/modules.list"
-AGENTLIST="$OS_ROOT/etc/aura/agents.list"
-TASKLIST="$OS_ROOT/etc/aura/tasks.list"
-MEMINDEX="$OS_ROOT/etc/aura/memory.index"
-SEMINDEX="$OS_ROOT/etc/aura/semantic.index"
+MEMROOT="$OS_ROOT/proc/aura/memory"
+SEMROOT="$OS_ROOT/proc/aura/semantic"
+mkdir -p "$MEMROOT" "$SEMROOT" "$OS_ROOT/proc/aura/context"
 
 # Load identity
 [ -f "$IDENTITY" ] && . "$IDENTITY"
 
-shell_name="Aura"
-host="${OS_NAME:-OS}"
-version="${OS_VERSION:-0.0}"
+shell_name="${OS_NAME:-Aura}"
+host="${OS_NAME:-AIOS}"
+version="${OS_VERSION:-0.1}"
 
 # === Personality Engine ===
 AURA_MODE="operator"
 AURA_MEMORY="$OS_ROOT/proc/aura.memory"
-touch "$AURA_MEMORY"
+touch "$AURA_MEMORY" 2>/dev/null
 
 aura_say() {
     case "$AURA_MODE" in
-        operator) echo "Aura (op): $*" ;;
-        system)   echo "Aura [sys]: $*" ;;
-        talk)     echo "Aura: $*" ;;
+        operator) echo "[$shell_name] $*" ;;
+        system)   echo "[SYS:$shell_name] $*" ;;
+        talk)     echo "$shell_name: $*" ;;
     esac
 }
 
@@ -47,7 +48,7 @@ aura_prompt() {
     [ -z "$cwd" ] && cwd="/"
     case "$AURA_MODE" in
         operator) printf '%s:%s$ ' "$host" "$cwd" ;;
-        system)   printf '[SYS]%s:%s$ ' "$host" "$cwd" ;;
+        system)   printf '[SYS]%s:%s# ' "$host" "$cwd" ;;
         talk)     printf '(%s)> ' "$shell_name" ;;
     esac
 }
@@ -59,44 +60,77 @@ aura_prompt() {
 . "$HYBDIR/engine.mod"
 . "$POLICYDIR/engine.mod"
 . "$POLICYDIR/actions.mod"
+. "$LLMDIR/llm.mod"
+. "$BRIDGEDIR/detect.mod"
+. "$BRIDGEDIR/ios.mod"
+. "$BRIDGEDIR/android.mod"
+. "$BRIDGEDIR/linux.mod"
+. "$BRIDGEDIR/mirror.mod"
 
 banner() {
-    echo "$shell_name Shell on $host v$version"
-    echo "Hybrid Memory: enabled"
-    echo "Semantic Memory: enabled"
-    echo "Symbolic Memory: enabled"
-    echo "Context Window: active"
+    echo "================================"
+    echo "   $shell_name Shell  v$version"
+    echo "  AI-Augmented Operating System"
+    echo "================================"
+    host_os=$(detect_host_os)
+    echo "Host OS: $host_os"
+    if bin=$(llm_available) 2>/dev/null; then
+        echo "AI:      $bin ($(basename "$(llm_model 2>/dev/null)" 2>/dev/null || echo 'model not found'))"
+    else
+        echo "AI:      rule-based fallback"
+    fi
+    echo "Memories: symbolic + semantic + context"
     echo "Type 'help' for commands."
+    echo "================================"
 }
 
 help_cmd() {
     cat << 'EOH'
-Hybrid Memory Commands:
-  recall <text>        - hybrid recall (context + semantic + symbolic)
-  recall.best <text>   - best single answer
-  ctx.show             - show context window
-  ctx.add <text>       - add to context window
+=== AIOS-Lite Shell Commands ===
+
+AI / LLM:
+  ask <text>           Ask the AI a question
+  mode <m>             Set personality: operator | system | talk
+
+Hybrid Memory:
+  recall <text>        Hybrid recall (context + semantic + symbolic)
+  recall.best <text>   Best single answer
+  ctx.show             Show context window
+  ctx.add <text>       Add to context window
 
 Semantic Memory:
-  sem.set k v
-  sem.get k
-  sem.search text
-  sem.delete k
-  sem.list
+  sem.set <k> <v>      Store semantic memory
+  sem.get <k>          Retrieve by key
+  sem.search <text>    Search by similarity
+  sem.delete <k>       Delete entry
+  sem.list             List all entries
 
 Symbolic Memory:
-  mem.set k v
-  mem.get k
-  mem.search p
-  mem.delete k
-  mem.tag k tags...
-  mem.list
+  mem.set <k> <v>      Store key-value memory
+  mem.get <k>          Retrieve by key
+  mem.search <p>       Search by pattern
+  mem.delete <k>       Delete entry
+  mem.tag <k> <tags>   Tag a memory entry
+  mem.list             List all entries
 
-Other:
-  msg <text>
-  event <text>
-  mode <m>
-  exit
+Cross-OS Bridge & Mirror:
+  bridge               Show bridge status
+  bridge.detect        Detect connected devices
+  bridge.ios           iOS device info
+  bridge.android       Android device info
+  mirror               Show mirror status
+  mirror.mount <t>     Mount: ios | android | linux | auto
+  mirror.unmount <t>   Unmount: ios | android | linux | all
+  mirror.ls [t] [p]    List mirrored files
+
+System:
+  msg <text>           Send message to message bus
+  event <text>         Fire system event
+  status               Show OS state
+  services             Show service status
+  ps                   List processes
+  info                 System information
+  exit                 Exit shell
 EOH
 }
 
@@ -106,28 +140,99 @@ banner
 while true; do
     aura_prompt
     IFS= read -r line || exit 0
+    [ -z "$line" ] && continue
     ctx_add "$line"
     set -- $line
     cmd="$1"
 
     case "$cmd" in
-        recall ) shift; hybrid_recall "$*" ;;
-        recall.best ) shift; hybrid_best "$*" ;;
-        ctx.show ) ctx_get ;;
-        ctx.add ) shift; ctx_add "$*"; aura_say "Added to context." ;;
-        sem.set ) shift; key="$1"; shift; semantic_store "$key" "$*"; aura_say "Semantic memory stored." ;;
-        sem.get ) shift; semantic_get "$1" ;;
-        sem.search ) shift; semantic_search "$*" ;;
-        sem.delete ) shift; semantic_delete "$1"; aura_say "Semantic memory deleted." ;;
-        sem.list ) semantic_list ;;
-        mem.set ) shift; key="$1"; shift; mem_set "$key" "$*"; aura_say "Memory stored." ;;
-        mem.get ) shift; mem_get "$1" ;;
-        mem.search ) shift; mem_search "$1" ;;
-        mem.delete ) shift; mem_delete "$1"; aura_say "Memory deleted." ;;
-        mem.tag ) shift; key="$1"; shift; mem_tag "$key" "$*"; aura_say "Tagged." ;;
-        mem.list ) mem_list ;;
-        help ) help_cmd ;;
-        exit ) aura_say "Goodbye."; exit 0 ;;
-        * ) aura_say "Unknown command: $cmd" ;;
+        ask)
+            shift
+            [ -z "$*" ] && { aura_say "Usage: ask <question>"; continue; }
+            response=$(llm_query "$*")
+            ctx_add "ai: $response"
+            echo "$response"
+            ;;
+        recall)
+            shift; hybrid_recall "$*" ;;
+        recall.best)
+            shift; hybrid_best "$*" ;;
+        ctx.show)
+            ctx_get ;;
+        ctx.add)
+            shift; ctx_add "$*"; aura_say "Added to context." ;;
+        sem.set)
+            shift; key="$1"; shift; semantic_store "$key" "$*"; aura_say "Semantic memory stored." ;;
+        sem.get)
+            shift; semantic_get "$1" ;;
+        sem.search)
+            shift; semantic_search "$*" ;;
+        sem.delete)
+            shift; semantic_delete "$1"; aura_say "Semantic memory deleted." ;;
+        sem.list)
+            semantic_list ;;
+        mem.set)
+            shift; key="$1"; shift; mem_set "$key" "$*"; aura_say "Memory stored." ;;
+        mem.get)
+            shift; mem_get "$1" ;;
+        mem.search)
+            shift; mem_search "$1" ;;
+        mem.delete)
+            shift; mem_delete "$1"; aura_say "Memory deleted." ;;
+        mem.tag)
+            shift; key="$1"; shift; mem_tag "$key" "$*"; aura_say "Tagged." ;;
+        mem.list)
+            mem_list ;;
+        bridge)
+            cat "$OS_ROOT/proc/aura/bridge/status" 2>/dev/null || aura_say "Bridge not initialized." ;;
+        bridge.detect)
+            bridge_summary ;;
+        bridge.ios)
+            ios_device_info ;;
+        bridge.android)
+            android_devices ;;
+        mirror)
+            mirror_status ;;
+        mirror.mount)
+            shift; mirror_mount "$@" ;;
+        mirror.unmount)
+            shift; mirror_unmount "${1:-all}" ;;
+        mirror.ls)
+            shift; mirror_ls "$@" ;;
+        msg)
+            shift
+            os-msg "$*"
+            aura_say "Message sent." ;;
+        event)
+            shift
+            os-event "$*"
+            aura_say "Event fired." ;;
+        mode)
+            shift
+            case "$1" in
+                operator|system|talk) AURA_MODE="$1"; aura_say "Mode: $AURA_MODE" ;;
+                *) aura_say "Modes: operator | system | talk" ;;
+            esac
+            ;;
+        status)
+            os-state ;;
+        services)
+            os-service-status ;;
+        ps)
+            os-ps ;;
+        info)
+            os-info ;;
+        help)
+            help_cmd ;;
+        exit|quit)
+            aura_say "Goodbye."; exit 0 ;;
+        "")
+            ;;
+        *)
+            # Unknown command: route to AI
+            response=$(llm_query "$line")
+            ctx_add "ai: $response"
+            echo "$response"
+            ;;
     esac
 done

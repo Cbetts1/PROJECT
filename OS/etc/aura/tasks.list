@@ -7,3 +7,4 @@
 healthcheck every:30
 autosave every:60
 logwatch on:message:alert
+bridge-monitor every:60

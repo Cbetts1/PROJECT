@@ -1,6 +1,24 @@
 task_name="logwatch"
-task_help="React to alert messages."
+task_help="Watch for alert messages and rotate logs when large."
+
+LOG_MAX_LINES=1000
 
 task_run() {
-    echo "[task:logwatch] ALERT detected: $*"
+    # Check for alert messages
+    if grep -q "alert" "$OS_ROOT/proc/os.messages" 2>/dev/null; then
+        echo "[task:logwatch] ALERT detected: $*"
+        os-msg "logwatch: alert condition detected" 2>/dev/null
+    fi
+
+    # Log rotation: rotate logs that exceed LOG_MAX_LINES
+    for logfile in "$OS_ROOT/var/log/"*.log; do
+        [ -f "$logfile" ] || continue
+        lines=$(wc -l < "$logfile" 2>/dev/null)
+        if [ "${lines:-0}" -gt "$LOG_MAX_LINES" ]; then
+            rotated="${logfile}.1"
+            mv "$logfile" "$rotated" 2>/dev/null
+            touch "$logfile"
+            echo "[task:logwatch] Rotated: $(basename "$logfile") ($lines lines → $rotated)"
+        fi
+    done
 }

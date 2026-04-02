@@ -1,7 +1,9 @@
-# Aura Policy Rules (condition → action)
-# Format:
-#   when <hook> <pattern> => <action>
+# Aura Policy Rules
+# Format: when <hook> <pattern> => <action>
 
 when heartbeat any => autosys_check
 when event system:check => autosys_check
 when message alert => autosys_alert
+when event bridge:connect => agent_bridge_connect
+when event bridge:disconnect => agent_bridge_disconnect
+when message bridge => agent_bridge_event
