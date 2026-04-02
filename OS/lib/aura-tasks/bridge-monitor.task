@@ -1,0 +1,9 @@
+task_name="bridge-monitor"
+task_help="Monitors bridge connections and updates status."
+
+task_run() {
+    echo "[task:bridge-monitor] Checking bridge connections..."
+    . "$OS_ROOT/lib/aura-bridge/detect.mod"
+    bridge_write_status
+    cat "$OS_ROOT/proc/aura/bridge/status"
+}
