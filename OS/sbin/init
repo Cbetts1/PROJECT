@@ -1,0 +1,36 @@
+#!/bin/sh
+
+OS_ROOT="/data/data/com.termux/files/home/OS"
+
+BOOT_TARGET="$OS_ROOT/etc/boot.target"
+RUNLEVEL_DIR="$OS_ROOT/etc/rc2.d"
+BOOT_LOG="$OS_ROOT/var/boot.time"
+
+echo "[BOOT] Universal OS init starting..."
+
+mkdir -p "$OS_ROOT/var" 2>/dev/null
+date +"%Y-%m-%d %H:%M:%S" > "$BOOT_LOG"
+
+if [ -f "$BOOT_TARGET" ]; then
+    TARGET=$(cat "$BOOT_TARGET")
+    echo "[BOOT] Target: $TARGET"
+else
+    TARGET="default"
+    echo "[BOOT] No boot.target found, using default"
+fi
+
+for script in "$RUNLEVEL_DIR"/S*; do
+    echo "[BOOT] Running $(basename "$script")"
+    sh "$script"
+done
+
+if [ -d "$OS_ROOT/proc/aura" ]; then
+    echo "[BOOT] Initializing Aura subsystem..."
+    echo "boot" > "$OS_ROOT/proc/aura/context/window"
+    echo "1" > "$OS_ROOT/proc/aura/memory"
+    echo "1" > "$OS_ROOT/proc/aura/tasks"
+    echo "1" > "$OS_ROOT/proc/aura/semantic"
+fi
+
+echo "[BOOT] Universal OS boot complete."
+exec /bin/sh

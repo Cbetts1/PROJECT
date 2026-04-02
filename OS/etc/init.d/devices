@@ -1,0 +1,11 @@
+OS_ROOT="${OS_ROOT:-/}"
+HEALTH="$OS_ROOT/var/service/devices.health"
+health() { echo "$1" > "$HEALTH"; }
+
+#!/bin/sh
+
+case "$1" in
+  start)
+    echo "[dev] Preparing /dev..."
+    ;;
+esac

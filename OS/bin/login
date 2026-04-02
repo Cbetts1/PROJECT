@@ -1,0 +1,23 @@
+#!/bin/sh
+OS_ROOT="${OS_ROOT:-/}"
+PASSWD="$OS_ROOT/etc/passwd"
+
+echo -n "login: "
+read USER
+
+LINE=$(grep "^$USER:" "$PASSWD")
+
+if [ -z "$LINE" ]; then
+    echo "Login incorrect"
+    exit 1
+fi
+
+IFS=':' read -r NAME PASS UID GID GECOS HOME SHELL <<EOF2
+$LINE
+EOF2
+
+echo "Welcome, $NAME"
+
+cd "$HOME" 2>/dev/null || cd /
+
+exec $SHELL

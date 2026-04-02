@@ -1,0 +1,7 @@
+#!/bin/sh
+OS_ROOT="${OS_ROOT:-/}"
+HEALTH="$OS_ROOT/var/service/$1.health"
+
+health() {
+    echo "$2" > "$HEALTH"
+}

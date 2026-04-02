@@ -1,0 +1,6 @@
+task_name="logwatch"
+task_help="React to alert messages."
+
+task_run() {
+    echo "[task:logwatch] ALERT detected: $*"
+}

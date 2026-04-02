@@ -1,0 +1,133 @@
+#!/bin/sh
+
+OS_ROOT="${OS_ROOT:-/}"
+
+IDENTITY="$OS_ROOT/proc/os.identity"
+STATEFILE="$OS_ROOT/proc/os.state"
+MSGFILE="$OS_ROOT/proc/os.messages"
+EVENTLOG="$OS_ROOT/var/log/events.log"
+
+HEALTHDIR="$OS_ROOT/var/service"
+MODDIR="$OS_ROOT/lib/aura-mods"
+AGENTDIR="$OS_ROOT/lib/aura-agents"
+POLICYDIR="$OS_ROOT/lib/aura-policy"
+TASKDIR="$OS_ROOT/lib/aura-tasks"
+MEMDIR="$OS_ROOT/lib/aura-memory"
+SEMDIR="$OS_ROOT/lib/aura-semantic"
+HYBDIR="$OS_ROOT/lib/aura-hybrid"
+
+MODLIST="$OS_ROOT/etc/aura/modules.list"
+AGENTLIST="$OS_ROOT/etc/aura/agents.list"
+TASKLIST="$OS_ROOT/etc/aura/tasks.list"
+MEMINDEX="$OS_ROOT/etc/aura/memory.index"
+SEMINDEX="$OS_ROOT/etc/aura/semantic.index"
+
+# Load identity
+[ -f "$IDENTITY" ] && . "$IDENTITY"
+
+shell_name="Aura"
+host="${OS_NAME:-OS}"
+version="${OS_VERSION:-0.0}"
+
+# === Personality Engine ===
+AURA_MODE="operator"
+AURA_MEMORY="$OS_ROOT/proc/aura.memory"
+touch "$AURA_MEMORY"
+
+aura_say() {
+    case "$AURA_MODE" in
+        operator) echo "Aura (op): $*" ;;
+        system)   echo "Aura [sys]: $*" ;;
+        talk)     echo "Aura: $*" ;;
+    esac
+}
+
+aura_prompt() {
+    cwd=$(pwd | sed "s|$OS_ROOT||")
+    [ -z "$cwd" ] && cwd="/"
+    case "$AURA_MODE" in
+        operator) printf '%s:%s$ ' "$host" "$cwd" ;;
+        system)   printf '[SYS]%s:%s$ ' "$host" "$cwd" ;;
+        talk)     printf '(%s)> ' "$shell_name" ;;
+    esac
+}
+
+# === Load Engines ===
+. "$MEMDIR/engine.mod"
+. "$SEMDIR/embed.mod"
+. "$SEMDIR/engine.mod"
+. "$HYBDIR/engine.mod"
+. "$POLICYDIR/engine.mod"
+. "$POLICYDIR/actions.mod"
+
+banner() {
+    echo "$shell_name Shell on $host v$version"
+    echo "Hybrid Memory: enabled"
+    echo "Semantic Memory: enabled"
+    echo "Symbolic Memory: enabled"
+    echo "Context Window: active"
+    echo "Type 'help' for commands."
+}
+
+help_cmd() {
+    cat << 'EOH'
+Hybrid Memory Commands:
+  recall <text>        - hybrid recall (context + semantic + symbolic)
+  recall.best <text>   - best single answer
+  ctx.show             - show context window
+  ctx.add <text>       - add to context window
+
+Semantic Memory:
+  sem.set k v
+  sem.get k
+  sem.search text
+  sem.delete k
+  sem.list
+
+Symbolic Memory:
+  mem.set k v
+  mem.get k
+  mem.search p
+  mem.delete k
+  mem.tag k tags...
+  mem.list
+
+Other:
+  msg <text>
+  event <text>
+  mode <m>
+  exit
+EOH
+}
+
+# === Start Shell ===
+banner
+
+while true; do
+    aura_prompt
+    IFS= read -r line || exit 0
+    ctx_add "$line"
+    set -- $line
+    cmd="$1"
+
+    case "$cmd" in
+        recall ) shift; hybrid_recall "$*" ;;
+        recall.best ) shift; hybrid_best "$*" ;;
+        ctx.show ) ctx_get ;;
+        ctx.add ) shift; ctx_add "$*"; aura_say "Added to context." ;;
+        sem.set ) shift; key="$1"; shift; semantic_store "$key" "$*"; aura_say "Semantic memory stored." ;;
+        sem.get ) shift; semantic_get "$1" ;;
+        sem.search ) shift; semantic_search "$*" ;;
+        sem.delete ) shift; semantic_delete "$1"; aura_say "Semantic memory deleted." ;;
+        sem.list ) semantic_list ;;
+        mem.set ) shift; key="$1"; shift; mem_set "$key" "$*"; aura_say "Memory stored." ;;
+        mem.get ) shift; mem_get "$1" ;;
+        mem.search ) shift; mem_search "$1" ;;
+        mem.delete ) shift; mem_delete "$1"; aura_say "Memory deleted." ;;
+        mem.tag ) shift; key="$1"; shift; mem_tag "$key" "$*"; aura_say "Tagged." ;;
+        mem.list ) mem_list ;;
+        help ) help_cmd ;;
+        exit ) aura_say "Goodbye."; exit 0 ;;
+        * ) aura_say "Unknown command: $cmd" ;;
+    esac
+done

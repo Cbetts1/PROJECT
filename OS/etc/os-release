@@ -1,0 +1,4 @@
+NAME="OS"
+ID=os
+PRETTY_NAME="OS (BusyBox Userland)"
+VERSION_ID="0.1"

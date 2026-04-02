@@ -1,0 +1,7 @@
+agent_name="autosys"
+agent_help="System automation agent."
+
+agent_event() {
+    evt="$*"
+    echo "[agent:autosys] Event: $evt"
+}

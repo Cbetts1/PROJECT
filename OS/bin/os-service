@@ -1,0 +1,21 @@
+#!/bin/sh
+
+OS_ROOT="${OS_ROOT:-/}"
+RC2="$OS_ROOT/etc/rc2.d"
+
+case "$1" in
+  enable)
+    ln -sf "../init.d/$2" "$RC2/S99-$2"
+    echo "Enabled: $2"
+    ;;
+  disable)
+    rm -f "$RC2/"*"$2"
+    echo "Disabled: $2"
+    ;;
+  list)
+    ls "$RC2"
+    ;;
+  *)
+    echo "Usage: os-service {enable|disable|list} <service>"
+    ;;
+esac

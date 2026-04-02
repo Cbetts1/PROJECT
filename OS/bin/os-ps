@@ -1,0 +1,29 @@
+#!/bin/sh
+
+OS_ROOT="${OS_ROOT:-/}"
+STATE="$OS_ROOT/var/service"
+
+echo "PID     CMD"
+echo "--------------"
+
+# Loop through all processes
+for pid in /proc/[0-9]*; do
+    [ -d "$pid" ] || continue
+
+    p=$(basename "$pid")
+
+    # Command name
+    if [ -f "$pid/cmdline" ]; then
+        cmd=$(tr '\0' ' ' < "$pid/cmdline")
+    else
+        cmd="unknown"
+    fi
+
+    # Trim empty commands
+    [ -z "$cmd" ] && cmd="unknown"
+
+    printf "%-7s %s\n" "$p" "$cmd"
+done
+
+echo
+echo "[os-ps] Complete."

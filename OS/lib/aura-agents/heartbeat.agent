@@ -1,0 +1,6 @@
+agent_name="heartbeat"
+agent_help="Responds to kernel heartbeats."
+
+agent_heartbeat() {
+    echo "[agent:heartbeat] Kernel heartbeat detected."
+}

@@ -1,0 +1,9 @@
+# task_name schedule
+# schedule types:
+#   every:<seconds>
+#   on:event:<pattern>
+#   on:message:<pattern>
+
+healthcheck every:30
+autosave every:60
+logwatch on:message:alert

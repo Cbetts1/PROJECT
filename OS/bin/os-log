@@ -1,0 +1,9 @@
+#!/bin/sh
+
+OS_ROOT="${OS_ROOT:-/}"
+LOGFILE="$OS_ROOT/var/log/os.log"
+
+msg="$*"
+timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+
+echo "[$timestamp] $msg" >> "$LOGFILE"

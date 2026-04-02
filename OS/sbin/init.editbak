@@ -1,0 +1,75 @@
+#!/bin/sh
+
+# -----------------------------
+# 1. Establish OS_ROOT
+# -----------------------------
+OS_ROOT="${OS_ROOT:-/}"
+
+SERV_DIR="$OS_ROOT/etc/init.d"
+LOG_DIR="$OS_ROOT/var/log"
+BOOT_LOG="$LOG_DIR/boot.log"
+
+mkdir -p "$LOG_DIR"
+
+log() {
+    echo "$@" | tee -a "$BOOT_LOG"
+}
+
+# -----------------------------
+# 2. Detect mode
+# -----------------------------
+PID="$$"
+if [ "$PID" -eq 1 ] 2>/dev/null; then
+    MODE="kernel"
+else
+    MODE="host"
+fi
+
+log "[init] Starting in $MODE mode (PID=$PID, OS_ROOT=$OS_ROOT)"
+
+# -----------------------------
+# 3. Kernel-mode mounts
+# -----------------------------
+if [ "$MODE" = "kernel" ]; then
+    log "[init] Mounting /proc, /sys, /dev"
+
+    mountpoint -q /proc 2>/dev/null || mount -t proc proc /proc
+    mountpoint -q /sys 2>/dev/null || mount -t sysfs sysfs /sys
+
+    if command -v mount >/dev/null 2>&1; then
+        mountpoint -q /dev 2>/dev/null || mount -t devtmpfs devtmpfs /dev || true
+    fi
+else
+    log "[init] Host mode: skipping mounts"
+fi
+
+# -----------------------------
+# 4. Start services
+# -----------------------------
+log "[init] Starting services from $SERV_DIR"
+
+if [ -d "$SERV_DIR" ]; then
+    for svc in "$SERV_DIR"/*; do
+        [ -x "$svc" ] || continue
+        name=$(basename "$svc")
+        log "[init] Starting service: $name"
+        "$svc" start >>"$BOOT_LOG" 2>&1
+    done
+else
+    log "[init] No service directory found"
+fi
+
+log "[init] Boot complete."
+
+# -----------------------------
+# 5. Kernel mode stays alive
+# -----------------------------
+if [ "$MODE" = "kernel" ]; then
+    log "[init] Kernel mode: launching shell"
+    exec /bin/sh
+fi
+
+# -----------------------------
+# 6. Host mode returns to launcher
+# -----------------------------
+exit 0

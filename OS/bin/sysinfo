@@ -1,0 +1,37 @@
+#!/bin/sh
+
+OS_ROOT="${OS_ROOT:-/}"
+PROC_OS="$OS_ROOT/proc/os"
+
+echo "=== System Information ==="
+
+if [ -f "$PROC_OS/name" ]; then
+    echo "OS Name:      $(cat $PROC_OS/name)"
+fi
+
+if [ -f "$PROC_OS/version" ]; then
+    echo "OS Version:   $(cat $PROC_OS/version)"
+fi
+
+if [ -f "$PROC_OS/mode" ]; then
+    echo "Boot Mode:    $(cat $PROC_OS/mode)"
+fi
+
+if [ -f "$PROC_OS/boot_time" ]; then
+    echo "Boot Time:    $(cat $PROC_OS/boot_time)"
+fi
+
+if [ -f "$PROC_OS/kernel" ]; then
+    echo "Kernel:       $(cat $PROC_OS/kernel)"
+fi
+
+if [ -f "$PROC_OS/pid" ]; then
+    echo "Kernel PID:   $(cat $PROC_OS/pid)"
+fi
+
+if [ -f "$PROC_OS/services" ]; then
+    echo "Services:"
+    sed 's/^/  - /' "$PROC_OS/services"
+fi
+
+echo "==========================="

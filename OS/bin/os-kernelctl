@@ -1,0 +1,72 @@
+#!/bin/sh
+
+OS_ROOT="${OS_ROOT:-/}"
+STATE="$OS_ROOT/var/service"
+PIDFILE="$STATE/os-kernel.pid"
+PROCFILE="$OS_ROOT/proc/os"
+INITD="$OS_ROOT/etc/init.d/os-kernel"
+
+cmd="$1"
+
+case "$cmd" in
+  status)
+    echo "Kernel Daemon Status"
+    echo "===================="
+    if [ -f "$PIDFILE" ]; then
+        pid=$(cat "$PIDFILE")
+        if [ -d "/proc/$pid" ]; then
+            echo "Running: yes"
+            echo "PID:      $pid"
+        else
+            echo "Running: no"
+        fi
+    else
+        echo "Running: no"
+    fi
+
+    echo
+    echo "Kernel Personality:"
+    if [ -f "$PROCFILE" ]; then
+        cat "$PROCFILE"
+    else
+        echo "(none)"
+    fi
+    ;;
+
+  restart)
+    echo "[os-kernelctl] Restarting kernel daemon..."
+    if [ -f "$PIDFILE" ]; then
+        pid=$(cat "$PIDFILE")
+        kill "$pid" 2>/dev/null
+        rm -f "$PIDFILE"
+    fi
+    sh "$INITD" start
+    echo "[os-kernelctl] Restart complete."
+    ;;
+
+  reload)
+    echo "[os-kernelctl] Reloading kernel personality..."
+    if [ -f "$PROCFILE" ]; then
+        . "$PROCFILE"
+        echo "Loaded OS personality:"
+        echo "Name:    $OS_NAME"
+        echo "Version: $OS_VERSION"
+    else
+        echo "No kernel personality file found."
+    fi
+    ;;
+
+  info)
+    echo "Kernel Personality Info"
+    echo "======================="
+    if [ -f "$PROCFILE" ]; then
+        cat "$PROCFILE"
+    else
+        echo "(none)"
+    fi
+    ;;
+
+  *)
+    echo "Usage: os-kernelctl {status|restart|reload|info}"
+    ;;
+esac

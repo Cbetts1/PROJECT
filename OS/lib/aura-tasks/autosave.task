@@ -1,0 +1,7 @@
+task_name="autosave"
+task_help="Autosave Aura memory."
+
+task_run() {
+    cp "$OS_ROOT/proc/aura.memory" "$OS_ROOT/proc/aura.memory.bak" 2>/dev/null
+    echo "[task:autosave] Memory autosaved."
+}

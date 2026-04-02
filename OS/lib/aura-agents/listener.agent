@@ -1,0 +1,7 @@
+agent_name="listener"
+agent_help="Listens to message bus and reacts."
+
+agent_message() {
+    msg="$*"
+    echo "[agent:listener] Heard: $msg"
+}

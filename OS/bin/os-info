@@ -1,0 +1,51 @@
+#!/bin/sh
+
+OS_ROOT="${OS_ROOT:-/}"
+
+echo "===================="
+echo "        OS"
+echo "===================="
+
+# OS identity
+if [ -f "$OS_ROOT/proc/os" ]; then
+    . "$OS_ROOT/proc/os"
+    echo "Name:     $OS_NAME"
+    echo "Version:  $OS_VERSION"
+else
+    echo "Name:     OS"
+    echo "Version:  Unknown"
+fi
+
+# Kernel + arch
+echo "Kernel:   $(uname -r)"
+echo "Arch:     $(uname -m)"
+
+# Boot target
+if [ -f "$OS_ROOT/etc/boot.target" ]; then
+    echo "Boot:     Runlevel $(cat $OS_ROOT/etc/boot.target)"
+fi
+
+# Services
+echo
+echo "Services:"
+ls -1 "$OS_ROOT/etc/rc2.d" 2>/dev/null
+
+# Uptime (universal, OS-native)
+BOOTFILE="$OS_ROOT/var/boot.time"
+NOW=$(date +%s)
+
+if [ ! -f "$BOOTFILE" ]; then
+    echo "$NOW" > "$BOOTFILE"
+fi
+
+BOOT=$(cat "$BOOTFILE")
+UPTIME=$((NOW - BOOT))
+
+echo
+echo "Uptime:   ${UPTIME}s"
+
+# OS Root
+echo "OS Root:  $OS_ROOT"
+
+echo
+echo "[os-info] Complete."

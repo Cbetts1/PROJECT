@@ -1,0 +1,43 @@
+#!/bin/sh
+
+OS_ROOT="${OS_ROOT:-/}"
+INITD="$OS_ROOT/etc/init.d"
+RC2="$OS_ROOT/etc/rc2.d"
+STATE="$OS_ROOT/var/service"
+
+mkdir -p "$STATE"
+
+echo "Service Status"
+echo "=============="
+echo
+
+for svc in "$INITD"/*; do
+    [ -f "$svc" ] || continue
+
+    name=$(basename "$svc")
+
+    # Enabled?
+    if ls "$RC2"/S*-"$name" >/dev/null 2>&1; then
+        enabled="yes"
+    else
+        enabled="no"
+    fi
+
+    # Running?
+    pidfile="$STATE/$name.pid"
+    if [ -f "$pidfile" ]; then
+        pid=$(cat "$pidfile")
+        if [ -d "/proc/$pid" ]; then
+            running="yes"
+        else
+            running="no"
+        fi
+    else
+        running="no"
+    fi
+
+    printf "%-12s  enabled: %-3s  running: %-3s\n" "$name" "$enabled" "$running"
+done
+
+echo
+echo "[os-service-status] Complete."

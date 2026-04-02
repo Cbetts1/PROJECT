@@ -1,0 +1,33 @@
+#!/bin/sh
+OS_ROOT="${OS_ROOT:-/}"
+STATEFILE="$OS_ROOT/proc/os.state"
+IDENTITY="$OS_ROOT/proc/os.identity"
+MANIFEST="$OS_ROOT/proc/os.manifest"
+HEALTHDIR="$OS_ROOT/var/service"
+
+echo "OS Identity"
+echo "==========="
+cat "$IDENTITY"
+echo
+
+echo "OS State"
+echo "========"
+cat "$STATEFILE"
+echo
+
+echo "Manifest"
+echo "========"
+cat "$MANIFEST"
+echo
+
+echo "Service Health"
+echo "--------------"
+for file in "$HEALTHDIR"/*.health; do
+    [ -f "$file" ] || continue
+    svc=$(basename "$file" .health)
+    echo "$svc:"
+    cat "$file"
+    echo
+done
+
+echo "[os-state] Complete."

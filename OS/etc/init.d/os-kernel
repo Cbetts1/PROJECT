@@ -1,0 +1,81 @@
+#!/bin/sh
+
+OS_ROOT="${OS_ROOT:-/}"
+STATE="$OS_ROOT/var/service"
+PIDFILE="$STATE/os-kernel.pid"
+PROCFILE="$OS_ROOT/proc/os"
+STATEFILE="$OS_ROOT/proc/os.state"
+IDENTITY="$OS_ROOT/proc/os.identity"
+LOG="$OS_ROOT/var/log/os.log"
+HEALTH="$OS_ROOT/var/service/os-kernel.health"
+
+start() {
+    os-event "kernel: starting"
+    os-msg   "kernel: starting"
+
+    mkdir -p "$OS_ROOT/proc"
+    [ -d "$PROCFILE" ] && rm -rf "$PROCFILE"
+    touch "$PROCFILE"
+
+    (
+        echo $$ > "$PIDFILE"
+
+        # Kernel personality
+        cat > "$PROCFILE" << EOP
+OS_NAME="OS"
+OS_VERSION="0.1"
+KERNEL_DAEMON_PID="$$"
+EOP
+
+        # OS state
+        echo "boot_time=$(date +%s)
+kernel_pid=$$
+os_version=0.1
+runlevel=3
+last_heartbeat=$(date +%s)" > "$STATEFILE"
+
+        # Kernel health
+        echo "status=running
+time=$(date +%s)
+pid=$$" > "$HEALTH"
+
+        os-event "kernel: started pid=$$"
+        os-msg   "kernel: started pid=$$"
+
+        while true; do
+            echo "[os-kernel] heartbeat $$" >> "$LOG"
+            os-event "kernel: heartbeat pid=$$"
+            os-msg   "kernel: heartbeat pid=$$"
+
+            # Update OS state
+            echo "boot_time=$(awk -F= '/boot_time/ {print $2}' $STATEFILE)
+kernel_pid=$$
+os_version=0.1
+runlevel=3
+last_heartbeat=$(date +%s)" > "$STATEFILE"
+
+            sleep 5
+        done
+    ) &
+}
+
+stop() {
+    if [ -f "$PIDFILE" ]; then
+        pid=$(cat "$PIDFILE")
+        kill "$pid" 2>/dev/null
+        rm -f "$PIDFILE"
+
+        echo "status=stopped
+time=$(date +%s)" > "$HEALTH"
+
+        os-event "kernel: stopped pid=$pid"
+        os-msg   "kernel: stopped pid=$pid"
+    fi
+}
+
+case "$1" in
+    start) start ;;
+    stop) stop ;;
+    restart) stop; start ;;
+    *) echo "Usage: os-kernel {start|stop|restart}" ;;
+esac

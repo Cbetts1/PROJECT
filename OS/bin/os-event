@@ -1,0 +1,15 @@
+#!/bin/sh
+
+OS_ROOT="${OS_ROOT:-/}"
+EVENTDIR="$OS_ROOT/var/events"
+LOGFILE="$OS_ROOT/var/log/events.log"
+
+timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+event="$*"
+
+# Write event file
+id=$(date +%s%N)
+echo "[$timestamp] $event" > "$EVENTDIR/$id.event"
+
+# Append to event log
+echo "[$timestamp] $event" >> "$LOGFILE"

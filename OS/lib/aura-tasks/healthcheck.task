@@ -1,0 +1,8 @@
+task_name="healthcheck"
+task_help="Periodic system health check."
+
+task_run() {
+    echo "[task:healthcheck] Checking kernel..."
+    status=$(awk -F= '/status/ {print $2}' "$OS_ROOT/var/service/os-kernel.health")
+    echo "[task:healthcheck] Kernel status: $status"
+}

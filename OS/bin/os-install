@@ -1,0 +1,36 @@
+#!/bin/sh
+OS_ROOT="${OS_ROOT:-/}"
+PKG_DIR="$OS_ROOT/usr/pkg"
+INSTALLED="$OS_ROOT/var/pkg"
+
+case "$1" in
+  install)
+    pkg="$2"
+    if [ -f "$PKG_DIR/$pkg/install.sh" ]; then
+        sh "$PKG_DIR/$pkg/install.sh"
+        echo "$pkg" > "$INSTALLED/$pkg"
+        echo "Installed: $pkg"
+    else
+        echo "Package not found: $pkg"
+    fi
+    ;;
+  remove)
+    pkg="$2"
+    if [ -f "$INSTALLED/$pkg" ]; then
+        if [ -f "$PKG_DIR/$pkg/remove.sh" ]; then
+            sh "$PKG_DIR/$pkg/remove.sh"
+        fi
+        rm -f "$INSTALLED/$pkg"
+        echo "Removed: $pkg"
+    else
+        echo "Not installed: $pkg"
+    fi
+    ;;
+  list)
+    echo "Installed packages:"
+    ls "$INSTALLED"
+    ;;
+  *)
+    echo "Usage: os-install {install|remove|list} <package>"
+    ;;
+esac

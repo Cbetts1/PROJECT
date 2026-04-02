@@ -1,0 +1,9 @@
+subsystems=(
+  logging
+  events
+  message_bus
+  service_health
+  kernel_health
+  os_state
+  os_identity
+)

@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "System rebooting..."
+exit 0

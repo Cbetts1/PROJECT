@@ -1,0 +1,19 @@
+#!/bin/sh
+
+OS_ROOT="${OS_ROOT:-/}"
+STATE="$OS_ROOT/var/service"
+
+echo "Service Health"
+echo "=============="
+echo
+
+for file in "$STATE"/*.health; do
+    [ -f "$file" ] || continue
+    svc=$(basename "$file" .health)
+
+    echo "$svc:"
+    cat "$file"
+    echo
+done
+
+echo "[os-service-health] Complete."

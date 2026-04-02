@@ -1,0 +1,4 @@
+OS_NAME="AIOS-Lite"
+OS_VERSION="0.1"
+OS_VENDOR="Chris"
+OS_ARCH="mobile-unix"

@@ -1,0 +1,16 @@
+#!/bin/sh
+
+OS_ROOT="${OS_ROOT:-/}"
+MSGFILE="$OS_ROOT/proc/os.messages"
+LOGFILE="$OS_ROOT/var/log/messages.log"
+
+mkdir -p "$OS_ROOT/proc"
+touch "$MSGFILE"
+mkdir -p "$OS_ROOT/var/log"
+touch "$LOGFILE"
+
+timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+msg="$*"
+
+echo "[$timestamp] $msg" >> "$MSGFILE"
+echo "[$timestamp] $msg" >> "$LOGFILE"

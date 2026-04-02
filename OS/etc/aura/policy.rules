@@ -1,0 +1,7 @@
+# Aura Policy Rules (condition → action)
+# Format:
+#   when <hook> <pattern> => <action>
+
+when heartbeat any => autosys_check
+when event system:check => autosys_check
+when message alert => autosys_alert
