@@ -100,13 +100,13 @@ llm_fallback() {
     case "$input_lower" in
         *hello*|*hi*|*hey*)
             echo "Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?" ;;
-        *status*|*how are you*|*health*)
+        *status*|*how*you*|*health*)
             echo "System status: operational. All core services running. Type 'os-state' for full details." ;;
         *bridge*|*connect*|*device*|*phone*)
             echo "Bridge system ready. Use 'os-bridge detect' to scan for connected devices (iOS, Android, Linux). Use 'os-mirror' to mount a device filesystem." ;;
         *memory*|*remember*)
             echo "I have symbolic, semantic, and context memory available. Use 'mem.set', 'sem.set', or 'ctx.add' to store information." ;;
-        *help*|*what can you do*)
+        *help*|*what*you*do*)
             echo "I can: manage your OS, bridge to other devices (iOS/Android/Linux), store and recall memories, monitor services, and answer questions. Type 'help' for command list." ;;
         *mirror*|*apple*|*ios*|*iphone*)
             echo "iOS bridging uses libimobiledevice. Run 'os-bridge detect' after connecting your iPhone via USB, then 'os-mirror mount ios' to access its filesystem." ;;
@@ -116,7 +116,7 @@ llm_fallback() {
             echo "To restart the kernel daemon: 'os-kernelctl restart'. To reboot the full system: 'reboot'." ;;
         *time*|*date*)
             echo "Current time: $(date '+%Y-%m-%d %H:%M:%S')" ;;
-        *version*|*who are you*)
+        *version*|*who*you*)
             echo "AIOS-Lite v0.1 — AI-Augmented Operating System by Chris. Built for portability and cross-device bridging." ;;
         *)
             # Try symbolic memory search
