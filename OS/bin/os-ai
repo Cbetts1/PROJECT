@@ -1,0 +1,43 @@
+#!/bin/sh
+# os-ai — Interactive AI assistant powered by Aura LLM module
+
+OS_ROOT="${OS_ROOT:-/}"
+export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+
+. "$OS_ROOT/lib/aura-memory/engine.mod"
+. "$OS_ROOT/lib/aura-semantic/embed.mod"
+. "$OS_ROOT/lib/aura-semantic/engine.mod"
+. "$OS_ROOT/lib/aura-hybrid/engine.mod"
+. "$OS_ROOT/lib/aura-llm/llm.mod"
+
+MEMROOT="$OS_ROOT/proc/aura/memory"
+SEMROOT="$OS_ROOT/proc/aura/semantic"
+mkdir -p "$MEMROOT" "$SEMROOT"
+
+if [ "$1" = "-c" ] || [ "$1" = "--cmd" ]; then
+    shift
+    llm_query "$*"
+    exit 0
+fi
+
+echo "AIOS-Lite AI Assistant"
+if bin=$(llm_available) && model=$(llm_model); then
+    echo "LLM: $bin | Model: $(basename "$model")"
+else
+    echo "LLM: rule-based fallback (no llama model found)"
+    echo "Place a .gguf model in $OS_ROOT/llama_model/ to enable full AI"
+fi
+echo "Type 'exit' to quit."
+echo
+
+while true; do
+    printf 'AI> '
+    IFS= read -r line || break
+    [ "$line" = "exit" ] && { echo "Goodbye."; break; }
+    [ -z "$line" ] && continue
+    ctx_add "user: $line"
+    response=$(llm_query "$line")
+    ctx_add "ai: $response"
+    echo "$response"
+    echo
+done
