@@ -1,36 +1,45 @@
 #!/bin/sh
 
-OS_ROOT="/data/data/com.termux/files/home/OS"
+# Auto-detect OS_ROOT from this script's location (sbin/init lives one level below OS_ROOT)
+_SELF="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
+OS_ROOT="${OS_ROOT:-$_SELF}"
 
 BOOT_TARGET="$OS_ROOT/etc/boot.target"
 RUNLEVEL_DIR="$OS_ROOT/etc/rc2.d"
 BOOT_LOG="$OS_ROOT/var/boot.time"
 
-echo "[BOOT] Universal OS init starting..."
+echo "[BOOT] AIOS-Lite init starting..."
+echo "[BOOT] OS_ROOT: $OS_ROOT"
 
-mkdir -p "$OS_ROOT/var" 2>/dev/null
-date +"%Y-%m-%d %H:%M:%S" > "$BOOT_LOG"
+mkdir -p "$OS_ROOT/var/log" "$OS_ROOT/var/service" "$OS_ROOT/var/events" 2>/dev/null
+date +%s > "$BOOT_LOG"
 
 if [ -f "$BOOT_TARGET" ]; then
     TARGET=$(cat "$BOOT_TARGET")
     echo "[BOOT] Target: $TARGET"
 else
-    TARGET="default"
-    echo "[BOOT] No boot.target found, using default"
+    TARGET="2"
+    echo "[BOOT] No boot.target found, defaulting to runlevel 2"
 fi
 
+# Ensure PATH includes our bin dirs
+export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+export OS_ROOT
+
+# Initialize proc/aura namespace
+mkdir -p "$OS_ROOT/proc/aura/context" \
+         "$OS_ROOT/proc/aura/memory" \
+         "$OS_ROOT/proc/aura/semantic" \
+         "$OS_ROOT/proc/aura/bridge" 2>/dev/null
+
+[ -f "$OS_ROOT/proc/aura/context/window" ] || touch "$OS_ROOT/proc/aura/context/window"
+
+# Start init.d services
 for script in "$RUNLEVEL_DIR"/S*; do
-    echo "[BOOT] Running $(basename "$script")"
-    sh "$script"
+    [ -f "$script" ] || continue
+    echo "[BOOT] Starting $(basename "$script")..."
+    sh "$script" start
 done
 
-if [ -d "$OS_ROOT/proc/aura" ]; then
-    echo "[BOOT] Initializing Aura subsystem..."
-    echo "boot" > "$OS_ROOT/proc/aura/context/window"
-    echo "1" > "$OS_ROOT/proc/aura/memory"
-    echo "1" > "$OS_ROOT/proc/aura/tasks"
-    echo "1" > "$OS_ROOT/proc/aura/semantic"
-fi
-
-echo "[BOOT] Universal OS boot complete."
+echo "[BOOT] AIOS-Lite boot complete."
 exec /bin/sh
