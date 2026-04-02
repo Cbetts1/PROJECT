@@ -54,7 +54,8 @@ ios_mount() {
         echo "[ios] Mounted at $IOS_MIRROR"
         ios_log "Mounted at $IOS_MIRROR"
         # Update bridge status
-        sed -i "s/mirror_mounted=0/mirror_mounted=1/" "$OS_ROOT/proc/aura/bridge/status" 2>/dev/null
+        sed "s/mirror_mounted=0/mirror_mounted=1/" "$OS_ROOT/proc/aura/bridge/status" > "$OS_ROOT/proc/aura/bridge/status.tmp" 2>/dev/null \
+            && mv "$OS_ROOT/proc/aura/bridge/status.tmp" "$OS_ROOT/proc/aura/bridge/status" 2>/dev/null
     else
         echo "[ios] Mount failed. Ensure device is paired and unlocked."
         ios_log "Mount failed"
@@ -69,7 +70,8 @@ ios_unmount() {
         umount "$IOS_MIRROR" 2>/dev/null
     fi
     echo "[ios] Unmounted $IOS_MIRROR"
-    sed -i "s/mirror_mounted=1/mirror_mounted=0/" "$OS_ROOT/proc/aura/bridge/status" 2>/dev/null
+    sed "s/mirror_mounted=1/mirror_mounted=0/" "$OS_ROOT/proc/aura/bridge/status" > "$OS_ROOT/proc/aura/bridge/status.tmp" 2>/dev/null \
+        && mv "$OS_ROOT/proc/aura/bridge/status.tmp" "$OS_ROOT/proc/aura/bridge/status" 2>/dev/null
     ios_log "Unmounted"
 }
 

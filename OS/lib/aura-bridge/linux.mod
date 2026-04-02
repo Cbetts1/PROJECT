@@ -50,7 +50,8 @@ hostname=$(hostname 2>/dev/null)
 mounted=$(date +%s)
 mirror_path=$LINUX_MIRROR
 EOF
-    sed -i "s/mirror_mounted=0/mirror_mounted=1/" "$OS_ROOT/proc/aura/bridge/status" 2>/dev/null
+    sed "s/mirror_mounted=0/mirror_mounted=1/" "$OS_ROOT/proc/aura/bridge/status" > "$OS_ROOT/proc/aura/bridge/status.tmp" 2>/dev/null \
+        && mv "$OS_ROOT/proc/aura/bridge/status.tmp" "$OS_ROOT/proc/aura/bridge/status" 2>/dev/null
     echo "[linux] Host mirror created at $LINUX_MIRROR"
     linux_log "Host mirror created"
 }
@@ -84,7 +85,8 @@ linux_ssh_mount() {
     if [ $? -eq 0 ]; then
         echo "[linux] Mounted at $mount_point"
         linux_log "SSHFS mounted $host:$remote_path at $mount_point"
-        sed -i "s/mirror_mounted=0/mirror_mounted=1/" "$OS_ROOT/proc/aura/bridge/status" 2>/dev/null
+        sed "s/mirror_mounted=0/mirror_mounted=1/" "$OS_ROOT/proc/aura/bridge/status" > "$OS_ROOT/proc/aura/bridge/status.tmp" 2>/dev/null \
+            && mv "$OS_ROOT/proc/aura/bridge/status.tmp" "$OS_ROOT/proc/aura/bridge/status" 2>/dev/null
     else
         echo "[linux] Mount failed."
         linux_log "SSHFS mount failed: $host"

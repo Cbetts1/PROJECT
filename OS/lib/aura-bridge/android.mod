@@ -64,7 +64,8 @@ serial=${serial:-auto}
 mounted=$(date +%s)
 mirror_path=$ANDROID_MIRROR
 EOF
-    sed -i "s/mirror_mounted=0/mirror_mounted=1/" "$OS_ROOT/proc/aura/bridge/status" 2>/dev/null
+    sed "s/mirror_mounted=0/mirror_mounted=1/" "$OS_ROOT/proc/aura/bridge/status" > "$OS_ROOT/proc/aura/bridge/status.tmp" 2>/dev/null \
+        && mv "$OS_ROOT/proc/aura/bridge/status.tmp" "$OS_ROOT/proc/aura/bridge/status" 2>/dev/null
     echo "[android] Mirror index created at $ANDROID_MIRROR"
 }
 
@@ -84,7 +85,7 @@ android_push() {
     remote_path="${2:-/sdcard/}"
     serial="${3:-}"
     adb_cmd="adb${serial:+ -s $serial}"
-    adb $adb_cmd push "$local_file" "$remote_path"
+    $adb_cmd push "$local_file" "$remote_path"
     android_log "Pushed $local_file to $remote_path"
 }
 
@@ -95,6 +96,6 @@ android_pull() {
     serial="${3:-}"
     adb_cmd="adb${serial:+ -s $serial}"
     mkdir -p "$local_path"
-    adb $adb_cmd pull "$remote_file" "$local_path"
+    $adb_cmd pull "$remote_file" "$local_path"
     android_log "Pulled $remote_file to $local_path"
 }

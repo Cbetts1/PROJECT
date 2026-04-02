@@ -90,7 +90,8 @@ mirror_unmount() {
             mirror_unmount ios
             mirror_unmount android
             mirror_unmount linux
-            sed -i "s/mirror_mounted=1/mirror_mounted=0/" "$OS_ROOT/proc/aura/bridge/status" 2>/dev/null
+            sed "s/mirror_mounted=1/mirror_mounted=0/" "$OS_ROOT/proc/aura/bridge/status" > "$OS_ROOT/proc/aura/bridge/status.tmp" 2>/dev/null \
+                && mv "$OS_ROOT/proc/aura/bridge/status.tmp" "$OS_ROOT/proc/aura/bridge/status" 2>/dev/null
             ;;
     esac
     mirror_log "Unmounted: $target"
