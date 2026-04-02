@@ -73,13 +73,13 @@ llm_query() {
     if [ -n "$llm_bin" ] && [ -n "$model" ]; then
         # Real LLM path
         prompt=$(llm_prompt_build "$input")
-        response=$( echo "$prompt" | "$llm_bin" \
+        response=$("$llm_bin" \
             -m "$model" \
             --n-predict "$LLM_MAX_TOKENS" \
             --temp 0.7 \
             --ctx-size 2048 \
             -p "$prompt" \
-            2>/dev/null | tail -n +2 | head -30 )
+            2>>"$LLM_HISTORY_FILE" | tail -n +2 | head -30)
         [ -z "$response" ] && response=$(llm_fallback "$input")
     else
         response=$(llm_fallback "$input")
@@ -121,7 +121,7 @@ llm_fallback() {
         *)
             # Try symbolic memory search
             result=$(grep -i "$(echo "$input" | awk '{print $1}')" "$OS_ROOT/etc/aura/memory.index" 2>/dev/null | head -1)
-            if [ -n "$result" ]; then
+            if [ -n "$result" ] && command -v mem_get >/dev/null 2>&1; then
                 key=$(echo "$result" | awk -F'|' '{print $1}' | xargs)
                 echo "From memory [$key]: $(mem_get "$key" 2>/dev/null)"
             else
