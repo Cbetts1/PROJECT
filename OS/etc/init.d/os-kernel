@@ -29,7 +29,7 @@ start() {
     fi
 
     # Write kernel personality
-    [ -f "$PROCFILE" ] && [ -d "$PROCFILE" ] && rm -rf "$PROCFILE"
+    [ -f "$PROCFILE" ] || [ -d "$PROCFILE" ] && rm -rf "$PROCFILE"
     cat > "$PROCFILE" << EOP
 OS_NAME="AIOS-Lite"
 OS_VERSION="0.1"
@@ -51,7 +51,7 @@ last_heartbeat=$(date +%s)" > "$STATEFILE"
             echo "[os-kernel] heartbeat $$" >> "$LOG"
             os-event "kernel: heartbeat pid=$$" 2>/dev/null
             # Update heartbeat timestamp only (keep boot_time)
-            boot_t=$(awk -F= '/boot_time/ {print $2}' "$STATEFILE" 2>/dev/null)
+            boot_t=$(awk -F= '/^boot_time=/ {print $2}' "$STATEFILE" 2>/dev/null)
             echo "boot_time=${boot_t:-$(date +%s)}
 kernel_pid=$$
 os_version=0.1

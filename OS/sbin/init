@@ -2,6 +2,10 @@
 
 # Auto-detect OS_ROOT from this script's location (sbin/init lives one level below OS_ROOT)
 _SELF="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
+if [ -z "$_SELF" ]; then
+    echo "[BOOT] ERROR: Could not determine OS_ROOT from script path. Set OS_ROOT manually." >&2
+    exit 1
+fi
 OS_ROOT="${OS_ROOT:-$_SELF}"
 
 BOOT_TARGET="$OS_ROOT/etc/boot.target"
