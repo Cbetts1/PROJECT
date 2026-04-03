@@ -35,7 +35,7 @@ case "$cmd" in
   start)
     if [ -z "$svc" ]; then echo "Usage: os-service start <service>" >&2; exit 1; fi
     script="$INITD/$svc"
-    if [ ! -f "$script" ] && [ ! -x "$script" ]; then
+    if [ ! -f "$script" ] || [ ! -x "$script" ]; then
         echo "[os-service] No init script for '$svc' at $script" >&2; exit 1
     fi
     echo "[os-service] Starting $svc ..."

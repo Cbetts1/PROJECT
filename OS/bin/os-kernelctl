@@ -6,6 +6,8 @@ OS_ROOT="${OS_ROOT:-/}"
 STATE="$OS_ROOT/var/service"
 PIDFILE="$STATE/os-kernel.pid"
 PROCDIR="$OS_ROOT/proc/os"
+STATEFILE="$PROCDIR/state"
+PROCFILE="$PROCDIR/state"
 INITD="$OS_ROOT/etc/init.d/os-kernel"
 LOG="$OS_ROOT/var/log/os.log"
 
