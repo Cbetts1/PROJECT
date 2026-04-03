@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# aioscpu-ai-shell - AIOSCPU AI mode entry point (replaces login on tty1)
+#
+# This script is invoked by the getty@tty1 drop-in when aioscpu_mode=ai
+# is set on the kernel command line. It:
+#   1. Displays the AIOSCPU banner and legal warning
+#   2. Checks whether aura.service is running; starts it if not
+#   3. Drops into auractl interactive (AURA AI agent)
+#   4. Falls back to bash if auractl fails or exits with an error
+#
+# Make this script executable: chmod +x /usr/local/bin/aioscpu-ai-shell
+
+set -uo pipefail
+
+# ---------------------------------------------------------------------------
+# Banner & legal warning
+# ---------------------------------------------------------------------------
+clear
+cat <<'BANNER'
+============================================================
+   ___  ___ ___  ___ ___ ___  _   _
+  / _ \|_ _/ _ \/ __/ __| _ \| | | |
+ | (_) || || (_) \__ \__ \  _/ |_| |
+  \__,_|___\___/|___/___/_|  \___/
+
+  AIOSCPU - AI Operating System  (OS-AI mode)
+  © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+============================================================
+LEGAL WARNING:
+  This session is mediated by AURA, an AI agent with controlled
+  access to system resources. All AI-triggered commands are logged.
+  See /usr/share/doc/aioscpu/LEGAL.md for full terms.
+============================================================
+BANNER
+echo ""
+
+# ---------------------------------------------------------------------------
+# Ensure AURA service is running
+# ---------------------------------------------------------------------------
+if ! systemctl is-active --quiet aura.service 2>/dev/null; then
+    echo "[aioscpu-ai-shell] Starting AURA service..."
+    if ! systemctl start aura.service 2>/dev/null; then
+        echo "[aioscpu-ai-shell] WARNING: Could not start aura.service via systemctl."
+        echo "[aioscpu-ai-shell] Attempting direct startup..."
+    fi
+fi
+
+# ---------------------------------------------------------------------------
+# Drop into auractl interactive
+# ---------------------------------------------------------------------------
+echo "[aioscpu-ai-shell] Launching AURA interactive session..."
+echo ""
+
+if command -v auractl >/dev/null 2>&1; then
+    auractl interactive
+    AURA_EXIT=$?
+else
+    echo "[aioscpu-ai-shell] WARNING: auractl not found." >&2
+    AURA_EXIT=127
+fi
+
+# ---------------------------------------------------------------------------
+# Fallback to bash if auractl failed or was not found
+# ---------------------------------------------------------------------------
+if [[ ${AURA_EXIT} -ne 0 ]]; then
+    echo ""
+    echo "[aioscpu-ai-shell] auractl exited with code ${AURA_EXIT}."
+    echo "[aioscpu-ai-shell] Falling back to standard bash shell."
+    echo ""
+    exec /bin/bash --login
+fi

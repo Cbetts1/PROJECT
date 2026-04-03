@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# aioscpu-mode-init - AIOSCPU boot mode initializer
+#
+# This script is executed at early boot by aioscpu-mode-init.service.
+# It reads the kernel command line (/proc/cmdline), extracts the
+# aioscpu_mode= parameter, and performs the appropriate setup:
+#
+#   aioscpu_mode=ai     → Enable/start AURA agent; configure AI shell on tty1
+#   aioscpu_mode=shell  → Standard multi-user getty on tty1 (default)
+#   (no parameter)      → Defaults to shell mode
+#
+# The detected mode is written to /run/aioscpu/mode so other services
+# and scripts can check it at runtime.
+#
+# Make this script executable: chmod +x /usr/local/bin/aioscpu-mode-init
+
+set -uo pipefail
+
+MODE_DIR="/run/aioscpu"
+MODE_FILE="${MODE_DIR}/mode"
+
+# ---------------------------------------------------------------------------
+# Read kernel command line
+# ---------------------------------------------------------------------------
+CMDLINE=$(cat /proc/cmdline 2>/dev/null || echo "")
+
+# Extract aioscpu_mode=<value> (may appear anywhere in the cmdline)
+AIOSCPU_MODE="shell"   # default
+if echo "${CMDLINE}" | grep -qE '(^| )aioscpu_mode='; then
+    AIOSCPU_MODE=$(echo "${CMDLINE}" \
+        | grep -oE '(^| )aioscpu_mode=[^ ]+' \
+        | head -1 \
+        | sed 's/.*aioscpu_mode=//')
+fi
+
+echo "[aioscpu-mode-init] Detected mode: ${AIOSCPU_MODE}"
+
+# ---------------------------------------------------------------------------
+# Write mode file
+# ---------------------------------------------------------------------------
+mkdir -p "${MODE_DIR}"
+echo "${AIOSCPU_MODE}" > "${MODE_FILE}"
+chmod 0644 "${MODE_FILE}"
+
+# ---------------------------------------------------------------------------
+# Mode-specific actions
+# ---------------------------------------------------------------------------
+case "${AIOSCPU_MODE}" in
+    ai)
+        echo "[aioscpu-mode-init] AI mode: enabling AURA agent service..."
+        # Enable and start AURA service (if systemctl is available at this point)
+        if command -v systemctl >/dev/null 2>&1; then
+            systemctl enable aura.service 2>/dev/null || true
+            systemctl start  aura.service 2>/dev/null || true
+        fi
+        # The getty@tty1 drop-in (aioscpu-ai.conf) handles autologin + ai-shell.
+        echo "[aioscpu-mode-init] AI mode setup complete."
+        ;;
+
+    shell|*)
+        echo "[aioscpu-mode-init] Shell mode: standard multi-user login."
+        # Nothing special needed; standard getty handles tty1.
+        # Ensure AURA is NOT started automatically in shell mode.
+        if command -v systemctl >/dev/null 2>&1; then
+            systemctl stop    aura.service 2>/dev/null || true
+            systemctl disable aura.service 2>/dev/null || true
+        fi
+        echo "[aioscpu-mode-init] Shell mode setup complete."
+        ;;
+esac
+
+echo "[aioscpu-mode-init] Mode written to ${MODE_FILE}: $(cat "${MODE_FILE}")"

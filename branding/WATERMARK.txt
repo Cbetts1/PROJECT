@@ -1,0 +1,7 @@
+© 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+
+AIOSCPU - AI Operating System
+Built on open-source foundations (Linux kernel, Debian, GRUB, Python)
+AURA AI Agent integrated
+
+This watermark must be preserved in all distributions of AIOSCPU.

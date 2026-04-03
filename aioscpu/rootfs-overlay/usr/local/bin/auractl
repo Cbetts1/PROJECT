@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# auractl - Command-line interface for the AURA AI agent
+#
+# Usage:
+#   auractl interactive            Start an interactive session with AURA
+#   auractl cmd "<line>"           Send a single command to AURA and print response
+#   auractl help                   Show this help
+#
+# AURA communicates over stdin/stdout using a simple line protocol.
+# See /usr/share/doc/aioscpu/AURA-API.md for the full protocol spec.
+#
+# Make this script executable: chmod +x /usr/local/bin/auractl
+
+set -uo pipefail
+
+AURA_AGENT="/usr/bin/python3"
+AURA_SCRIPT="/opt/aura/aura-agent.py"
+AURA_CONFIG="/opt/aura/aura-config.json"
+
+# ---------------------------------------------------------------------------
+# Branding
+# ---------------------------------------------------------------------------
+print_banner() {
+    echo "============================================================"
+    echo "  AURA - AI Agent for AIOSCPU"
+    echo "  © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal"
+    echo "  Type 'help' for available commands.  Type 'quit' to exit."
+    echo "============================================================"
+}
+
+# ---------------------------------------------------------------------------
+# Preflight
+# ---------------------------------------------------------------------------
+if [[ ! -f "${AURA_SCRIPT}" ]]; then
+    echo "[auractl] ERROR: AURA agent script not found at ${AURA_SCRIPT}" >&2
+    echo "[auractl] Is the AURA package installed?" >&2
+    exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# Interactive mode – bidirectional pipe loop
+# ---------------------------------------------------------------------------
+run_interactive() {
+    print_banner
+    echo ""
+    echo "Connecting to AURA agent..."
+    echo ""
+
+    # Start aura-agent.py as a subprocess with stdin connected to this shell's stdin
+    # and stdout/stderr flowing directly to the terminal.
+    "${AURA_AGENT}" "${AURA_SCRIPT}" --config "${AURA_CONFIG}"
+    local exit_code=$?
+
+    echo ""
+    echo "[auractl] AURA session ended (exit code: ${exit_code})."
+    return "${exit_code}"
+}
+
+# ---------------------------------------------------------------------------
+# Single-command mode – send one line, capture response
+# ---------------------------------------------------------------------------
+run_cmd() {
+    local line="$1"
+    # Echo the command into aura-agent.py's stdin, then send 'quit'
+    printf '%s\nquit\n' "${line}" \
+        | "${AURA_AGENT}" "${AURA_SCRIPT}" --config "${AURA_CONFIG}" \
+        | grep -v '^AURA>' \
+        | head -n 50
+}
+
+# ---------------------------------------------------------------------------
+# Argument dispatch
+# ---------------------------------------------------------------------------
+MODE="${1:-interactive}"
+
+case "${MODE}" in
+    interactive)
+        run_interactive
+        ;;
+    cmd)
+        if [[ $# -lt 2 ]]; then
+            echo "Usage: auractl cmd \"<command line>\"" >&2
+            exit 1
+        fi
+        run_cmd "$2"
+        ;;
+    help|--help|-h)
+        echo ""
+        echo "  auractl - AIOSCPU AURA agent interface"
+        echo "  © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal"
+        echo ""
+        echo "  Usage:"
+        echo "    auractl interactive         Start an interactive AURA session"
+        echo "    auractl cmd \"<command>\"    Send a single command to AURA"
+        echo "    auractl help                Show this help"
+        echo ""
+        echo "  AURA commands (inside interactive session):"
+        echo "    ping                        Check if AURA is alive"
+        echo "    sysinfo                     Print system information"
+        echo "    netinfo                     Print network information"
+        echo "    remember <scope> <key>=<v>  Store a memory"
+        echo "    recall <scope> <key>        Retrieve a memory"
+        echo "    recall-all <scope>          Retrieve all memories in scope"
+        echo "    run <cmd>                   Run a command via secure-run wrapper"
+        echo "    help                        Show AURA command help"
+        echo "    quit                        Exit the AURA session"
+        echo ""
+        ;;
+    *)
+        echo "[auractl] Unknown mode: ${MODE}" >&2
+        echo "Run 'auractl help' for usage." >&2
+        exit 1
+        ;;
+esac

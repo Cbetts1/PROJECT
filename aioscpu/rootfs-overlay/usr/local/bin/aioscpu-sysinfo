@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# aioscpu-sysinfo - Print a summary of system information
+#
+# Usage: aioscpu-sysinfo
+#
+# This script is designed to be called by both human users and the AURA
+# AI agent. Output is plain text for easy parsing.
+#
+# Make this script executable: chmod +x /usr/local/bin/aioscpu-sysinfo
+
+set -euo pipefail
+
+DIVIDER="------------------------------------------------------------"
+
+echo "============================================================"
+echo "  AIOSCPU System Information"
+echo "  © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal"
+echo "  Generated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+echo "============================================================"
+echo ""
+
+# --- Kernel ---
+echo "=== Kernel ==="
+uname -a
+echo ""
+
+# --- CPU ---
+echo "=== CPU ==="
+if command -v lscpu >/dev/null 2>&1; then
+    lscpu | grep -E "^(Architecture|CPU\(s\)|Thread|Core|Socket|Model name|CPU MHz|Virtualization)" || lscpu
+else
+    # Fallback: parse /proc/cpuinfo
+    grep -E "^(processor|model name|cpu MHz|cache size|physical id|siblings|cpu cores)" /proc/cpuinfo | sort -u
+fi
+echo ""
+
+# --- Memory ---
+echo "=== Memory ==="
+free -h
+echo ""
+
+# --- Disk ---
+echo "=== Block Devices ==="
+lsblk 2>/dev/null || echo "(lsblk not available)"
+echo ""
+
+echo "=== Disk Usage ==="
+df -h --output=source,fstype,size,used,avail,pcent,target 2>/dev/null \
+    || df -h
+echo ""
+
+# --- Uptime & Load ---
+echo "=== Uptime & Load ==="
+uptime
+echo ""
+
+# --- OS Release ---
+echo "=== OS Release ==="
+if [[ -f /etc/aioscpu-release ]]; then
+    cat /etc/aioscpu-release
+    echo ""
+fi
+if [[ -f /etc/os-release ]]; then
+    # Show only the most relevant fields
+    grep -E "^(NAME|VERSION|ID|PRETTY_NAME)" /etc/os-release || cat /etc/os-release
+fi
+echo ""
+
+echo "${DIVIDER}"
+echo "PRIVACY WARNING: This output may contain sensitive system information."
+echo "Do not share it with untrusted parties."
+echo "All invocations by AURA AI agent are logged in /var/log/aioscpu-secure-run.log"
+echo "${DIVIDER}"
