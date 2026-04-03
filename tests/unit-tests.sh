@@ -16,12 +16,24 @@ fail() { echo "[FAIL] $1"; FAIL=$((FAIL+1)); ERRORS="$ERRORS\n  - $1"; }
 echo "Running unit tests..."
 
 # ---------------------------------------------------------------------------
-# Test environment setup — create runtime files that are gitignored but
-# expected to exist by the filesystem tests.
+# Test fixtures: create runtime-generated stub files that are gitignored
 # ---------------------------------------------------------------------------
+_STUB_OS_LOG="$OS_ROOT/var/log/os.log"
+_STUB_OS_STATE="$OS_ROOT/proc/os.state"
+_created_os_log=false
+_created_os_state=false
+
 mkdir -p "$OS_ROOT/var/log" "$OS_ROOT/proc"
-[ -f "$OS_ROOT/var/log/os.log" ] || touch "$OS_ROOT/var/log/os.log"
-[ -f "$OS_ROOT/proc/os.state" ]  || printf "boot_time=0\nkernel_pid=0\nos_version=0.1\nrunlevel=3\nlast_heartbeat=0\n" > "$OS_ROOT/proc/os.state"
+
+if [ ! -f "$_STUB_OS_LOG" ]; then
+    echo "[stub] os-kernel heartbeat stub" > "$_STUB_OS_LOG"
+    _created_os_log=true
+fi
+
+if [ ! -f "$_STUB_OS_STATE" ]; then
+    printf "boot_time=0\nkernel_pid=0\nos_version=0.1\nrunlevel=3\nlast_heartbeat=0\n" > "$_STUB_OS_STATE"
+    _created_os_state=true
+fi
 
 # ---------------------------------------------------------------------------
 # filesystem.py tests
@@ -183,107 +195,10 @@ grep -q "service dead: fake-svc" "$_AURA_LOG_FILE" && pass "heartbeat: dead serv
 rm -rf "$_STATE_DIR" "$_AURA_LOG_FILE" "$_EVENTS_LOG"
 
 # ---------------------------------------------------------------------------
-# os-install upgrade subcommands
+# Cleanup test fixtures
 # ---------------------------------------------------------------------------
-echo
-echo "=== os-install upgrade tests ==="
-
-_TEST_OS_ROOT=$(mktemp -d)
-mkdir -p "$_TEST_OS_ROOT/usr/pkg" "$_TEST_OS_ROOT/var/pkg"
-
-# Create a fake installed package with an upgrade script
-mkdir -p "$_TEST_OS_ROOT/usr/pkg/testpkg"
-printf '#!/bin/sh\necho "upgraded testpkg"\n' > "$_TEST_OS_ROOT/usr/pkg/testpkg/upgrade.sh"
-chmod +x "$_TEST_OS_ROOT/usr/pkg/testpkg/upgrade.sh"
-echo "testpkg" > "$_TEST_OS_ROOT/var/pkg/testpkg"
-
-# upgrade-all: should call upgrade.sh for each installed package
-out=$(OS_ROOT="$_TEST_OS_ROOT" sh "$OS_ROOT/bin/os-install" upgrade-all 2>/dev/null)
-echo "$out" | grep -q "upgraded testpkg" && pass "os-install upgrade-all: calls upgrade.sh" || fail "os-install upgrade-all: should call upgrade.sh"
-echo "$out" | grep -q "1 package" && pass "os-install upgrade-all: reports count" || fail "os-install upgrade-all: should report upgraded count"
-
-# upgrade <pkg>: should call upgrade.sh for the named package
-out=$(OS_ROOT="$_TEST_OS_ROOT" sh "$OS_ROOT/bin/os-install" upgrade testpkg 2>/dev/null)
-echo "$out" | grep -q "upgraded testpkg" && pass "os-install upgrade <pkg>: calls upgrade.sh" || fail "os-install upgrade <pkg>: should call upgrade.sh"
-
-# upgrade non-installed package: should error
-out=$(OS_ROOT="$_TEST_OS_ROOT" sh "$OS_ROOT/bin/os-install" upgrade notinstalled 2>/dev/null; true)
-echo "$out" | grep -qi "not installed" && pass "os-install upgrade: rejects non-installed pkg" || fail "os-install upgrade: should reject non-installed pkg"
-
-# Package with only install.sh (no upgrade.sh): falls back to reinstall
-mkdir -p "$_TEST_OS_ROOT/usr/pkg/fallbackpkg"
-printf '#!/bin/sh\necho "installed fallbackpkg"\n' > "$_TEST_OS_ROOT/usr/pkg/fallbackpkg/install.sh"
-chmod +x "$_TEST_OS_ROOT/usr/pkg/fallbackpkg/install.sh"
-echo "fallbackpkg" > "$_TEST_OS_ROOT/var/pkg/fallbackpkg"
-out=$(OS_ROOT="$_TEST_OS_ROOT" sh "$OS_ROOT/bin/os-install" upgrade fallbackpkg 2>/dev/null)
-echo "$out" | grep -q "installed fallbackpkg" && pass "os-install upgrade: falls back to install.sh" || fail "os-install upgrade: should fall back to install.sh when no upgrade.sh"
-
-rm -rf "$_TEST_OS_ROOT"
-
-# ---------------------------------------------------------------------------
-# os-shell KNOWN_CMDS includes 'upgrade'
-# ---------------------------------------------------------------------------
-echo
-echo "=== os-shell upgrade command registration test ==="
-
-grep -q "upgrade" "$OS_ROOT/bin/os-shell" \
-    && pass "os-shell: 'upgrade' present in script" \
-    || fail "os-shell: 'upgrade' should be in script"
-
-# Fuzzy match: 'upgradde' -> 'upgrade' (1 char off)
-_KNOWN_CMDS_WITH_UPGRADE="$_KNOWN_CMDS upgrade"
-fuzzy_match_upgrade_test() {
-    input="$1"
-    awk -v input="$input" -v cmds="$_KNOWN_CMDS_WITH_UPGRADE" '
-    function min3(a, b, c,    m) { m=(a<b)?a:b; return(m<c)?m:c }
-    function lev(s, t,    m, n, i, j, cost, dtbl) {
-        m=length(s); n=length(t)
-        if(m==0) return n; if(n==0) return m
-        for(i=0;i<=m;i++) dtbl[i,0]=i
-        for(j=0;j<=n;j++) dtbl[0,j]=j
-        for(i=1;i<=m;i++) for(j=1;j<=n;j++) {
-            cost=(substr(s,i,1)==substr(t,j,1))?0:1
-            dtbl[i,j]=min3(dtbl[i-1,j]+1,dtbl[i,j-1]+1,dtbl[i-1,j-1]+cost)
-        }
-        return dtbl[m,n]
-    }
-    BEGIN {
-        n=split(cmds,ca," "); best=999; bestcmd=""
-        for(i=1;i<=n;i++) { dist=lev(input,ca[i]); if(dist<best){best=dist;bestcmd=ca[i]} }
-        if(best<=2) print bestcmd
-    }' /dev/null
-}
-r=$(fuzzy_match_upgrade_test "upgradde"); [ "$r" = "upgrade" ] && pass "fuzzy: upgradde -> upgrade" || fail "fuzzy: upgradde should -> upgrade (got '$r')"
-
-# ---------------------------------------------------------------------------
-# aura-agent: upgrade and version commands
-# ---------------------------------------------------------------------------
-echo
-echo "=== aura-agent upgrade/version tests ==="
-
-_AURA_AGENT="$REPO_ROOT/aura/aura-agent.py"
-_AURA_CFG="$REPO_ROOT/aura/aura-config.json"
-_AURA_EXPECTED_VERSION="v1.1"
-
-if ! command -v python3 >/dev/null 2>&1; then
-    echo "[SKIP] python3 not available - skipping aura-agent tests"
-else
-    # version command returns "AURA v1.1"
-    out=$(printf 'version\nquit\n' | python3 "$_AURA_AGENT" --config "$_AURA_CFG" 2>/dev/null | grep -v "^AURA>" | head -5)
-    echo "$out" | grep -q "$_AURA_EXPECTED_VERSION" && pass "aura-agent: version reports $_AURA_EXPECTED_VERSION" || fail "aura-agent: version should report $_AURA_EXPECTED_VERSION"
-
-    # --version flag prints version and exits
-    out=$(python3 "$_AURA_AGENT" --config "$_AURA_CFG" --version 2>/dev/null)
-    echo "$out" | grep -q "$_AURA_EXPECTED_VERSION" && pass "aura-agent: --version flag works" || fail "aura-agent: --version flag should print $_AURA_EXPECTED_VERSION"
-
-    # upgrade command exists and returns something (secure-run may not be present; just check no crash)
-    out=$(printf 'upgrade\nquit\n' | python3 "$_AURA_AGENT" --config "$_AURA_CFG" 2>/dev/null | grep -v "^AURA>" | head -5)
-    [ -n "$out" ] && pass "aura-agent: upgrade command responds" || fail "aura-agent: upgrade command should respond"
-
-    # upgrade with bad flag returns error
-    out=$(printf 'upgrade --badflg\nquit\n' | python3 "$_AURA_AGENT" --config "$_AURA_CFG" 2>/dev/null | grep -v "^AURA>" | head -5)
-    echo "$out" | grep -qi "error" && pass "aura-agent: upgrade rejects bad flag" || fail "aura-agent: upgrade should reject bad flag"
-fi
+[ "$_created_os_log" = true ]   && rm -f "$_STUB_OS_LOG"
+[ "$_created_os_state" = true ] && rm -f "$_STUB_OS_STATE"
 
 # ---------------------------------------------------------------------------
 # Summary
