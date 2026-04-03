@@ -1,34 +1,12 @@
-# AIOS-Lite
+# AIOS-Lite — Your AI OS. Any Device. Any Shell.
 
-> **AI-Augmented Portable Operating System**
->
-> *"Plug your OS into any device and your system mirrors it — giving you the power of your AI OS on top of any platform."*
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0--Aurora-blue.svg)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/tests-144%20passing-brightgreen.svg)](tests/)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange.svg)]()
-[![Platform: POSIX](https://img.shields.io/badge/Platform-POSIX%20Shell-green.svg)]()
-
-**AIOS-Lite** is a lightweight, AI-augmented portable operating system built on POSIX shell script. It runs on any Unix-like environment — Android (Termux), Linux, macOS, or Raspberry Pi — and can **bridge to and mirror** external operating systems, giving you a unified AI-powered shell interface to any connected device.
-
----
-
-## Table of Contents
-
-- [Vision](#vision)
-- [Features](#features)
-- [Architecture](#architecture)
-- [System Requirements](#system-requirements)
-- [Installation](#installation)
-- [Usage](#usage)
-- [AI Memory System](#ai-memory-system)
-- [LLM Integration](#llm-integration)
-- [Status & Roadmap](#status--roadmap)
-- [Credits & Author](#credits--author)
-- [License & Legal](#license--legal)
-
----
-
-## Vision
+**AIOS-Lite** is a portable, AI-native operating system built entirely in POSIX shell and Python 3.
+It runs on any Unix-like environment (Android/Termux, Linux, macOS) — no root, no installation required.
+Drop in a LLaMA model and your shell starts thinking.  Connect a device and your OS mirrors it.
 
 - **Portable** — Runs from a USB drive, Android phone (Termux), Raspberry Pi, or any POSIX shell
 - **AI-Powered** — Three-layer hybrid memory (context + symbolic + semantic) plus optional LLaMA LLM inference
@@ -39,17 +17,20 @@
 
 ## Features
 
-- **POSIX Shell Kernel** — Lightweight OS kernel written entirely in POSIX sh; no compiled binaries required for core operation
-- **AI Intent Engine** — Python-based NLP classifier converts natural-language commands into structured intents routed to specialist bots
-- **Hybrid Memory** — Three-layer memory: rolling context window, symbolic key-value store, and semantic embedding index
-- **LLaMA LLM Integration** — Optional integration with llama.cpp for on-device large-language-model inference (GGUF models)
-- **Cross-OS Bridging** — Detects and connects to iOS devices (libimobiledevice/ifuse), Android devices (ADB), and remote Linux/macOS servers (SSH/SSHFS)
-- **Mirror Filesystem** — Mounts any bridged device's filesystem into `$OS_ROOT/mirror/` for unified access
-- **Service Manager** — rc2.d-compatible init system with PID tracking, health checks, and log rotation
-- **AURA Agents** — Background automation agents, event-driven policy engine, and scheduled task runner
-- **Heartbeat Daemon** — Periodic health monitor (`bin/aios-heartbeat`) with configurable targets and thermal alerting
-- **Dual Shell Interface** — `bin/aios` (AI-interactive shell) and `bin/aios-sys` (OS command dispatcher)
-- **Zero External Dependencies** for core — only `sh`, `awk`, `grep`, `sed`, and `cksum` are required to boot
+---
+
+## Why AIOS-Lite?
+
+| | |
+|---|---|
+| 🧠 **On-device AI** | LLaMA inference runs on your hardware — no cloud, no subscription, no telemetry |
+| 🐚 **Shell-portable** | Clone and boot in under a minute on Android (Termux), Linux, or macOS |
+| 🔗 **Cross-OS bridge** | Mirror iOS, Android, and Linux filesystems into a unified namespace |
+| 🛡️ **Capability security** | Fine-grained permissions per principal; every syscall is audit-logged |
+| 🔁 **Self-healing** | Five-stage automated recovery mode detects and repairs itself |
+| 🌐 **REST + WebSocket API** | Built-in HTTP server with TLS 1.2, token auth, and Server-Sent Events |
+| 💾 **3-layer AI memory** | Context window + symbolic key-value + semantic embeddings + hybrid recall |
+| 📦 **Reproducible builds** | Portable shell mode (zero build) or full AIOSCPU disk image from source |
 
 ---
 
@@ -351,26 +332,42 @@ python3 tests/test_python_modules.py
 
 ---
 
-## Credits & Author
+## Documentation
 
-**AIOS-Lite** was conceived, designed, and directed by **Christopher Betts**.
-
-All source code in this repository was generated or substantially refined using AI tools (including large language models) under the direct creative direction, supervision, and authorship of Christopher Betts. Christopher Betts retains full authorship and copyright over this work.
-
-> © 2026 Christopher Betts. All rights reserved.
-
----
-
-## License & Legal
-
-This project is licensed under the **MIT License** — see [LICENSE](LICENSE) for the full text.
-
-All third-party components used in this project are listed in [`licenses/THIRD_PARTY_LICENSES.md`](licenses/THIRD_PARTY_LICENSES.md) with their respective licenses.
-
-**AI-Generated Code Disclosure:** The source code in this repository was created or refined with the assistance of AI tools under the direction of Christopher Betts. This is disclosed in accordance with best practices for AI-assisted software development. The creative direction, system design, and authorship belong to Christopher Betts.
-
-For the complete legal package including Terms of Use, Privacy Notice, Disclaimer, and Copyright Notice, see [`docs/LEGAL_PACKAGE.md`](docs/LEGAL_PACKAGE.md).
+| Document | Description |
+|----------|-------------|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture and directory structure |
+| [docs/KERNEL-DESIGN.md](docs/KERNEL-DESIGN.md) | Pseudo-kernel design, boot sequence, syscall table |
+| [docs/CAPABILITIES.md](docs/CAPABILITIES.md) | Full capability matrix (status / component / tested) |
+| [docs/API-REFERENCE.md](docs/API-REFERENCE.md) | Complete API reference (syscall, kernel, REST, AI) |
+| [docs/AURA-API.md](docs/AURA-API.md) | AURA agent API reference |
+| [docs/SECURITY.md](docs/SECURITY.md) | Security architecture and hardening guide |
+| [docs/INSTALL.md](docs/INSTALL.md) | Installation guide (AIOSCPU image) |
+| [docs/REPRODUCIBLE-BUILD.md](docs/REPRODUCIBLE-BUILD.md) | Reproducible build instructions |
+| [docs/AI_MODEL_SETUP.md](docs/AI_MODEL_SETUP.md) | LLaMA model setup guide |
+| [CHANGELOG.md](CHANGELOG.md) | Full release history |
+| [ROADMAP.md](ROADMAP.md) | Short-term and long-term goals |
+| [SECURITY.md](SECURITY.md) | Vulnerability reporting policy |
+| [LAUNCH.md](LAUNCH.md) | Public launch materials, press release, branding |
 
 ---
 
-*AIOS-Lite — Built by Christopher Betts*
+## Contributing
+
+Contributions are welcome!  See [MAINTAINERS.md](MAINTAINERS.md) for the
+contribution process.
+
+Run the test suite before submitting:
+```sh
+AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS bash tests/unit-tests.sh
+AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS bash tests/integration-tests.sh
+```
+
+---
+
+## License
+
+MIT — © 2026 Christopher Betts.  See [LICENSE](LICENSE) for the full text.
+
+Third-party dependency licenses: [licenses/THIRD_PARTY_LICENSES.md](licenses/THIRD_PARTY_LICENSES.md)
+
