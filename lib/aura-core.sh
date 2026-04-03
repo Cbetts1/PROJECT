@@ -89,7 +89,7 @@ osroot_resolve() {
     elif resolved="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "${path}" 2>/dev/null)"; then
         : # Python fallback
     else
-        echo "" >&2
+        echo "[AIOS] Failed to resolve path: ${path}" >&2
         return 1
     fi
 
