@@ -2,20 +2,83 @@
 
 OS_ROOT="${OS_ROOT:-/}"
 RC2="$OS_ROOT/etc/rc2.d"
+INITD="$OS_ROOT/etc/init.d"
+STATE="$OS_ROOT/var/service"
+
+_svc_run() {
+    svc="$1"; action="$2"
+    script="$INITD/$svc"
+    if [ -x "$script" ]; then
+        sh "$script" "$action"
+    elif [ -f "$script" ]; then
+        sh "$script" "$action"
+    else
+        echo "[os-service] Service script not found: $script"
+        return 1
+    fi
+}
+
+_svc_status() {
+    svc="$1"
+    pidfile="$STATE/${svc}.pid"
+    if [ -f "$pidfile" ]; then
+        pid=$(cat "$pidfile")
+        if [ -d "/proc/$pid" ]; then
+            echo "$svc: running (pid=$pid)"
+        else
+            echo "$svc: dead (stale pid=$pid)"
+        fi
+    elif [ -x "$INITD/$svc" ] || [ -f "$INITD/$svc" ]; then
+        # Try calling the init script's status action
+        sh "$INITD/$svc" status 2>/dev/null || echo "$svc: stopped"
+    else
+        echo "$svc: unknown (no script at $INITD/$svc)"
+    fi
+}
 
 case "$1" in
+  start)
+    [ -z "$2" ] && { echo "Usage: os-service start <service>"; exit 1; }
+    _svc_run "$2" start
+    ;;
+  stop)
+    [ -z "$2" ] && { echo "Usage: os-service stop <service>"; exit 1; }
+    _svc_run "$2" stop
+    ;;
+  restart)
+    [ -z "$2" ] && { echo "Usage: os-service restart <service>"; exit 1; }
+    _svc_run "$2" restart
+    ;;
+  status)
+    if [ -n "$2" ]; then
+        _svc_status "$2"
+    else
+        echo "=== Service Status ==="
+        for s in "$INITD"/*; do
+            [ -f "$s" ] || continue
+            _svc_status "$(basename "$s")"
+        done
+        echo "====================="
+    fi
+    ;;
   enable)
+    [ -z "$2" ] && { echo "Usage: os-service enable <service>"; exit 1; }
     ln -sf "../init.d/$2" "$RC2/S99-$2"
     echo "Enabled: $2"
     ;;
   disable)
+    [ -z "$2" ] && { echo "Usage: os-service disable <service>"; exit 1; }
     rm -f "$RC2/"*"$2"
     echo "Disabled: $2"
     ;;
   list)
-    ls "$RC2"
+    echo "=== Enabled Services (rc2.d) ==="
+    ls "$RC2" 2>/dev/null || echo "(none)"
+    echo ""
+    echo "=== Available Services (init.d) ==="
+    ls "$INITD" 2>/dev/null || echo "(none)"
     ;;
   *)
-    echo "Usage: os-service {enable|disable|list} <service>"
+    echo "Usage: os-service {start|stop|restart|status|enable|disable|list} [service]"
     ;;
 esac

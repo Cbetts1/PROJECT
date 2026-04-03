@@ -4,6 +4,10 @@
 OS_ROOT="${OS_ROOT:-/}"
 export PATH="$PATH:$OS_ROOT/bin:$OS_ROOT/sbin"
 
+# History and job control
+HISTFILE="${OS_ROOT}/var/log/shell.history"
+HISTSIZE=1000
+
 IDENTITY="$OS_ROOT/proc/os.identity"
 STATEFILE="$OS_ROOT/proc/os.state"
 MSGFILE="$OS_ROOT/proc/os.messages"
@@ -28,6 +32,9 @@ mkdir -p "$MEMROOT" "$SEMROOT" "$OS_ROOT/proc/aura/context" "$OS_ROOT/var/log"
 
 # Load identity
 [ -f "$IDENTITY" ] && . "$IDENTITY"
+
+# Source login profile (user customisation point)
+[ -f "$OS_ROOT/etc/aura/profile" ] && . "$OS_ROOT/etc/aura/profile" 2>/dev/null
 
 shell_name="${OS_NAME:-Aura}"
 host="${OS_NAME:-AIOS}"
@@ -80,7 +87,7 @@ aura_log() {
 
 # === Fuzzy Command Matching (awk Levenshtein) ===
 # All known commands — used for typo suggestion / intent correction.
-KNOWN_CMDS="ask recall recall.best ctx.show ctx.add sem.set sem.get sem.search sem.delete sem.list mem.set mem.get mem.search mem.delete mem.tag mem.list bridge bridge.detect bridge.ios bridge.android mirror mirror.mount mirror.unmount mirror.ls msg event mode status services ps info help exit quit sysinfo uptime disk ls cd read write start stop restart kill upgrade"
+KNOWN_CMDS="ask recall recall.best ctx.show ctx.add sem.set sem.get sem.search sem.delete sem.list mem.set mem.get mem.search mem.delete mem.tag mem.list bridge bridge.detect bridge.ios bridge.android mirror mirror.mount mirror.unmount mirror.ls msg event mode status services ps info help exit quit sysinfo uptime disk ls cd read write start stop restart kill upgrade history jobs bg fg"
 
 cmd_fuzzy_match() {
     input="$1"
@@ -211,11 +218,84 @@ Services:
 Packages:
   upgrade              Check installed packages for upgrades
   upgrade --apply      Apply all pending package upgrades
+
+History & Jobs:
+  history [n]          Show last n commands (default: 20)
+  history -c           Clear history
+  jobs                 List background jobs
+  fg [n]               Wait for background job n (default: last)
+  bg <cmd> [args]      Run command in background
 EOH
+}
+
+# === History helpers ===
+_hist_load() {
+    mkdir -p "$(dirname "$HISTFILE")"
+    touch "$HISTFILE" 2>/dev/null || true
+}
+
+_hist_append() {
+    [ -z "$1" ] && return
+    echo "$1" >> "$HISTFILE"
+    # Trim to HISTSIZE
+    total=$(wc -l < "$HISTFILE" 2>/dev/null | tr -d ' ')
+    if [ "$total" -gt "$HISTSIZE" ]; then
+        tail -n "$HISTSIZE" "$HISTFILE" > "$HISTFILE.tmp" && mv "$HISTFILE.tmp" "$HISTFILE"
+    fi
+}
+
+_hist_show() {
+    n="${1:-20}"
+    if [ ! -f "$HISTFILE" ]; then echo "(no history)"; return; fi
+    total=$(wc -l < "$HISTFILE" 2>/dev/null | tr -d ' ')
+    start=$(( total - n + 1 ))
+    [ "$start" -lt 1 ] && start=1
+    awk -v s="$start" 'NR>=s {printf "%5d  %s\n", NR, $0}' "$HISTFILE"
+}
+
+# === Job control ===
+# Jobs stored as lines in "$OS_ROOT/var/service/jobs.table": "N PID CMD"
+JOBFILE="$OS_ROOT/var/service/jobs.table"
+
+_job_add() {
+    pid="$1"; shift; cmd="$*"
+    mkdir -p "$(dirname "$JOBFILE")"
+    n=$(( $(wc -l < "$JOBFILE" 2>/dev/null | tr -d ' ') + 1 ))
+    echo "$n $pid $cmd" >> "$JOBFILE"
+    echo "[${n}] $pid"
+}
+
+_job_list() {
+    [ -f "$JOBFILE" ] || { echo "No background jobs."; return; }
+    while read -r jn jpid jcmd; do
+        if [ -d "/proc/$jpid" ]; then
+            printf '[%s] Running   %s  %s\n' "$jn" "$jpid" "$jcmd"
+        else
+            printf '[%s] Done      %s  %s\n' "$jn" "$jpid" "$jcmd"
+        fi
+    done < "$JOBFILE"
+}
+
+_job_fg() {
+    n="${1:-}"
+    [ -f "$JOBFILE" ] || { echo "No background jobs."; return; }
+    if [ -z "$n" ]; then
+        # Read last job entry
+        jn=$(tail -1 "$JOBFILE" | awk '{print $1}')
+        jpid=$(tail -1 "$JOBFILE" | awk '{print $2}')
+    else
+        jn="$n"
+        jpid=$(awk -v n="$n" '$1==n {print $2}' "$JOBFILE")
+    fi
+    [ -z "$jpid" ] && { echo "No such job: $n"; return 1; }
+    echo "[${jn}] Waiting for PID $jpid ..."
+    wait "$jpid" 2>/dev/null
+    echo "[${jn}] Done."
 }
 
 # === Start Shell ===
 banner
+_hist_load
 aura_log "shell started (mode=$AURA_MODE)"
 
 _pending=""   # holds a corrected command to re-dispatch without re-reading stdin
@@ -227,14 +307,37 @@ while true; do
     else
         aura_prompt
         IFS= read -r line || exit 0
+        # Append to history (skip blank and history commands)
+        case "$line" in
+            ""|history*) ;;
+            *) _hist_append "$line" ;;
+        esac
     fi
     [ -z "$line" ] && continue
+
+    # Handle background job: line ending with ' &'
+    _bg_mode=0
+    case "$line" in
+        *" &"|*"	&")
+            _bg_mode=1
+            line="${line% &}"
+            line="${line%	&}"
+            ;;
+    esac
+
     ctx_add "$line"
     set -- $line
     cmd="$1"
 
     # Log every command to aura.log for auditability
     aura_log "CMD: $line"
+
+    # Run in background if & was appended
+    if [ "$_bg_mode" -eq 1 ]; then
+        ( eval "$line" ) &
+        _job_add "$!" "$line"
+        continue
+    fi
 
     case "$cmd" in
         ask)
@@ -472,6 +575,23 @@ while true; do
         exit|quit)
             aura_log "shell exit"
             aura_say "Goodbye."; exit 0 ;;
+        history)
+            shift
+            case "$1" in
+                -c) > "$HISTFILE"; aura_say "History cleared." ;;
+                *)  _hist_show "${1:-20}" ;;
+            esac
+            ;;
+        jobs)
+            _job_list ;;
+        fg)
+            shift; _job_fg "$1" ;;
+        bg)
+            shift
+            [ -z "$*" ] && { aura_say "Usage: bg <cmd> [args]"; continue; }
+            ( eval "$*" ) &
+            _job_add "$!" "$*"
+            ;;
         "")
             ;;
         *)
