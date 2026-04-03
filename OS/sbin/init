@@ -29,12 +29,13 @@ export OS_ROOT AIOS_HOME
 # ---------------------------------------------------------------------------
 BOOT_SHELL="os-shell"
 NO_SHELL=0
-for arg in "$@"; do
-    case "$arg" in
-        --no-shell)           NO_SHELL=1 ;;
-        --shell)              shift; BOOT_SHELL="$1" ;;
-        --shell=*)            BOOT_SHELL="${arg#--shell=}" ;;
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --no-shell)   NO_SHELL=1 ;;
+        --shell=*)    BOOT_SHELL="${1#--shell=}" ;;
+        --shell)      shift; BOOT_SHELL="${1:-os-shell}" ;;
     esac
+    shift
 done
 
 # ---------------------------------------------------------------------------
