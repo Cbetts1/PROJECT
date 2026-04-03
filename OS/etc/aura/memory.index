@@ -6,4 +6,5 @@ test.key.debug | test_key_debug.mem |
 testkey123 | testkey123.mem | 
 test.key.6606 | test_key_6606.mem | 
 test.key.4166 | test_key_4166.mem | 
+test.key.6316 | test_key_6316.mem | 
 inttest.key | inttest_key.mem | 

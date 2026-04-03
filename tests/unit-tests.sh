@@ -201,6 +201,245 @@ rm -rf "$_STATE_DIR" "$_AURA_LOG_FILE" "$_EVENTS_LOG"
 [ "$_created_os_state" = true ] && rm -f "$_STUB_OS_STATE"
 
 # ---------------------------------------------------------------------------
+# filesystem.py CLI — additional edge cases
+# ---------------------------------------------------------------------------
+echo
+echo "=== filesystem.py CLI edge cases ==="
+
+# 10. fs stat on a directory (isdir: True)
+_tmp_stat_dir="tmp/unit-statdir-$$"
+OS_ROOT="$OS_ROOT" python3 "$FS_PY" write "$_tmp_stat_dir/placeholder.txt" "x" >/dev/null 2>&1
+out=$(OS_ROOT="$OS_ROOT" python3 "$FS_PY" stat "$_tmp_stat_dir" 2>/dev/null)
+echo "$out" | grep -q "isdir: True" \
+    && pass "fs stat: isdir=True for directory" \
+    || fail "fs stat: isdir should be True for a directory"
+rm -rf "${OS_ROOT:?}/$_tmp_stat_dir"
+
+# 11. fs list shows file size > 0 for non-empty file
+_tmp_list_file="tmp/unit-list-size-$$.txt"
+OS_ROOT="$OS_ROOT" python3 "$FS_PY" write "$_tmp_list_file" "sizecontent" >/dev/null 2>&1
+out=$(OS_ROOT="$OS_ROOT" python3 "$FS_PY" list tmp 2>/dev/null)
+echo "$out" | grep -q "unit-list-size-$$" \
+    && pass "fs list: newly written file appears in listing" \
+    || fail "fs list: newly written file should appear in listing"
+rm -f "${OS_ROOT:?}/$_tmp_list_file"
+
+# 12. fs exists on a directory returns true
+_tmp_exists_dir="tmp/unit-existdir-$$"
+mkdir -p "${OS_ROOT:?}/$_tmp_exists_dir"
+out=$(OS_ROOT="$OS_ROOT" python3 "$FS_PY" exists "$_tmp_exists_dir" 2>/dev/null)
+[ "$out" = "true" ] \
+    && pass "fs exists: directory returns true" \
+    || fail "fs exists: directory should return true"
+rmdir "${OS_ROOT:?}/$_tmp_exists_dir"
+
+# 13. fs read on a missing file outputs an ERROR message (exit non-zero)
+OS_ROOT="$OS_ROOT" python3 "$FS_PY" read "tmp/definitely-missing-$$.txt" 2>&1 | grep -q "ERROR" \
+    && pass "fs read: missing file reports ERROR" \
+    || fail "fs read: missing file should report ERROR"
+
+# 14. unknown CLI verb exits non-zero and reports the verb
+out=$(OS_ROOT="$OS_ROOT" python3 "$FS_PY" frobnicate "some/path" 2>&1)
+echo "$out" | grep -qi "unknown\|frobnicate" \
+    && pass "fs CLI: unknown verb is rejected" \
+    || fail "fs CLI: unknown verb should be rejected"
+
+# ---------------------------------------------------------------------------
+# fuzzy.py CLI (--input / --candidates)
+# ---------------------------------------------------------------------------
+echo
+echo "=== fuzzy.py CLI tests ==="
+
+FUZZY_PY="$REPO_ROOT/ai/core/fuzzy.py"
+
+# 1. Exact match
+out=$(python3 "$FUZZY_PY" --input "sysinfo" --candidates "sysinfo,uptime,help" 2>/dev/null)
+[ "$out" = "sysinfo" ] \
+    && pass "fuzzy CLI: exact match returns candidate" \
+    || fail "fuzzy CLI: exact match should return candidate (got '$out')"
+
+# 2. Close match (one char off)
+out=$(python3 "$FUZZY_PY" --input "sysinf" --candidates "sysinfo,uptime,help" 2>/dev/null)
+[ "$out" = "sysinfo" ] \
+    && pass "fuzzy CLI: close match returns best candidate" \
+    || fail "fuzzy CLI: close match should return best candidate (got '$out')"
+
+# 3. No match returns empty
+out=$(python3 "$FUZZY_PY" --input "xyz_garbage_zzz" --candidates "sysinfo,uptime,help" 2>/dev/null)
+[ -z "$out" ] \
+    && pass "fuzzy CLI: no match returns empty output" \
+    || fail "fuzzy CLI: no match should return empty output (got '$out')"
+
+# 4. Single candidate exact match
+out=$(python3 "$FUZZY_PY" --input "help" --candidates "help" 2>/dev/null)
+[ "$out" = "help" ] \
+    && pass "fuzzy CLI: single candidate exact match" \
+    || fail "fuzzy CLI: single candidate exact match failed (got '$out')"
+
+# ---------------------------------------------------------------------------
+# lib/aura-core.sh — osroot_resolve, register_command, run_command
+# ---------------------------------------------------------------------------
+echo
+echo "=== lib/aura-core.sh tests ==="
+
+_CORE_OS_ROOT=$(mktemp -d)
+mkdir -p "$_CORE_OS_ROOT/tmp"
+
+# Helper: run a snippet sourcing aura-core.sh in a subshell with a temp OS_ROOT
+_core() {
+    bash --norc --noprofile -c "
+AIOS_HOME='$REPO_ROOT'
+AIOS_ROOT='$REPO_ROOT'
+OS_ROOT='$_CORE_OS_ROOT'
+AIOS_LOG_FILE='$_CORE_OS_ROOT/tmp/aios.log'
+HEARTBEAT_LOG_FILE='$_CORE_OS_ROOT/tmp/heartbeat.log'
+. '$REPO_ROOT/lib/aura-core.sh'
+$1
+" 2>/dev/null
+}
+
+# 1. osroot_resolve: relative path inside jail
+out=$(_core "osroot_resolve 'tmp/myfile.txt'")
+echo "$out" | grep -q "$_CORE_OS_ROOT/tmp/myfile.txt" \
+    && pass "aura-core: osroot_resolve relative path resolves inside OS_ROOT" \
+    || fail "aura-core: osroot_resolve relative path should resolve inside OS_ROOT (got '$out')"
+
+# 2. osroot_resolve: absolute path treated as jail-rooted (chroot semantics)
+out=$(_core "osroot_resolve '/tmp/abs.txt'")
+echo "$out" | grep -q "$_CORE_OS_ROOT/tmp/abs.txt" \
+    && pass "aura-core: osroot_resolve absolute path stays in OS_ROOT" \
+    || fail "aura-core: osroot_resolve absolute path should stay in OS_ROOT (got '$out')"
+
+# 3. osroot_resolve: traversal blocked — exits non-zero
+_core "osroot_resolve '../../etc/passwd'" >/dev/null 2>/dev/null
+exit_code=$?
+[ "$exit_code" -ne 0 ] \
+    && pass "aura-core: osroot_resolve traversal attempt exits non-zero" \
+    || fail "aura-core: osroot_resolve traversal attempt should exit non-zero"
+
+# 4. register_command + run_command: registered function is dispatched
+out=$(_core "
+_unit_test_fn() { echo test_output_marker; }
+register_command 'test.cmd' '_unit_test_fn'
+run_command 'test.cmd'
+")
+echo "$out" | grep -q "test_output_marker" \
+    && pass "aura-core: register_command + run_command dispatches correctly" \
+    || fail "aura-core: register_command + run_command should dispatch correctly"
+
+# 5. run_command: unknown command returns 127
+_core "run_command 'no.such.cmd'" >/dev/null 2>/dev/null
+exit_code=$?
+[ "$exit_code" -eq 127 ] \
+    && pass "aura-core: run_command unknown command returns 127" \
+    || fail "aura-core: run_command unknown command should return 127 (got $exit_code)"
+
+rm -rf "$_CORE_OS_ROOT"
+
+# ---------------------------------------------------------------------------
+# lib/aura-fs.sh — filesystem command functions
+# ---------------------------------------------------------------------------
+echo
+echo "=== lib/aura-fs.sh tests ==="
+
+_FS_OS_ROOT=$(mktemp -d)
+mkdir -p "$_FS_OS_ROOT/tmp"
+
+_fs() {
+    bash --norc --noprofile -c "
+AIOS_HOME='$REPO_ROOT'
+AIOS_ROOT='$REPO_ROOT'
+OS_ROOT='$_FS_OS_ROOT'
+AIOS_LOG_FILE='$_FS_OS_ROOT/tmp/aios.log'
+HEARTBEAT_LOG_FILE='$_FS_OS_ROOT/tmp/heartbeat.log'
+. '$REPO_ROOT/lib/aura-fs.sh'
+$1
+" 2>/dev/null
+}
+
+# 1. aura_fs_write + aura_fs_cat roundtrip
+_fs "aura_fs_write tmp/fstest.txt 'hello from aura_fs_write'" >/dev/null 2>/dev/null
+out=$(_fs "aura_fs_cat tmp/fstest.txt")
+echo "$out" | grep -q "hello from aura_fs_write" \
+    && pass "aura-fs: aura_fs_write + aura_fs_cat roundtrip" \
+    || fail "aura-fs: write/cat roundtrip failed (got '$out')"
+
+# 2. aura_fs_mkdir creates directory
+_fs "aura_fs_mkdir tmp/newsubdir" >/dev/null 2>/dev/null
+[ -d "$_FS_OS_ROOT/tmp/newsubdir" ] \
+    && pass "aura-fs: aura_fs_mkdir creates directory" \
+    || fail "aura-fs: aura_fs_mkdir should create directory"
+
+# 3. aura_fs_rm removes file
+echo "todelete" > "$_FS_OS_ROOT/tmp/todelete.txt"
+_fs "aura_fs_rm tmp/todelete.txt" >/dev/null 2>/dev/null
+[ ! -f "$_FS_OS_ROOT/tmp/todelete.txt" ] \
+    && pass "aura-fs: aura_fs_rm removes file" \
+    || fail "aura-fs: aura_fs_rm should remove file"
+
+# 4. aura_fs_rm refuses to remove OS_ROOT itself
+out=$(bash --norc --noprofile -c "
+AIOS_HOME='$REPO_ROOT'
+AIOS_ROOT='$REPO_ROOT'
+OS_ROOT='$_FS_OS_ROOT'
+AIOS_LOG_FILE='$_FS_OS_ROOT/tmp/aios.log'
+HEARTBEAT_LOG_FILE='$_FS_OS_ROOT/tmp/heartbeat.log'
+. '$REPO_ROOT/lib/aura-fs.sh'
+aura_fs_rm '.'
+" 2>&1)
+echo "$out" | grep -qi "refus\|cannot\|denied" \
+    && pass "aura-fs: aura_fs_rm refuses to remove OS_ROOT" \
+    || fail "aura-fs: aura_fs_rm should refuse to remove OS_ROOT (got '$out')"
+
+# 5. aura_fs_cp copies file
+echo "copyme" > "$_FS_OS_ROOT/tmp/src.txt"
+_fs "aura_fs_cp tmp/src.txt tmp/dst.txt" >/dev/null 2>/dev/null
+[ -f "$_FS_OS_ROOT/tmp/dst.txt" ] \
+    && pass "aura-fs: aura_fs_cp copies file" \
+    || fail "aura-fs: aura_fs_cp should copy file"
+
+# 6. aura_fs_write with no args prints usage error (exit non-zero)
+bash --norc --noprofile -c "
+AIOS_HOME='$REPO_ROOT'
+AIOS_ROOT='$REPO_ROOT'
+OS_ROOT='$_FS_OS_ROOT'
+AIOS_LOG_FILE='$_FS_OS_ROOT/tmp/aios.log'
+HEARTBEAT_LOG_FILE='$_FS_OS_ROOT/tmp/heartbeat.log'
+. '$REPO_ROOT/lib/aura-fs.sh'
+aura_fs_write
+" >/dev/null 2>/dev/null
+exit_code=$?
+[ "$exit_code" -ne 0 ] \
+    && pass "aura-fs: aura_fs_write with no args exits non-zero" \
+    || fail "aura-fs: aura_fs_write with no args should exit non-zero"
+
+# 7. aura_fs_ls produces output for existing directory
+out=$(_fs "aura_fs_ls tmp")
+[ -n "$out" ] \
+    && pass "aura-fs: aura_fs_ls returns output for directory" \
+    || fail "aura-fs: aura_fs_ls should return output for existing directory"
+
+rm -rf "$_FS_OS_ROOT"
+
+# ---------------------------------------------------------------------------
+# Python unit tests (tests/test_python_modules.py)
+# ---------------------------------------------------------------------------
+echo
+echo "=== Python unit tests (test_python_modules.py) ==="
+
+python3 "$REPO_ROOT/tests/test_python_modules.py" 2>/dev/null
+_py_exit=$?
+[ "$_py_exit" -eq 0 ] \
+    && pass "python tests: all Python unit tests passed" \
+    || fail "python tests: one or more Python unit tests failed (see output above)"
+
+# ---------------------------------------------------------------------------
+# Cleanup test fixtures
+# ---------------------------------------------------------------------------
+[ "$_created_os_log" = true ]   && rm -f "$_STUB_OS_LOG"
+[ "$_created_os_state" = true ] && rm -f "$_STUB_OS_STATE"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo
