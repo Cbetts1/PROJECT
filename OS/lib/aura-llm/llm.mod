@@ -132,3 +132,35 @@ llm_fallback() {
             ;;
     esac
 }
+
+# Stream the LLM response token-by-token to stdout (for interactive use)
+# Falls back to llm_fallback when no model/binary is present.
+llm_stream() {
+    input="$*"
+    llm_bin=$(llm_available)
+    model=$(llm_model)
+
+    if [ -n "$llm_bin" ] && [ -n "$model" ]; then
+        prompt=$(llm_prompt_build "$input")
+        # Use python3 streaming client if available; fall back to plain binary
+        if command -v python3 >/dev/null 2>&1 && \
+           [ -f "$(dirname "$(dirname "$(dirname "$0")")")/ai/core/llama_client.py" ]; then
+            AIOS_PY="$(dirname "$(dirname "$(dirname "$0")")")/ai/core/llama_client.py"
+            python3 "$AIOS_PY" \
+                --backend llama \
+                --model-path "$model" \
+                --threads "${LLAMA_THREADS:-4}" \
+                --ctx 2048 \
+                --stream \
+                --prompt "$prompt" 2>/dev/null
+        else
+            "$llm_bin" -m "$model" \
+                --n-predict "${LLM_MAX_TOKENS:-256}" \
+                --temp 0.7 \
+                --ctx-size 2048 \
+                -p "$prompt" 2>/dev/null
+        fi
+    else
+        llm_fallback "$input"
+    fi
+}

@@ -15,6 +15,7 @@
 # Options:
 #   --build-llama          Build llama.cpp (requires cmake + git)
 #   --start                Start AIOS kernel after install
+#   --self-test            Run full self-test suite and exit (no install)
 #   --os-root <path>       Override OS_ROOT (default: ./OS)
 #   --help                 Show this help
 
@@ -25,6 +26,7 @@ OS_ROOT="${OS_ROOT:-$REPO_ROOT/OS}"
 
 BUILD_LLAMA=0
 START_AFTER=0
+SELF_TEST=0
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -33,9 +35,10 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --build-llama) BUILD_LLAMA=1; shift ;;
         --start)       START_AFTER=1; shift ;;
+        --self-test)   SELF_TEST=1; shift ;;
         --os-root)     OS_ROOT="$2"; shift 2 ;;
         --help|-h)
-            sed -n '3,15p' "$0"
+            sed -n '3,20p' "$0"
             exit 0
             ;;
         *) echo "Unknown option: $1"; exit 1 ;;
@@ -219,6 +222,64 @@ run_tests() {
 }
 
 # ---------------------------------------------------------------------------
+# Self-test: run all tests + verify core binary presence
+# ---------------------------------------------------------------------------
+self_test() {
+    local failed=0
+    echo "════════════════════════════════════════"
+    echo "  AIOS Self-Test"
+    echo "════════════════════════════════════════"
+
+    check_python
+    verify_modules
+    detect_deps
+
+    info "Running unit tests..."
+    if AIOS_HOME="$REPO_ROOT" OS_ROOT="$OS_ROOT" bash "$REPO_ROOT/tests/unit-tests.sh" 2>&1; then
+        success "Unit tests: PASS"
+    else
+        warn "Unit tests: FAIL"
+        failed=$(( failed + 1 ))
+    fi
+
+    if [[ -f "$REPO_ROOT/tests/integration-tests.sh" ]]; then
+        info "Running integration tests..."
+        if AIOS_HOME="$REPO_ROOT" OS_ROOT="$OS_ROOT" bash "$REPO_ROOT/tests/integration-tests.sh" 2>&1; then
+            success "Integration tests: PASS"
+        else
+            warn "Integration tests: FAIL"
+            failed=$(( failed + 1 ))
+        fi
+    fi
+
+    # Verify core executables are present and executable
+    for f in \
+        "$OS_ROOT/bin/os-shell" \
+        "$OS_ROOT/bin/os-real-shell" \
+        "$OS_ROOT/sbin/init" \
+        "$OS_ROOT/bin/os-kernelctl" \
+        "$OS_ROOT/bin/os-service" \
+        "$OS_ROOT/bin/os-bridge" \
+        "$OS_ROOT/bin/os-mirror"; do
+        if [[ -x "$f" ]]; then
+            printf '  %-45s OK\n' "$(basename "$f")"
+        else
+            printf '  %-45s MISSING or not executable\n' "$f" >&2
+            failed=$(( failed + 1 ))
+        fi
+    done
+
+    echo ""
+    if [[ "$failed" -eq 0 ]]; then
+        success "All self-tests passed."
+    else
+        warn "$failed test(s) failed."
+    fi
+    echo "════════════════════════════════════════"
+    return "$failed"
+}
+
+# ---------------------------------------------------------------------------
 # Build llama.cpp (optional)
 # ---------------------------------------------------------------------------
 build_llama() {
@@ -256,6 +317,15 @@ echo "  Repo root : $REPO_ROOT"
 echo "  OS_ROOT   : $OS_ROOT"
 echo "════════════════════════════════════════"
 echo ""
+
+# --self-test: only run tests, no install
+if [[ "$SELF_TEST" -eq 1 ]]; then
+    make_executables
+    create_dirs
+    init_files
+    self_test
+    exit $?
+fi
 
 check_python
 make_executables
