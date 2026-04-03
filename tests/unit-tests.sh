@@ -21,6 +21,27 @@ echo "Running unit tests..."
 echo
 echo "=== filesystem.py tests ==="
 
+# Create runtime fixture files required by the tests below; these are
+# excluded from version control (.gitignore) but must exist for the
+# filesystem interface tests to exercise real paths.
+mkdir -p "$OS_ROOT/var/log" "$OS_ROOT/proc"
+_created_os_log=0
+_created_os_state=0
+if [ ! -f "$OS_ROOT/var/log/os.log" ]; then
+    touch "$OS_ROOT/var/log/os.log"
+    _created_os_log=1
+fi
+if [ ! -f "$OS_ROOT/proc/os.state" ]; then
+    cat > "$OS_ROOT/proc/os.state" << 'EOF'
+boot_time=0
+kernel_pid=0
+os_version=0.1
+runlevel=3
+last_heartbeat=0
+EOF
+    _created_os_state=1
+fi
+
 # 1. list OS/var/log
 out=$(OS_ROOT="$OS_ROOT" python3 "$FS_PY" list var/log 2>/dev/null)
 if echo "$out" | grep -q "os.log"; then
@@ -70,6 +91,10 @@ OS_ROOT="$OS_ROOT" python3 "$FS_PY" read var/log/aura.log 2>/dev/null | grep -q 
 # 9. stat returns expected keys
 out=$(OS_ROOT="$OS_ROOT" python3 "$FS_PY" stat proc/os.state 2>/dev/null)
 echo "$out" | grep -q "isfile: True" && pass "fs stat: isfile=True for regular file" || fail "fs stat: isfile should be True"
+
+# Clean up fixture files created by this test run
+[ "$_created_os_log"   = "1" ] && rm -f "$OS_ROOT/var/log/os.log"
+[ "$_created_os_state" = "1" ] && rm -f "$OS_ROOT/proc/os.state"
 
 # ---------------------------------------------------------------------------
 # os-shell fuzzy matching (pure awk, sourced inline)
