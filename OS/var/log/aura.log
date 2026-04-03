@@ -978,3 +978,15 @@
 [2026-04-03T17:07:01Z] [syscall] invoke syscall=sysinfo caller_pid=5739 args=
 [2026-04-03T17:07:01Z] [syscall] invoke syscall=log caller_pid=5750 args=integration-test-marker-4057
 [2026-04-03T17:07:01Z] [syscall] integration-test-marker-4057
+[2026-04-03T17:09:14Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T17:09:14Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-6383.txt
+[2026-04-03T17:09:14Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-6383.txt
+[2026-04-03T17:09:14Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-6383.txt
+[2026-04-03T17:09:14Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-6383.txt
+[2026-04-03T17:09:14Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-6383.txt
+[2026-04-03T17:09:14Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T17:09:14Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T17:09:14Z] unit-test marker 6383
+[2026-04-03T17:09:14Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T17:09:14Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T17:09:14Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state

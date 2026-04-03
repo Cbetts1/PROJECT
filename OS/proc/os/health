@@ -1,0 +1,6 @@
+# Health metrics — updated by os-selftest and os-kernel at runtime
+cpu_ok=ok
+mem_ok=ok
+disk_ok=ok
+thermal_ok=ok
+last_check=1775236147
