@@ -73,21 +73,23 @@ EOP
 
     # Start kernel daemon in background, capture its PID
     (
-        echo $$ > "$PIDFILE"
+        # Update STATEFILE with our actual PID (written by parent after &)
+        while [ ! -f "$PIDFILE" ] || [ "$(cat "$PIDFILE")" = "" ]; do sleep 0; done
+        _mypid=$(cat "$PIDFILE")
         echo "boot_time=$(date +%s)
-kernel_pid=$$
+kernel_pid=$_mypid
 os_version=0.1
 runlevel=3
 last_heartbeat=$(date +%s)" > "$STATEFILE"
-        write_health "running" "$$"
-        aura_log "kernel started pid=$$"
-        os-event "kernel: started pid=$$" 2>/dev/null
-        os-msg   "kernel: started pid=$$" 2>/dev/null
+        write_health "running" "$_mypid"
+        aura_log "kernel started pid=$_mypid"
+        os-event "kernel: started pid=$_mypid" 2>/dev/null
+        os-msg   "kernel: started pid=$_mypid" 2>/dev/null
 
         _hb_count=0
         while true; do
-            echo "[os-kernel] heartbeat $$" >> "$LOG"
-            os-event "kernel: heartbeat pid=$$" 2>/dev/null
+            echo "[os-kernel] heartbeat $_mypid" >> "$LOG"
+            os-event "kernel: heartbeat pid=$_mypid" 2>/dev/null
 
             # AURA: periodic service monitoring (every heartbeat)
             monitor_services
@@ -101,17 +103,19 @@ last_heartbeat=$(date +%s)" > "$STATEFILE"
             # Update state: keep boot_time, refresh heartbeat timestamp
             boot_t=$(awk -F= '/^boot_time=/ {print $2}' "$STATEFILE" 2>/dev/null)
             echo "boot_time=${boot_t:-$(date +%s)}
-kernel_pid=$$
+kernel_pid=$_mypid
 os_version=0.1
 runlevel=3
 last_heartbeat=$(date +%s)" > "$STATEFILE"
-            write_health "running" "$$"
-            aura_log "heartbeat $_hb_count pid=$$"
+            write_health "running" "$_mypid"
+            aura_log "heartbeat $_hb_count pid=$_mypid"
 
             sleep 5
         done
     ) &
-    echo "[os-kernel] Started (pid=$!)"
+    _bgpid=$!
+    echo "$_bgpid" > "$PIDFILE"
+    echo "[os-kernel] Started (pid=$_bgpid)"
 }
 
 stop() {

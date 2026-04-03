@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# bin/aios-heartbeat — AIOS heartbeat monitor daemon
+#
+# Periodically checks whether the monitored targets are alive and logs the
+# result.  Targets can be:
+#   - A process name string: pgrep -f <name> is used.
+#   - A PID reference:       pid:<number> — checks /proc/<n> or kill -0.
+#
+# Configuration (from etc/aios.conf, overridable via environment):
+#   HEARTBEAT_INTERVAL_SEC   Seconds between beats (default: 5)
+#   HEARTBEAT_TARGETS        Space-separated list of targets (default: aios)
+#   HEARTBEAT_LOG_FILE       Absolute path to the heartbeat log file
+#
+# Usage:
+#   bin/aios-heartbeat              # run in foreground
+#   bin/aios-heartbeat &            # run in background
+
+AIOS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export AIOS_ROOT
+
+# shellcheck source=lib/aura-core.sh
+. "${AIOS_ROOT}/lib/aura-core.sh"
+
+interval="${HEARTBEAT_INTERVAL_SEC:-5}"
+
+# Split HEARTBEAT_TARGETS into an array.
+IFS=' ' read -r -a targets <<< "${HEARTBEAT_TARGETS:-aios}"
+
+log "INFO" "Heartbeat started: interval=${interval}s targets=${targets[*]}"
+
+# Write the daemon's own PID so it can be tracked.
+echo "$$" > "${AIOS_ROOT}/var/run/heartbeat.pid"
+
+# ---------------------------------------------------------------------------
+# Signal handler — clean up PID file on exit.
+# INT/TERM trigger `exit 0`; EXIT trap does the actual cleanup so it runs
+# in both normal and signal-terminated cases without infinite recursion.
+# ---------------------------------------------------------------------------
+_cleanup() {
+    rm -f "${AIOS_ROOT}/var/run/heartbeat.pid"
+    log "INFO" "Heartbeat daemon stopped (PID $$)"
+}
+trap '_cleanup' EXIT
+trap 'exit 0' INT TERM
+
+# ---------------------------------------------------------------------------
+# Heartbeat loop
+# ---------------------------------------------------------------------------
+while true; do
+    ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+    for t in "${targets[@]}"; do
+        status="unknown"
+
+        if [[ "${t}" == pid:* ]]; then
+            # Explicit PID reference: pid:<number>
+            pid="${t#pid:}"
+            if kill -0 "${pid}" 2>/dev/null; then
+                status="alive"
+            else
+                status="dead"
+            fi
+        else
+            # Process name: use pgrep
+            if pgrep -f "${t}" >/dev/null 2>&1; then
+                status="alive"
+            else
+                status="dead"
+            fi
+        fi
+
+        entry="[${ts}] target=${t} status=${status}"
+        echo "${entry}" | tee -a "${HEARTBEAT_LOG_FILE}"
+
+        # Emit a warning to the main AIOS log when a target is dead.
+        if [[ "${status}" == "dead" ]]; then
+            log "WARN" "Heartbeat: target '${t}' is DEAD"
+        fi
+    done
+
+    sleep "${interval}"
+done

@@ -11,10 +11,14 @@ __pycache__/
 aura/__pycache__/
 # Runtime-generated files (state, events, logs)
 OS/var/events/*.event
-OS/var/log/
+OS/var/log/*
+# Keep placeholder log files so unit tests pass out-of-the-box
+!OS/var/log/os.log
+!OS/var/log/aura.log
 OS/var/service/
 OS/var/boot.time
-OS/proc/os.state
+# Keep initial os.state placeholder
+!OS/proc/os.state
 OS/proc/os.messages
 OS/proc/aura/bridge/status
 OS/proc/aura.memory.bak

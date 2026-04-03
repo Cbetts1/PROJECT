@@ -1,35 +1,50 @@
-cat > /sbin/init << 'EOF'
-#!/bin/sh
-
-BOOT_TARGET="/etc/boot.target"
-RUNLEVEL_DIR="/etc/rc2.d"
-BOOT_LOG="/var/boot.time"
-
-echo "[BOOT] Universal OS init starting..."
-
-date +"%Y-%m-%d %H:%M:%S" > "$BOOT_LOG"
-
-if [ -f "$BOOT_TARGET" ]; then
-    TARGET=$(cat "$BOOT_TARGET")
-    echo "[BOOT] Target: $TARGET"
-else
-    TARGET="default"
-    echo "[BOOT] No boot.target found, using default"
-fi
-
-for script in "$RUNLEVEL_DIR"/S*; do
-    echo "[BOOT] Running $(basename "$script")"
-    sh "$script"
-done
-
-if [ -d /proc/aura ]; then
-    echo "[BOOT] Initializing Aura subsystem..."
-    echo "boot" > /proc/aura/context/window
-    echo "1" > /proc/aura/memory
-    echo "1" > /proc/aura/tasks
-    echo "1" > /proc/aura/semantic
-fi
-
-echo "[BOOT] Universal OS boot complete."
-exec /bin/sh
-EOFexit
+sem.search hello
+sysinf
+sysinfo
+ask hello
+ai: Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?
+mode system
+mode operator
+write integration-test-file.txt hello_integration
+read integration-test-file.txt
+services
+help
+sysinfo
+netinfo
+diskinfo
+logread aura
+echo test_passthrough_4541
+sysinf
+sysinfo
+mem.set test.key.debug hello
+mem.get test.key.debug
+exit
+mem.set testkey123 helloworld
+mem.get testkey123
+exit
+help
+sysinfo
+uptime
+disk
+ls
+mem.set test.key.6606 integration_value
+mem.get test.key.6606
+sem.set sem.test.6606 hello semantic world
+sem.search hello
+sysinf
+sysinfo
+ask hello
+ai: Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?
+mode system
+mode operator
+write integration-test-file.txt hello_integration
+read integration-test-file.txt
+services
+help
+sysinfo
+netinfo
+diskinfo
+logread aura
+echo test_passthrough_6606
+sysinf
+sysinfo

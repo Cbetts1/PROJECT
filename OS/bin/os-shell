@@ -2,7 +2,7 @@
 # © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
 
 OS_ROOT="${OS_ROOT:-/}"
-export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+export PATH="$PATH:$OS_ROOT/bin:$OS_ROOT/sbin"
 
 IDENTITY="$OS_ROOT/proc/os.identity"
 STATEFILE="$OS_ROOT/proc/os.state"
@@ -80,7 +80,7 @@ aura_log() {
 
 # === Fuzzy Command Matching (awk Levenshtein) ===
 # All known commands — used for typo suggestion / intent correction.
-KNOWN_CMDS="ask recall recall.best ctx.show ctx.add sem.set sem.get sem.search sem.delete sem.list mem.set mem.get mem.search mem.delete mem.tag mem.list bridge bridge.detect bridge.ios bridge.android mirror mirror.mount mirror.unmount mirror.ls msg event mode status services ps info help exit quit sysinfo uptime disk ls cd read write start stop restart kill"
+KNOWN_CMDS="ask recall recall.best ctx.show ctx.add sem.set sem.get sem.search sem.delete sem.list mem.set mem.get mem.search mem.delete mem.tag mem.list bridge bridge.detect bridge.ios bridge.android mirror mirror.mount mirror.unmount mirror.ls msg event mode status services ps info help exit quit sysinfo uptime disk ls cd read write start stop restart kill upgrade"
 
 cmd_fuzzy_match() {
     input="$1"
@@ -207,6 +207,10 @@ Services:
   start <svc>          Start init.d service
   stop <svc>           Stop init.d service
   restart <svc>        Restart init.d service
+
+Packages:
+  upgrade              Check installed packages for upgrades
+  upgrade --apply      Apply all pending package upgrades
 EOH
 }
 
@@ -445,6 +449,26 @@ while true; do
 
         help)
             help_cmd ;;
+        upgrade)
+            aura_log "CMD: upgrade $*"
+            shift
+            _upgrade_flag="${1:---check}"
+            if command -v os-install >/dev/null 2>&1; then
+                case "$_upgrade_flag" in
+                    --apply|apply)
+                        aura_say "Upgrading all installed packages..."
+                        os-install upgrade-all
+                        ;;
+                    *)
+                        aura_say "Checking installed packages..."
+                        os-install list
+                        aura_say "To apply upgrades: upgrade --apply"
+                        ;;
+                esac
+            else
+                aura_say "os-install not found."
+            fi
+            ;;
         exit|quit)
             aura_log "shell exit"
             aura_say "Goodbye."; exit 0 ;;

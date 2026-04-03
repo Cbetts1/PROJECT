@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+# bin/aios — AIOS interactive AI shell
+#
+# Dual-shell design:
+#   - This AI shell handles AIOS commands (fs.*, proc.*, net.*), typo
+#     correction, and natural-language AI queries.
+#   - Type 'sys' or 'sys <cmd>' to drop into the real OS shell (bin/aios-sys).
+#
+# Usage:
+#   ./bin/aios
+
+AIOS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export AIOS_ROOT
+
+# ---------------------------------------------------------------------------
+# Load all aura modules (include guards make re-sourcing safe)
+# ---------------------------------------------------------------------------
+# shellcheck source=lib/aura-core.sh
+. "${AIOS_ROOT}/lib/aura-core.sh"
+# shellcheck source=lib/aura-fs.sh
+. "${AIOS_ROOT}/lib/aura-fs.sh"
+# shellcheck source=lib/aura-proc.sh
+. "${AIOS_ROOT}/lib/aura-proc.sh"
+# shellcheck source=lib/aura-net.sh
+. "${AIOS_ROOT}/lib/aura-net.sh"
+# shellcheck source=lib/aura-typo.sh
+. "${AIOS_ROOT}/lib/aura-typo.sh"
+# shellcheck source=lib/aura-llama.sh
+. "${AIOS_ROOT}/lib/aura-llama.sh"
+# shellcheck source=lib/aura-ai.sh
+. "${AIOS_ROOT}/lib/aura-ai.sh"
+
+prompt="aios> "
+
+log "INFO" "AIOS AI shell started. OS_ROOT=${OS_ROOT}"
+echo "AIOS — AI Operating System Shell"
+echo "OS jail : ${OS_ROOT}"
+echo "AI mode : ${AI_BACKEND:-mock}"
+echo "Type 'help' for commands, 'exit' to quit."
+echo
+
+# ---------------------------------------------------------------------------
+# Main REPL
+# ---------------------------------------------------------------------------
+while true; do
+    if ! read -rp "${prompt}" line; then
+        echo
+        break
+    fi
+
+    # Strip leading/trailing whitespace
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    [[ -z "${line}" ]] && continue
+
+    # ------------------------------------------------------------------
+    # Built-in commands
+    # ------------------------------------------------------------------
+    case "${line}" in
+        exit|quit)
+            log "INFO" "AIOS AI shell exiting"
+            echo "Goodbye."
+            break
+            ;;
+
+        help)
+            cat <<'EOF'
+AIOS AI Shell — built-in commands
+══════════════════════════════════════════════════════
+Filesystem (confined to OS_ROOT):
+  fs.ls   [path]           List directory (default: /)
+  fs.cat  <path>           Show file contents
+  fs.write <path> <text>   Write text to file (creates parent dirs)
+  fs.mkdir <path>          Create directory
+  fs.rm   <path>           Remove path (recursive)
+  fs.cp   <src> <dest>     Copy file or directory
+  fs.mv   <src> <dest>     Move/rename
+  fs.find [path] [args]    Find files
+
+Process:
+  proc.ps                  List top 50 processes
+  proc.kill <pid>          Send SIGTERM to PID
+
+Network:
+  net.ping  [host]         Ping a host (default: 8.8.8.8)
+  net.ifconfig             Show network interfaces
+
+System:
+  sys                      Enter real OS shell (unrestricted)
+  sys -- <cmd> [args]      Run one AIOS command non-interactively
+
+Other:
+  help                     Show this help
+  exit / quit              Exit AIOS
+
+Natural language:
+  Type anything else and the AI backend will interpret or respond.
+  Typos in command names are automatically corrected (fuzzy matching).
+══════════════════════════════════════════════════════
+EOF
+            continue
+            ;;
+
+        # 'sys' alone → interactive real OS shell
+        sys)
+            log "INFO" "Entering real OS shell (${REAL_SHELL})"
+            echo "[AIOS] Entering OS shell. Type 'exit' to return."
+            "${AIOS_ROOT}/bin/aios-sys"
+            echo "[AIOS] Returned from OS shell."
+            continue
+            ;;
+
+        # 'sys -- <cmd> [args]' → run a single AIOS command via aios-sys
+        sys\ --\ *)
+            rest="${line#sys -- }"
+            set -- ${rest}
+            "${AIOS_ROOT}/bin/aios-sys" -- "$@"
+            continue
+            ;;
+    esac
+
+    # ------------------------------------------------------------------
+    # Try registered command dispatch
+    # ------------------------------------------------------------------
+    cmd_name="${line%% *}"
+    if [[ "${line}" == *" "* ]]; then
+        cmd_args="${line#"${cmd_name} "}"
+    else
+        cmd_args=""
+    fi
+
+    if run_command "${cmd_name}" ${cmd_args:+${cmd_args}}; then
+        continue
+    fi
+
+    # ------------------------------------------------------------------
+    # Fuzzy typo correction
+    # ------------------------------------------------------------------
+    suggestion="$(aura_typo_suggest "${cmd_name}" 2>/dev/null || true)"
+    if [[ -n "${suggestion}" ]]; then
+        echo "[AIOS] Unknown command '${cmd_name}'. Did you mean '${suggestion}'? [Y/n]"
+        if read -r -t 10 ans; then
+            if [[ -z "${ans}" || "${ans}" =~ ^[Yy]$ ]]; then
+                if run_command "${suggestion}" ${cmd_args:+${cmd_args}}; then
+                    continue
+                fi
+            fi
+        fi
+    fi
+
+    # ------------------------------------------------------------------
+    # Fall through to AI backend (natural language / chat)
+    # ------------------------------------------------------------------
+    echo "[AIOS] Routing to AI..."
+    aura_ai_query "${line}"
+
+done

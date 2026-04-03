@@ -1,6 +1,21 @@
 #!/bin/bash
+# OS/init.d/startup.sh — AIOS-Lite Startup Helper
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# Called by external boot environments (e.g. Termux $PREFIX/etc/boot.d,
+# systemd ExecStart, or Docker ENTRYPOINT) to launch AIOS-Lite.
+#
+# Usage:
+#   bash OS/init.d/startup.sh [--shell os-shell|os-real-shell] [--no-shell]
 
-# Main startup initialization script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AIOS_HOME="${AIOS_HOME:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
+OS_ROOT="${OS_ROOT:-$AIOS_HOME/OS}"
 
-echo "Starting the OS..."
-# Add any additional initialization commands here
+export OS_ROOT AIOS_HOME
+
+echo "[startup] AIOS_HOME: $AIOS_HOME"
+echo "[startup] OS_ROOT  : $OS_ROOT"
+
+# Delegate to sbin/init for the full boot sequence
+exec sh "$OS_ROOT/sbin/init" "$@"
