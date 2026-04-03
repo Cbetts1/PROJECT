@@ -2,6 +2,21 @@ task_name="autosave"
 task_help="Autosave Aura memory."
 
 task_run() {
-    cp "$OS_ROOT/proc/aura.memory" "$OS_ROOT/proc/aura.memory.bak" 2>/dev/null
+    bak_dir="$OS_ROOT/proc/aura/memory.bak"
+    mkdir -p "$bak_dir"
+
+    # Back up all symbolic memory entries
+    if [ -d "$OS_ROOT/proc/aura/memory" ]; then
+        cp -r "$OS_ROOT/proc/aura/memory/." "$bak_dir/" 2>/dev/null
+    fi
+
+    # Back up symbolic memory index
+    [ -f "$OS_ROOT/etc/aura/memory.index" ] && \
+        cp "$OS_ROOT/etc/aura/memory.index" "$bak_dir/memory.index.bak" 2>/dev/null
+
+    # Back up semantic memory index
+    [ -f "$OS_ROOT/etc/aura/semantic.index" ] && \
+        cp "$OS_ROOT/etc/aura/semantic.index" "$bak_dir/semantic.index.bak" 2>/dev/null
+
     echo "[task:autosave] Memory autosaved."
 }

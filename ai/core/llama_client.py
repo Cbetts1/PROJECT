@@ -14,11 +14,13 @@ from typing import Literal
 Backend = Literal["llama", "mock"]
 
 
-def run_llama(model_path: str, ctx: int, threads: int, prompt: str) -> str:
+def run_llama(model_path: str, ctx: int, threads: int, prompt: str) -> tuple:
     """Call the llama-cli binary with the given parameters.
 
     The binary is looked up in PATH; the model file must exist at model_path.
-    Returns the generated text, or an error message if the call fails.
+    Returns a ``(success, text)`` tuple where *success* is True on successful
+    inference, False on any error.  The *text* value is the generated text on
+    success or a human-readable error message on failure.
     """
     llama_bin = None
     for candidate in ("llama-cli", "llama", "llama.cpp", "main"):
@@ -31,9 +33,10 @@ def run_llama(model_path: str, ctx: int, threads: int, prompt: str) -> str:
 
     if llama_bin is None:
         return (
+            False,
             "[LLAMA] llama-cli binary not found in PATH.\n"
             "Install llama.cpp and ensure the binary is on PATH, then set\n"
-            "AI_BACKEND=llama and LLAMA_MODEL_PATH in etc/aios.conf."
+            "AI_BACKEND=llama and LLAMA_MODEL_PATH in etc/aios.conf.",
         )
 
     try:
@@ -50,11 +53,14 @@ def run_llama(model_path: str, ctx: int, threads: int, prompt: str) -> str:
             stderr=subprocess.DEVNULL,
             text=True,
         )
-        return out.strip() or "[LLAMA] (empty response)"
+        text = out.strip()
+        if not text:
+            return False, "[LLAMA] (empty response)"
+        return True, text
     except subprocess.CalledProcessError as exc:
-        return f"[LLAMA] Inference failed (exit {exc.returncode})"
+        return False, f"[LLAMA] Inference failed (exit {exc.returncode})"
     except FileNotFoundError:
-        return f"[LLAMA] Binary not found: {llama_bin}"
+        return False, f"[LLAMA] Binary not found: {llama_bin}"
 
 
 def run_mock(prompt: str) -> str:
@@ -77,7 +83,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.backend == "llama":
-        out = run_llama(args.model_path, args.ctx, args.threads, args.prompt)
+        _ok, out = run_llama(args.model_path, args.ctx, args.threads, args.prompt)
     else:
         out = run_mock(args.prompt)
 

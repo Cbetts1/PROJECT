@@ -19,8 +19,8 @@ import sys
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
 
-from commands import parse_natural_language  # noqa: E402
-from llama_client import run_mock            # noqa: E402
+from commands import parse_natural_language          # noqa: E402
+from llama_client import run_llama, run_mock         # noqa: E402
 
 
 def run_system_command(plan, aios_root: str) -> str:
@@ -48,7 +48,27 @@ def run_system_command(plan, aios_root: str) -> str:
 
 
 def chat_response(user_input: str) -> str:
-    """Return a chat response from the mock (or real) AI model."""
+    """Return a chat response from the configured AI backend.
+
+    Respects the AI_BACKEND, LLAMA_MODEL_PATH, LLAMA_CTX, and LLAMA_THREADS
+    environment variables (set via etc/aios.conf or the calling shell).
+    Falls back to the mock backend when the llama backend is selected but the
+    binary or model is unavailable, or when environment variables contain
+    invalid values.
+    """
+    backend = os.environ.get("AI_BACKEND", "mock").strip().lower()
+    if backend == "llama":
+        model_path = os.environ.get("LLAMA_MODEL_PATH", "").strip()
+        try:
+            ctx = int(os.environ.get("LLAMA_CTX", "4096"))
+            threads = int(os.environ.get("LLAMA_THREADS", "4"))
+        except ValueError:
+            ctx = 4096
+            threads = 4
+        if model_path:
+            ok, result = run_llama(model_path, ctx, threads, user_input)
+            if ok:
+                return result
     return run_mock(user_input)
 
 
