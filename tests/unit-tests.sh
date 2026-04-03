@@ -16,6 +16,14 @@ fail() { echo "[FAIL] $1"; FAIL=$((FAIL+1)); ERRORS="$ERRORS\n  - $1"; }
 echo "Running unit tests..."
 
 # ---------------------------------------------------------------------------
+# Test environment setup — create runtime files that are gitignored but
+# expected to exist by the filesystem tests.
+# ---------------------------------------------------------------------------
+mkdir -p "$OS_ROOT/var/log" "$OS_ROOT/proc"
+[ -f "$OS_ROOT/var/log/os.log" ] || touch "$OS_ROOT/var/log/os.log"
+[ -f "$OS_ROOT/proc/os.state" ]  || printf "boot_time=0\nkernel_pid=0\nos_version=0.1\nrunlevel=3\nlast_heartbeat=0\n" > "$OS_ROOT/proc/os.state"
+
+# ---------------------------------------------------------------------------
 # filesystem.py tests
 # ---------------------------------------------------------------------------
 echo
