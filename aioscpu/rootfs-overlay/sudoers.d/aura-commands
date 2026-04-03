@@ -1,3 +1,5 @@
 # AIOSCPU - sudoers rules for aura AI agent
 # Allow aura user to run only the secure-run wrapper as root, without password
 aura ALL=(root) NOPASSWD: /usr/local/bin/aioscpu-secure-run
+# Allow aura user to check and apply system upgrades without password
+aura ALL=(root) NOPASSWD: /usr/local/bin/aioscpu-upgrade

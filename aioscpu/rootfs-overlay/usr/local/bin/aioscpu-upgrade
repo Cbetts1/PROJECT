@@ -4,12 +4,13 @@
 # aioscpu-upgrade - System upgrade tool for AIOSCPU
 #
 # Usage:
-#   aioscpu-upgrade [--check]    Check for available upgrades (default)
-#   aioscpu-upgrade --apply      Apply all available upgrades
-#   aioscpu-upgrade --status     Show current AIOSCPU version info
-#   aioscpu-upgrade --help       Show this help
+#   aioscpu-upgrade [--check]         Check for available upgrades (default)
+#   aioscpu-upgrade --apply           Apply all available upgrades
+#   aioscpu-upgrade --full-upgrade    Full upgrade: handles new/removed deps, kernel updates
+#   aioscpu-upgrade --status          Show current AIOSCPU version info
+#   aioscpu-upgrade --help            Show this help
 #
-# Must be run as root or via sudo for --apply.
+# Must be run as root or via sudo for --apply and --full-upgrade.
 
 set -uo pipefail
 
@@ -88,9 +89,7 @@ check_upgrades() {
         return 0
     fi
 
-    echo "=== Refreshing package lists ==="
-    apt-get update -q 2>&1 | tail -5
-    echo ""
+    _apt_update
 
     echo "=== Available upgrades ==="
     local upgradable
@@ -106,8 +105,57 @@ check_upgrades() {
     log_audit "check complete (${upgradable} packages available)"
 }
 
+_require_root() {
+    [[ $EUID -eq 0 ]] || die "Must be run as root. Use: sudo aioscpu-upgrade $*"
+}
+
+_apt_update() {
+    echo "=== Refreshing package lists ==="
+    apt-get update -q 2>&1 | tail -5
+    echo ""
+}
+
+_update_snap() {
+    if command -v snap >/dev/null 2>&1; then
+        echo "=== Updating snap packages ==="
+        snap refresh 2>&1 || log "snap refresh failed (non-fatal)."
+        echo ""
+    fi
+}
+
+_update_flatpak() {
+    if command -v flatpak >/dev/null 2>&1; then
+        echo "=== Updating flatpak packages ==="
+        flatpak update -y 2>&1 || log "flatpak update failed (non-fatal)."
+        echo ""
+    fi
+}
+
+_report_aura_version() {
+    echo "=== AURA agent ==="
+    if [[ -f /opt/aura/aura-agent.py ]]; then
+        local aura_version
+        aura_version=$(python3 /opt/aura/aura-agent.py --version 2>/dev/null \
+                       || grep -oP '"version"\s*:\s*"\K[^"]+' /opt/aura/aura-config.json 2>/dev/null \
+                       || echo "unknown")
+        log "AURA agent version: ${aura_version} (in-place, no update source configured)"
+    else
+        log "AURA agent not found at /opt/aura/aura-agent.py — skipping."
+    fi
+    echo ""
+}
+
+_autoremove() {
+    echo "=== Removing orphaned packages ==="
+    DEBIAN_FRONTEND=noninteractive apt-get autoremove -y 2>&1
+    echo ""
+    echo "=== Cleaning package cache ==="
+    apt-get autoclean -q 2>&1
+    echo ""
+}
+
 apply_upgrades() {
-    [[ $EUID -eq 0 ]] || die "Must be run as root to apply upgrades. Use: sudo aioscpu-upgrade --apply"
+    _require_root "--apply"
 
     print_banner
     log "Applying system upgrades..."
@@ -119,9 +167,7 @@ apply_upgrades() {
         return 1
     fi
 
-    echo "=== Refreshing package lists ==="
-    apt-get update -q 2>&1 | tail -5
-    echo ""
+    _apt_update
 
     echo "=== Upgrading packages ==="
     DEBIAN_FRONTEND=noninteractive apt-get upgrade -y 2>&1
@@ -131,19 +177,10 @@ apply_upgrades() {
     if [[ "${apt_exit}" -eq 0 ]]; then
         log "Package upgrade complete (exit 0)."
         log_audit "apt-get upgrade succeeded"
-
-        echo "=== Updating AURA agent ==="
-        if [[ -f /opt/aura/aura-agent.py ]]; then
-            local aura_version
-            aura_version=$(python3 /opt/aura/aura-agent.py --version 2>/dev/null \
-                           || grep -oP '"version"\s*:\s*"\K[^"]+' /opt/aura/aura-config.json 2>/dev/null \
-                           || echo "unknown")
-            log "AURA agent version: ${aura_version} (in-place, no update source configured)"
-        else
-            log "AURA agent not found at /opt/aura/aura-agent.py — skipping."
-        fi
-        echo ""
-
+        _autoremove
+        _update_snap
+        _update_flatpak
+        _report_aura_version
         log "Upgrade complete."
         log_audit "apply complete"
     else
@@ -151,20 +188,60 @@ apply_upgrades() {
     fi
 }
 
+full_upgrade() {
+    _require_root "--full-upgrade"
+
+    print_banner
+    log "Applying full system upgrade (includes kernel and dependency changes)..."
+    log_audit "full-upgrade started"
+
+    if ! command -v apt-get >/dev/null 2>&1; then
+        log "apt-get not available; cannot apply full upgrade."
+        log_audit "full-upgrade aborted (apt-get not available)"
+        return 1
+    fi
+
+    _apt_update
+
+    echo "=== Full-upgrading packages ==="
+    DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y 2>&1
+    local apt_exit=$?
+    echo ""
+
+    if [[ "${apt_exit}" -eq 0 ]]; then
+        log "Full upgrade complete (exit 0)."
+        log_audit "apt-get full-upgrade succeeded"
+        _autoremove
+        _update_snap
+        _update_flatpak
+        _report_aura_version
+        log "Full upgrade complete."
+        log_audit "full-upgrade complete"
+    else
+        die "apt-get full-upgrade failed with exit code ${apt_exit}. Check ${LOG_FILE} for details."
+    fi
+}
+
 show_help() {
     cat <<'EOF'
 Usage: aioscpu-upgrade [OPTION]
 
-  (no option)   Check for available upgrades (same as --check)
-  --check       Refresh package lists and list upgradable packages
-  --apply       Apply all pending system upgrades (requires root)
-  --status      Show current AIOSCPU version and pending upgrades
-  --help        Show this help message
+  (no option)       Check for available upgrades (same as --check)
+  --check           Refresh package lists and list upgradable packages
+  --apply           Apply pending upgrades via apt-get upgrade (requires root)
+  --full-upgrade    Full upgrade: resolves new/removed dependencies and kernel
+                    updates via apt-get full-upgrade (requires root)
+  --status          Show current AIOSCPU version and pending upgrades
+  --help            Show this help message
 
 Examples:
-  aioscpu-upgrade              # Check for upgrades
-  sudo aioscpu-upgrade --apply # Apply upgrades
-  aioscpu-upgrade --status     # Show version info
+  aioscpu-upgrade                        # Check for upgrades
+  sudo aioscpu-upgrade --apply           # Apply standard upgrades
+  sudo aioscpu-upgrade --full-upgrade    # Full upgrade (kernel, dep changes)
+  aioscpu-upgrade --status               # Show version info
+
+Both --apply and --full-upgrade also update snap and flatpak packages (if
+installed) and remove orphaned packages with autoremove.
 
 Logs are written to: /var/log/aioscpu-upgrade.log
 Audit entries are appended to: /var/log/aioscpu-audit.log
@@ -184,6 +261,9 @@ case "${MODE}" in
         ;;
     --apply|apply)
         apply_upgrades
+        ;;
+    --full-upgrade|full-upgrade)
+        full_upgrade
         ;;
     --status|status)
         show_status
