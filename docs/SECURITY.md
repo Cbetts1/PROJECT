@@ -145,5 +145,17 @@ options above provide the primary security boundary.
 
 ## Reporting Security Issues
 
-Please report security vulnerabilities via the GitHub repository:
-<https://github.com/Cbetts1/PROJECT>
+Please report security vulnerabilities **privately** via the GitHub Security Advisory portal:  
+<https://github.com/Cbetts1/PROJECT/security/advisories/new>
+
+Do **not** open a public GitHub issue for security vulnerabilities.
+
+---
+
+## Full Security Framework
+
+For the complete security architecture, threat model (STRIDE), hardening guidelines,
+compliance rules, vulnerability management process, security testing checklists,
+and incident response procedures, see:
+
+👉 **[`docs/SECURITY-FRAMEWORK.md`](SECURITY-FRAMEWORK.md)**
