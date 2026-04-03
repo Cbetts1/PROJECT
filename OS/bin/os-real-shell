@@ -13,6 +13,8 @@ export PATH="$PATH:$OS_ROOT/bin:$OS_ROOT/sbin"
 
 AURA_LOG="$OS_ROOT/var/log/aura.log"
 REAL_SHELL_LOG="$OS_ROOT/var/log/real-shell.log"
+HISTFILE="${OS_ROOT}/var/log/real-shell.history"
+HISTSIZE=1000
 FS_PY="$OS_ROOT/lib/filesystem.py"
 IDENTITY="$OS_ROOT/proc/os.identity"
 STATEFILE="$OS_ROOT/proc/os.state"
@@ -33,6 +35,9 @@ _rlog() {
 [ -f "$IDENTITY" ] && . "$IDENTITY"
 SHELL_NAME="${OS_NAME:-AIOS}"
 VERSION="${OS_VERSION:-0.1}"
+
+# Source login profile
+[ -f "$OS_ROOT/etc/aura/profile" ] && . "$OS_ROOT/etc/aura/profile" 2>/dev/null
 
 # ---------------------------------------------------------------------------
 # Load AURA modules (best-effort — real-shell can run without them)
@@ -401,8 +406,19 @@ _aura_say() {
 # ---------------------------------------------------------------------------
 _banner
 _rlog "real-shell started"
+touch "$HISTFILE" 2>/dev/null || true
 
 _pending=""
+
+# Minimal history helpers for real-shell
+_rs_hist_append() {
+    [ -z "$1" ] && return
+    echo "$1" >> "$HISTFILE"
+    total=$(wc -l < "$HISTFILE" 2>/dev/null | tr -d ' ')
+    if [ "$total" -gt "$HISTSIZE" ]; then
+        tail -n "$HISTSIZE" "$HISTFILE" > "$HISTFILE.tmp" && mv "$HISTFILE.tmp" "$HISTFILE"
+    fi
+}
 
 while true; do
     if [ -n "$_pending" ]; then
@@ -410,6 +426,10 @@ while true; do
     else
         _real_prompt
         IFS= read -r line || { echo; _aura_say "Goodbye."; _rlog "EOF exit"; exit 0; }
+        case "$line" in
+            ""|history*) ;;
+            *) _rs_hist_append "$line" ;;
+        esac
     fi
     [ -z "$line" ] && continue
 
@@ -566,6 +586,20 @@ while true; do
             ;;
 
         help)   _help ;;
+        history)
+            shift
+            case "$1" in
+                -c) > "$HISTFILE"; _aura_say "History cleared." ;;
+                *)
+                    n="${1:-20}"
+                    if [ ! -f "$HISTFILE" ]; then echo "(no history)"; continue; fi
+                    total=$(wc -l < "$HISTFILE" 2>/dev/null | tr -d ' ')
+                    start=$(( total - n + 1 ))
+                    [ "$start" -lt 1 ] && start=1
+                    awk -v s="$start" 'NR>=s {printf "%5d  %s\n", NR, $0}' "$HISTFILE"
+                    ;;
+            esac
+            ;;
         exit|quit)
             _aura_say "Goodbye."
             _rlog "real-shell exit"

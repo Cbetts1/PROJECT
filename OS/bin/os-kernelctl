@@ -4,9 +4,86 @@ OS_ROOT="${OS_ROOT:-/}"
 STATE="$OS_ROOT/var/service"
 PIDFILE="$STATE/os-kernel.pid"
 PROCFILE="$OS_ROOT/proc/os"
+STATEFILE="$OS_ROOT/proc/os.state"
 INITD="$OS_ROOT/etc/init.d/os-kernel"
+LOG="$OS_ROOT/var/log/os.log"
 
 cmd="$1"
+
+_kernel_uptime() {
+    if [ -f "$STATEFILE" ]; then
+        boot_time=$(awk -F= '/^boot_time=/ {print $2}' "$STATEFILE" 2>/dev/null)
+        if [ -n "$boot_time" ] && [ "$boot_time" -gt 0 ] 2>/dev/null; then
+            now=$(date +%s)
+            elapsed=$(( now - boot_time ))
+            days=$(( elapsed / 86400 ))
+            hrs=$(( (elapsed % 86400) / 3600 ))
+            mins=$(( (elapsed % 3600) / 60 ))
+            secs=$(( elapsed % 60 ))
+            printf 'Uptime: %dd %02dh %02dm %02ds (boot_time=%s)\n' \
+                "$days" "$hrs" "$mins" "$secs" "$boot_time"
+        else
+            echo "Uptime: unknown (boot_time not set)"
+        fi
+    else
+        echo "Uptime: state file not found"
+    fi
+}
+
+_kernel_metrics() {
+    echo "=== Kernel Metrics ==="
+    _kernel_uptime
+    echo ""
+    # CPU load
+    if [ -f /proc/loadavg ]; then
+        read -r la1 la5 la15 _ < /proc/loadavg
+        printf 'Load avg:  1m=%-6s 5m=%-6s 15m=%s\n' "$la1" "$la5" "$la15"
+    fi
+    # Memory
+    if [ -f /proc/meminfo ]; then
+        mem_total=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)
+        mem_avail=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)
+        mem_used=$(( mem_total - mem_avail ))
+        printf 'Memory:    total=%dMB used=%dMB avail=%dMB\n' \
+            "$(( mem_total / 1024 ))" \
+            "$(( mem_used / 1024 ))" \
+            "$(( mem_avail / 1024 ))"
+    else
+        printf 'Memory:    (unavailable)\n'
+    fi
+    # Disk usage under OS_ROOT
+    du_out=$(df -h "$OS_ROOT" 2>/dev/null | tail -1)
+    printf 'Disk:      %s\n' "$du_out"
+    echo "======================"
+}
+
+_kernel_proc_dump() {
+    fmt="${1:-text}"
+    case "$fmt" in
+        json)
+            echo "{"
+            awk -F= '{
+                gsub(/"/, "\\\"", $2)
+                printf "  \"%s\": \"%s\",\n", $1, $2
+            }' "$PROCFILE" 2>/dev/null | sed '$s/,$//'
+            boot_time=$(awk -F= '/^boot_time=/ {print $2}' "$STATEFILE" 2>/dev/null || echo 0)
+            kernel_pid=$(awk -F= '/^kernel_pid=/ {print $2}' "$STATEFILE" 2>/dev/null || echo 0)
+            runlevel=$(awk -F= '/^runlevel=/ {print $2}' "$STATEFILE" 2>/dev/null || echo 0)
+            printf '  "boot_time": "%s",\n' "$boot_time"
+            printf '  "kernel_pid": "%s",\n' "$kernel_pid"
+            printf '  "runlevel": "%s"\n' "$runlevel"
+            echo "}"
+            ;;
+        *)
+            echo "=== Kernel Personality ==="
+            cat "$PROCFILE" 2>/dev/null || echo "(none)"
+            echo ""
+            echo "=== Kernel State ==="
+            cat "$STATEFILE" 2>/dev/null || echo "(none)"
+            echo "===================="
+            ;;
+    esac
+}
 
 case "$cmd" in
   status)
@@ -18,13 +95,12 @@ case "$cmd" in
             echo "Running: yes"
             echo "PID:      $pid"
         else
-            echo "Running: no"
+            echo "Running: no (stale pid=$pid)"
         fi
     else
         echo "Running: no"
     fi
-
-    echo
+    echo ""
     echo "Kernel Personality:"
     if [ -f "$PROCFILE" ]; then
         cat "$PROCFILE"
@@ -66,7 +142,44 @@ case "$cmd" in
     fi
     ;;
 
+  uptime)
+    _kernel_uptime
+    ;;
+
+  metrics)
+    _kernel_metrics
+    ;;
+
+  proc)
+    _kernel_proc_dump "${2:-text}"
+    ;;
+
+  log)
+    n="${2:-40}"
+    echo "=== Kernel Log (last $n lines) ==="
+    tail -n "$n" "$LOG" 2>/dev/null || echo "(log not found: $LOG)"
+    echo "=================================="
+    ;;
+
+  set)
+    key="$2"; val="$3"
+    if [ -z "$key" ] || [ -z "$val" ]; then
+        echo "Usage: os-kernelctl set <key> <value>"
+        exit 1
+    fi
+    if [ -f "$PROCFILE" ]; then
+        # Update or append the key
+        grep -v "^${key}=" "$PROCFILE" > "$PROCFILE.tmp" 2>/dev/null
+        printf '%s="%s"\n' "$key" "$val" >> "$PROCFILE.tmp"
+        mv "$PROCFILE.tmp" "$PROCFILE"
+        echo "[os-kernelctl] Set $key=$val"
+    else
+        printf '%s="%s"\n' "$key" "$val" > "$PROCFILE"
+        echo "[os-kernelctl] Created $PROCFILE and set $key=$val"
+    fi
+    ;;
+
   *)
-    echo "Usage: os-kernelctl {status|restart|reload|info}"
+    echo "Usage: os-kernelctl {status|restart|reload|info|uptime|metrics|proc [json]|log [n]|set <key> <val>}"
     ;;
 esac

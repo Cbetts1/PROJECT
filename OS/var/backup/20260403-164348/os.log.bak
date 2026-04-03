@@ -1,45 +1,4 @@
 [os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5889
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5889
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5889
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5889
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5889
-[os-kernel] heartbeat 5889
-[os-kernel] heartbeat 5216
 [os-kernel] heartbeat 5889
 [os-kernel] heartbeat 5216
 [os-kernel] heartbeat 5889
@@ -239,32 +198,3 @@
 [2026-04-03T16:43:47Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-4665.txt
 [2026-04-03T16:43:47Z] [recover] recovery mode started
 [2026-04-03T16:43:48Z] [recover] recovery mode complete
-[2026-04-03T16:43:48Z] [recover] backup created: 20260403-164348
-[os-kernel] heartbeat 6660
-[2026-04-03T16:44:14Z] [sched] add pid=6302 pri=5
-[2026-04-03T16:44:14Z] [sched] remove pid=6302
-[2026-04-03T16:44:14Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
-[2026-04-03T16:44:14Z] [perms] ALLOW principal=aura cap=fs.read
-[2026-04-03T16:44:14Z] [perms] DENY principal=aura cap=proc.kill
-[2026-04-03T16:44:14Z] [perms] GRANT principal=test-principal-6302 cap=test.cap
-[2026-04-03T16:44:14Z] [perms] ALLOW principal=test-principal-6302 cap=test.cap
-[2026-04-03T16:44:14Z] [perms] REVOKE principal=test-principal-6302 cap=test.cap
-[2026-04-03T16:44:14Z] [perms] DENY principal=test-principal-6302 cap=test.cap
-[2026-04-03T16:44:15Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-6302.txt
-[2026-04-03T16:44:15Z] [recover] recovery mode started
-[2026-04-03T16:44:15Z] [recover] recovery mode complete
-[2026-04-03T16:44:15Z] [recover] backup created: 20260403-164415
-[os-kernel] heartbeat 9102
-[2026-04-03T16:45:23Z] [sched] add pid=8297 pri=5
-[2026-04-03T16:45:23Z] [sched] remove pid=8297
-[2026-04-03T16:45:23Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
-[2026-04-03T16:45:23Z] [perms] ALLOW principal=aura cap=fs.read
-[2026-04-03T16:45:23Z] [perms] DENY principal=aura cap=proc.kill
-[2026-04-03T16:45:23Z] [perms] GRANT principal=test-principal-8297 cap=test.cap
-[2026-04-03T16:45:23Z] [perms] ALLOW principal=test-principal-8297 cap=test.cap
-[2026-04-03T16:45:23Z] [perms] REVOKE principal=test-principal-8297 cap=test.cap
-[2026-04-03T16:45:23Z] [perms] DENY principal=test-principal-8297 cap=test.cap
-[2026-04-03T16:45:23Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-8297.txt
-[2026-04-03T16:45:23Z] [recover] recovery mode started
-[2026-04-03T16:45:23Z] [recover] recovery mode complete
-[2026-04-03T16:45:23Z] [recover] backup created: 20260403-164523

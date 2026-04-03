@@ -1,0 +1,32 @@
+# OS/etc/aura/profile — AIOS login profile
+# Sourced by os-shell and os-real-shell at startup.
+# Override any of these variables in ~/.aiosrc if desired.
+
+# Default AI backend (mock | llama)
+: "${AI_BACKEND:=mock}"
+export AI_BACKEND
+
+# LLaMA model path — point to your .gguf file
+: "${LLAMA_MODEL_PATH:=}"
+export LLAMA_MODEL_PATH
+
+# LLaMA inference parameters
+: "${LLAMA_CTX:=4096}"
+: "${LLAMA_THREADS:=4}"
+: "${LLM_MAX_TOKENS:=256}"
+export LLAMA_CTX LLAMA_THREADS LLM_MAX_TOKENS
+
+# Shell history size
+: "${HISTSIZE:=1000}"
+
+# Default editor
+: "${EDITOR:=vi}"
+export EDITOR
+
+# Ensure OS_ROOT/bin and OS_ROOT/sbin are always in PATH
+export PATH="$PATH:${OS_ROOT:-/}/bin:${OS_ROOT:-/}/sbin"
+
+# Source user-local overrides if present
+[ -f "$HOME/.aiosrc" ] && . "$HOME/.aiosrc" 2>/dev/null
+
+true
