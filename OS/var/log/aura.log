@@ -425,3 +425,95 @@
 [2026-04-03T09:25:22Z] [kernel] heartbeat 93 pid=5216
 [2026-04-03T09:25:27Z] [kernel] heartbeat 64 pid=5889
 [2026-04-03T09:25:27Z] [kernel] heartbeat 94 pid=5216
+[2026-04-03T10:47:50Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T10:47:50Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-3907.txt
+[2026-04-03T10:47:50Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-3907.txt
+[2026-04-03T10:47:50Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-3907.txt
+[2026-04-03T10:47:50Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-3907.txt
+[2026-04-03T10:47:50Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-3907.txt
+[2026-04-03T10:47:50Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:47:50Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:47:50Z] unit-test marker 3907
+[2026-04-03T10:47:50Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:47:50Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:47:50Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-03T10:47:58Z] [shell] shell started (mode=operator)
+[2026-04-03T10:47:58Z] [shell] CMD: help
+[2026-04-03T10:47:58Z] [shell] shell started (mode=operator)
+[2026-04-03T10:47:58Z] [shell] CMD: sysinfo
+[2026-04-03T10:47:58Z] [shell] shell started (mode=operator)
+[2026-04-03T10:47:58Z] [shell] CMD: uptime
+[2026-04-03T10:47:58Z] [shell] shell started (mode=operator)
+[2026-04-03T10:47:58Z] [shell] CMD: disk
+[2026-04-03T10:47:58Z] [shell] shell started (mode=operator)
+[2026-04-03T10:47:58Z] [shell] CMD: ls
+[2026-04-03T10:47:58Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS
+[2026-04-03T10:47:58Z] [shell] shell started (mode=operator)
+[2026-04-03T10:47:58Z] [shell] CMD: mem.set test.key.3970 integration_value
+[2026-04-03T10:47:58Z] [shell] CMD: mem.get test.key.3970
+[2026-04-03T10:47:58Z] [shell] shell started (mode=operator)
+[2026-04-03T10:47:58Z] [shell] CMD: sem.set sem.test.3970 hello semantic world
+[2026-04-03T10:47:58Z] [shell] CMD: sem.search hello
+[2026-04-03T10:47:58Z] [shell] shell started (mode=operator)
+[2026-04-03T10:47:58Z] [shell] CMD: sysinf
+[2026-04-03T10:47:58Z] [shell] TYPO: 'sysinf' -> 'sysinfo'
+[2026-04-03T10:47:58Z] [shell] CMD: sysinfo
+[2026-04-03T10:47:58Z] [shell] shell started (mode=operator)
+[2026-04-03T10:47:58Z] [shell] CMD: ask hello
+[2026-04-03T10:47:58Z] [shell] AI: Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?
+[2026-04-03T10:47:58Z] [shell] shell started (mode=operator)
+[2026-04-03T10:47:58Z] [shell] CMD: mode system
+[2026-04-03T10:47:58Z] [shell] CMD: mode operator
+[2026-04-03T10:47:58Z] [shell] shell started (mode=operator)
+[2026-04-03T10:47:58Z] [shell] CMD: write integration-test-file.txt hello_integration
+[2026-04-03T10:47:58Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/integration-test-file.txt
+[2026-04-03T10:47:58Z] [shell] CMD: read integration-test-file.txt
+[2026-04-03T10:47:58Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/integration-test-file.txt
+[2026-04-03T10:47:58Z] [shell] shell started (mode=operator)
+[2026-04-03T10:47:58Z] [shell] CMD: services
+[2026-04-03T10:47:58Z] [real-shell] real-shell started
+[2026-04-03T10:47:58Z] [real-shell] CMD: help
+[2026-04-03T10:47:58Z] [real-shell] EOF exit
+[2026-04-03T10:47:58Z] [real-shell] real-shell started
+[2026-04-03T10:47:58Z] [real-shell] CMD: sysinfo
+[2026-04-03T10:47:58Z] [real-shell] EOF exit
+[2026-04-03T10:47:58Z] [real-shell] real-shell started
+[2026-04-03T10:47:58Z] [real-shell] CMD: netinfo
+[2026-04-03T10:47:58Z] [real-shell] EOF exit
+[2026-04-03T10:47:58Z] [real-shell] real-shell started
+[2026-04-03T10:47:58Z] [real-shell] CMD: diskinfo
+[2026-04-03T10:47:58Z] [real-shell] EOF exit
+[2026-04-03T10:47:58Z] [real-shell] real-shell started
+[2026-04-03T10:47:58Z] [real-shell] CMD: logread aura
+[2026-04-03T10:47:58Z] [real-shell] EOF exit
+[2026-04-03T10:47:58Z] [real-shell] real-shell started
+[2026-04-03T10:47:58Z] [real-shell] CMD: echo test_passthrough_3970
+[2026-04-03T10:47:58Z] [real-shell] EXEC: echo test_passthrough_3970
+[2026-04-03T10:47:58Z] [real-shell] EOF exit
+[2026-04-03T10:47:58Z] [real-shell] real-shell started
+[2026-04-03T10:47:58Z] [real-shell] CMD: sysinf
+[2026-04-03T10:47:58Z] [real-shell] TYPO: 'sysinf' -> 'sysinfo'
+[2026-04-03T10:47:58Z] [real-shell] CMD: sysinfo
+[2026-04-03T10:47:58Z] [real-shell] EOF exit
+[2026-04-03T10:47:58Z] [kernel] kernel started pid=4653
+[2026-04-03T10:47:58Z] [kernel] heartbeat 1 pid=4653
+[2026-04-03T10:48:01Z] [kernel] kernel stopped pid=4653
+[2026-04-03T10:48:03Z] [agents] agent loaded: heartbeat
+[2026-04-03T10:48:03Z] [agents] agent loaded: listener
+[2026-04-03T10:48:03Z] [agents] agent loaded: autosys
+[2026-04-03T10:48:03Z] [agents] agent loaded: bridge
+[2026-04-03T10:48:03Z] [agents] agent daemon launched pid=4747
+[2026-04-03T10:48:03Z] [agents] agent daemon started pid=4747
+[2026-04-03T10:48:07Z] [agents] agent daemon stopped pid=4747
+[2026-04-03T10:48:07Z] [tasks] task scheduler launched pid=5228
+[2026-04-03T10:48:07Z] [tasks] task scheduler started pid=5228
+[2026-04-03T10:48:07Z] [tasks] task ran: healthcheck
+[2026-04-03T10:48:07Z] [tasks] task ran: autosave
+[2026-04-03T10:48:07Z] [tasks] task ran: bridge-monitor
+[2026-04-03T10:48:12Z] [tasks] task ran: logwatch
+[2026-04-03T10:48:15Z] [tasks] task scheduler stopped pid=5228
+[2026-04-03T10:48:15Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/inttest-py-3970.txt
+[2026-04-03T10:48:15Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/inttest-py-3970.txt
+[2026-04-03T10:48:16Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:48:16Z] inttest log entry 3970
+[2026-04-03T10:48:16Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
