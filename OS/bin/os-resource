@@ -1,0 +1,202 @@
+#!/bin/sh
+# OS/bin/os-resource — AIOS Resource Manager
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# Tracks and reports CPU, memory, disk, and thermal resource usage.
+# Enforces soft limits defined in OS_ROOT/etc/resource.limits.
+#
+# Limit file format (etc/resource.limits):
+#   cpu_warn_pct=80
+#   mem_warn_pct=85
+#   disk_warn_pct=90
+#   thermal_limit_c=68
+#
+# Usage:
+#   os-resource status           — full resource summary
+#   os-resource cpu              — CPU usage snapshot
+#   os-resource mem              — memory usage
+#   os-resource disk             — disk usage
+#   os-resource thermal          — thermal / temperature
+#   os-resource limits           — show configured limits
+#   os-resource check            — check all resources vs limits (exit 1 on warning)
+#   os-resource snapshot [file]  — save resource snapshot to file
+
+set -e
+
+_SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+OS_ROOT="${OS_ROOT:-$(cd "$_SCRIPT_DIR/.." 2>/dev/null && pwd)}"
+export OS_ROOT
+
+LIMITS_FILE="$OS_ROOT/etc/resource.limits"
+RESOURCE_LOG="$OS_ROOT/var/log/os.log"
+SNAPSHOT_DIR="$OS_ROOT/var/resource"
+
+_ts()  { date '+%Y-%m-%dT%H:%M:%SZ'; }
+_log() { echo "[$(_ts)] [resource] $*" >> "$RESOURCE_LOG" 2>/dev/null; }
+
+mkdir -p "$SNAPSHOT_DIR" "$(dirname "$RESOURCE_LOG")" 2>/dev/null
+
+# ---------------------------------------------------------------------------
+# Load limits (with defaults)
+# ---------------------------------------------------------------------------
+CPU_WARN_PCT=80
+MEM_WARN_PCT=85
+DISK_WARN_PCT=90
+THERMAL_LIMIT_C=68
+
+if [ -f "$LIMITS_FILE" ]; then
+    # shellcheck source=/dev/null
+    . "$LIMITS_FILE"
+fi
+
+# ---------------------------------------------------------------------------
+_cpu_usage() {
+    if command -v top >/dev/null 2>&1; then
+        # Portable: read the first CPU line from a single top iteration
+        top -bn1 2>/dev/null | grep -E "^(%Cpu|Cpu)" | head -1 \
+            || echo "CPU: (top unavailable)"
+    elif [ -f /proc/stat ]; then
+        awk 'NR==1{idle=$5; total=0; for(i=2;i<=NF;i++) total+=$i;
+             pct=100-int(idle*100/total); print "CPU usage: "pct"%"}' /proc/stat
+    else
+        echo "CPU: unavailable"
+    fi
+}
+
+_mem_usage() {
+    if [ -f /proc/meminfo ]; then
+        awk '
+          /^MemTotal/  {total=$2}
+          /^MemAvail/  {avail=$2}
+          END {
+            used=total-avail
+            pct=int(used*100/total)
+            printf "Memory: %d kB used / %d kB total (%d%% used)\n", used, total, pct
+          }
+        ' /proc/meminfo
+    elif command -v free >/dev/null 2>&1; then
+        free -h
+    else
+        echo "Memory: unavailable"
+    fi
+}
+
+_disk_usage() {
+    df -h "$OS_ROOT" 2>/dev/null || df -h / 2>/dev/null || echo "Disk: unavailable"
+}
+
+_thermal() {
+    _found=0
+    for _zone in /sys/class/thermal/thermal_zone*/temp; do
+        [ -f "$_zone" ] || continue
+        _raw=$(cat "$_zone" 2>/dev/null)
+        _c=$((_raw / 1000))
+        _zone_name=$(dirname "$_zone" | xargs basename)
+        echo "Thermal $_zone_name: ${_c}°C"
+        _found=1
+    done
+    [ "$_found" -eq 0 ] && echo "Thermal: unavailable (no /sys/class/thermal)"
+}
+
+_check_limits() {
+    _warn=0
+    # Memory check
+    if [ -f /proc/meminfo ]; then
+        _pct=$(awk '/^MemTotal/{t=$2} /^MemAvail/{a=$2} END{print 100-int(a*100/t)}' /proc/meminfo)
+        if [ "$_pct" -ge "$MEM_WARN_PCT" ]; then
+            echo "[WARN] Memory at ${_pct}% (limit: ${MEM_WARN_PCT}%)"
+            _log "WARN memory_pct=$_pct limit=$MEM_WARN_PCT"
+            _warn=1
+        else
+            echo "[OK]   Memory at ${_pct}%"
+        fi
+    fi
+    # Disk check
+    _dpct=$(df "$OS_ROOT" 2>/dev/null | awk 'NR==2{gsub("%","",$5); print $5}')
+    if [ -n "$_dpct" ] && [ "$_dpct" -ge "$DISK_WARN_PCT" ]; then
+        echo "[WARN] Disk at ${_dpct}% (limit: ${DISK_WARN_PCT}%)"
+        _log "WARN disk_pct=$_dpct limit=$DISK_WARN_PCT"
+        _warn=1
+    elif [ -n "$_dpct" ]; then
+        echo "[OK]   Disk at ${_dpct}%"
+    fi
+    # Thermal check
+    for _zone in /sys/class/thermal/thermal_zone*/temp; do
+        [ -f "$_zone" ] || continue
+        _raw=$(cat "$_zone" 2>/dev/null)
+        _c=$((_raw / 1000))
+        if [ "$_c" -ge "$THERMAL_LIMIT_C" ]; then
+            echo "[WARN] Thermal ${_c}°C >= limit ${THERMAL_LIMIT_C}°C"
+            _log "WARN thermal_c=$_c limit=$THERMAL_LIMIT_C"
+            _warn=1
+        fi
+    done
+    return $_warn
+}
+
+# ---------------------------------------------------------------------------
+CMD="${1:-status}"; shift 2>/dev/null || true
+
+case "$CMD" in
+
+    status)
+        echo "=== AIOS Resource Manager — Status ($(_ts)) ==="
+        echo "--- CPU ---"
+        _cpu_usage
+        echo "--- Memory ---"
+        _mem_usage
+        echo "--- Disk ---"
+        _disk_usage
+        echo "--- Thermal ---"
+        _thermal
+        ;;
+
+    cpu)
+        _cpu_usage
+        ;;
+
+    mem|memory)
+        _mem_usage
+        ;;
+
+    disk)
+        _disk_usage
+        ;;
+
+    thermal)
+        _thermal
+        ;;
+
+    limits)
+        echo "Resource limits ($LIMITS_FILE):"
+        echo "  cpu_warn_pct    = $CPU_WARN_PCT"
+        echo "  mem_warn_pct    = $MEM_WARN_PCT"
+        echo "  disk_warn_pct   = $DISK_WARN_PCT"
+        echo "  thermal_limit_c = $THERMAL_LIMIT_C"
+        ;;
+
+    check)
+        _check_limits
+        ;;
+
+    snapshot)
+        _outfile="${1:-$SNAPSHOT_DIR/snapshot-$(date +%s).txt}"
+        {
+            echo "=== AIOS Resource Snapshot — $(_ts) ==="
+            echo "--- CPU ---";      _cpu_usage
+            echo "--- Memory ---";   _mem_usage
+            echo "--- Disk ---";     _disk_usage
+            echo "--- Thermal ---";  _thermal
+        } > "$_outfile"
+        echo "snapshot saved: $_outfile"
+        _log "snapshot saved path=$_outfile"
+        ;;
+
+    *)
+        cat >&2 << 'EOF'
+Usage: os-resource <command>
+Commands: status | cpu | mem | disk | thermal | limits | check | snapshot [file]
+EOF
+        exit 1
+        ;;
+esac

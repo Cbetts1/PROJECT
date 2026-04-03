@@ -1,0 +1,8 @@
+fs.read
+fs.list
+log.read
+memory.set
+memory.get
+health.check
+ai.ask
+net.ping

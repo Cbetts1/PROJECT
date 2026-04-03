@@ -1,0 +1,226 @@
+#!/bin/sh
+# OS/bin/os-syscall — AIOS System Call Interface
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# Provides a thin, audited gate between user-space requests and OS subsystems.
+# Every invocation is logged to var/log/syscall.log inside OS_ROOT.
+#
+# Usage:
+#   os-syscall <syscall> [args...]
+#
+# Available syscalls:
+#   read    <path>                 — read a file (OS_ROOT-jailed)
+#   write   <path> <data>          — write a file (OS_ROOT-jailed)
+#   append  <path> <data>          — append to file
+#   exists  <path>                 — test file existence (true|false)
+#   stat    <path>                 — file metadata
+#   mkdir   <path>                 — create directory
+#   rm      <path>                 — remove file
+#   ls      [path]                 — list directory
+#   spawn   <cmd> [args...]        — spawn allowed process
+#   kill    <pid>                  — send SIGTERM to process
+#   getpid                         — print current PID
+#   getenv  <name>                 — get environment variable
+#   setenv  <name> <value>         — set environment variable for session
+#   uptime                         — system uptime
+#   sysinfo                        — kernel / OS state
+#   log     <message>              — append message to audit log
+
+set -e
+
+# ---------------------------------------------------------------------------
+# Resolve OS_ROOT
+# ---------------------------------------------------------------------------
+_SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+OS_ROOT="${OS_ROOT:-$(cd "$_SCRIPT_DIR/.." 2>/dev/null && pwd)}"
+export OS_ROOT
+
+FS_PY="$OS_ROOT/lib/filesystem.py"
+SYSCALL_LOG="$OS_ROOT/var/log/syscall.log"
+AUDIT_LOG="$OS_ROOT/var/log/aura.log"
+
+# ---------------------------------------------------------------------------
+# Allowed spawn whitelist (commands that may be exec'd via syscall spawn)
+# ---------------------------------------------------------------------------
+_SPAWN_ALLOWED="ls cat echo date uptime df ps uname hostname id env"
+
+_is_spawn_allowed() {
+    _cmd="$1"
+    for w in $_SPAWN_ALLOWED; do
+        [ "$w" = "$_cmd" ] && return 0
+    done
+    return 1
+}
+
+# ---------------------------------------------------------------------------
+# Audit logging
+# ---------------------------------------------------------------------------
+_ts() { date '+%Y-%m-%dT%H:%M:%SZ'; }
+
+_audit() {
+    _line="[$(_ts)] [syscall] $*"
+    mkdir -p "$(dirname "$SYSCALL_LOG")" 2>/dev/null
+    echo "$_line" >> "$SYSCALL_LOG"
+    echo "$_line" >> "$AUDIT_LOG"
+}
+
+# ---------------------------------------------------------------------------
+# Usage
+# ---------------------------------------------------------------------------
+_usage() {
+    cat >&2 << 'EOF'
+Usage: os-syscall <syscall> [args...]
+
+Syscalls:
+  read    <path>
+  write   <path> <data>
+  append  <path> <data>
+  exists  <path>
+  stat    <path>
+  mkdir   <path>
+  rm      <path>
+  ls      [path]
+  spawn   <cmd> [args...]
+  kill    <pid>
+  getpid
+  getenv  <name>
+  setenv  <name> <value>
+  uptime
+  sysinfo
+  log     <message>
+EOF
+    exit 1
+}
+
+# ---------------------------------------------------------------------------
+# Main dispatch
+# ---------------------------------------------------------------------------
+[ $# -lt 1 ] && _usage
+
+SYSCALL="$1"; shift
+
+_audit "invoke syscall=$SYSCALL caller_pid=$$ args=$*"
+
+case "$SYSCALL" in
+
+    read)
+        [ $# -lt 1 ] && { echo "os-syscall read: missing path" >&2; exit 1; }
+        OS_ROOT="$OS_ROOT" python3 "$FS_PY" read "$1"
+        ;;
+
+    write)
+        [ $# -lt 2 ] && { echo "os-syscall write: missing path/data" >&2; exit 1; }
+        OS_ROOT="$OS_ROOT" python3 "$FS_PY" write "$1" "$2"
+        ;;
+
+    append)
+        [ $# -lt 2 ] && { echo "os-syscall append: missing path/data" >&2; exit 1; }
+        OS_ROOT="$OS_ROOT" python3 "$FS_PY" append "$1" "$2"
+        ;;
+
+    exists)
+        [ $# -lt 1 ] && { echo "os-syscall exists: missing path" >&2; exit 1; }
+        OS_ROOT="$OS_ROOT" python3 "$FS_PY" exists "$1"
+        ;;
+
+    stat)
+        [ $# -lt 1 ] && { echo "os-syscall stat: missing path" >&2; exit 1; }
+        OS_ROOT="$OS_ROOT" python3 "$FS_PY" stat "$1"
+        ;;
+
+    mkdir)
+        [ $# -lt 1 ] && { echo "os-syscall mkdir: missing path" >&2; exit 1; }
+        # Validate path stays inside OS_ROOT
+        _target="$OS_ROOT/$1"
+        case "$_target" in
+            "$OS_ROOT"/*) ;;
+            *) echo "os-syscall mkdir: access denied (outside OS_ROOT)" >&2; exit 1 ;;
+        esac
+        mkdir -p "$_target"
+        echo "created: $1"
+        ;;
+
+    rm)
+        [ $# -lt 1 ] && { echo "os-syscall rm: missing path" >&2; exit 1; }
+        _target="$OS_ROOT/$1"
+        case "$_target" in
+            "$OS_ROOT"/*) ;;
+            *) echo "os-syscall rm: access denied (outside OS_ROOT)" >&2; exit 1 ;;
+        esac
+        rm -f "$_target"
+        echo "removed: $1"
+        ;;
+
+    ls)
+        _lspath="${1:-.}"
+        OS_ROOT="$OS_ROOT" python3 "$FS_PY" list "$_lspath"
+        ;;
+
+    spawn)
+        [ $# -lt 1 ] && { echo "os-syscall spawn: missing command" >&2; exit 1; }
+        _cmd="$1"; shift
+        if ! _is_spawn_allowed "$_cmd"; then
+            echo "os-syscall spawn: '$_cmd' not in spawn whitelist" >&2
+            exit 1
+        fi
+        _audit "spawn cmd=$_cmd"
+        "$_cmd" "$@"
+        ;;
+
+    kill)
+        [ $# -lt 1 ] && { echo "os-syscall kill: missing pid" >&2; exit 1; }
+        _pid="$1"
+        case "$_pid" in
+            *[!0-9]*) echo "os-syscall kill: invalid PID '$_pid'" >&2; exit 1 ;;
+        esac
+        kill "$_pid" 2>&1 && echo "sent SIGTERM to PID $_pid" || echo "kill failed: PID $_pid"
+        ;;
+
+    getpid)
+        echo "$$"
+        ;;
+
+    getenv)
+        [ $# -lt 1 ] && { echo "os-syscall getenv: missing name" >&2; exit 1; }
+        # Strip potential injection via printenv — name must be alphanumeric/underscore
+        _varname="$1"
+        case "$_varname" in
+            *[!A-Za-z0-9_]*) echo "os-syscall getenv: invalid name" >&2; exit 1 ;;
+        esac
+        eval "echo \"\${${_varname}:-}\""
+        ;;
+
+    setenv)
+        [ $# -lt 2 ] && { echo "os-syscall setenv: missing name/value" >&2; exit 1; }
+        _varname="$1"
+        case "$_varname" in
+            *[!A-Za-z0-9_]*) echo "os-syscall setenv: invalid name" >&2; exit 1 ;;
+        esac
+        _varval="$2"
+        export "${_varname}=${_varval}"
+        echo "set: $_varname=$_varval"
+        ;;
+
+    uptime)
+        uptime
+        ;;
+
+    sysinfo)
+        echo "=== AIOS System Call — sysinfo ==="
+        echo "OS_ROOT   : $OS_ROOT"
+        echo "Kernel PID: $$"
+        uname -a 2>/dev/null || echo "(uname unavailable)"
+        uptime 2>/dev/null   || echo "(uptime unavailable)"
+        ;;
+
+    log)
+        _msg="$*"
+        _audit "$_msg"
+        echo "logged: $_msg"
+        ;;
+
+    *)
+        echo "os-syscall: unknown syscall '$SYSCALL'" >&2
+        _usage
+        ;;
+esac

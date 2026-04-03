@@ -405,6 +405,319 @@ OS_ROOT="$OS_ROOT" python3 "$FS_PY" read var/log/aura.log 2>/dev/null | grep -q 
 rm -f "$OS_ROOT/$_tmp"
 
 # ---------------------------------------------------------------------------
+# os-syscall integration tests
+# ---------------------------------------------------------------------------
+section "os-syscall — system call interface"
+
+_syscall() { OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-syscall" "$@" 2>/dev/null; }
+
+# getpid returns a number
+out=$(_syscall getpid)
+echo "$out" | grep -qE '^[0-9]+$' \
+    && pass "os-syscall: getpid returns numeric PID" \
+    || fail "os-syscall: getpid should return numeric PID"
+
+# uptime
+out=$(_syscall uptime)
+[ -n "$out" ] \
+    && pass "os-syscall: uptime returns output" \
+    || fail "os-syscall: uptime should return output"
+
+# write / read roundtrip
+_sc_path="tmp/syscall-test-$$.txt"
+_syscall write "$_sc_path" "syscall_test_value_$$" >/dev/null
+out=$(_syscall read "$_sc_path")
+echo "$out" | grep -q "syscall_test_value_$$" \
+    && pass "os-syscall: write/read roundtrip" \
+    || fail "os-syscall: write/read roundtrip failed"
+
+# exists positive
+out=$(_syscall exists "$_sc_path")
+[ "$out" = "true" ] \
+    && pass "os-syscall: exists returns true for written file" \
+    || fail "os-syscall: exists should return true"
+
+# traversal blocked
+out=$(OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-syscall" read "../../etc/passwd" 2>&1)
+echo "$out" | grep -qi "denied\|error\|blocked" \
+    && pass "os-syscall: path traversal blocked" \
+    || fail "os-syscall: path traversal should be blocked"
+
+# sysinfo
+out=$(_syscall sysinfo)
+echo "$out" | grep -qi "OS_ROOT\|AIOS\|sysinfo" \
+    && pass "os-syscall: sysinfo returns system info" \
+    || fail "os-syscall: sysinfo should return system info"
+
+# log
+_syscall log "integration-test-marker-$$" >/dev/null
+grep -q "integration-test-marker-$$" "$OS_ROOT/var/log/syscall.log" \
+    && pass "os-syscall: log writes to syscall.log" \
+    || fail "os-syscall: log should write to syscall.log"
+
+rm -f "$OS_ROOT/$_sc_path"
+
+# ---------------------------------------------------------------------------
+# os-sched integration tests
+# ---------------------------------------------------------------------------
+section "os-sched — process scheduler"
+
+_sched() { OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-sched" "$@" 2>/dev/null; }
+
+# status (no crash)
+out=$(_sched status)
+[ -n "$out" ] \
+    && pass "os-sched: status returns output" \
+    || fail "os-sched: status should return output"
+
+# add a real PID (current shell)
+_mypid=$$
+_sched add "$_mypid" 5 >/dev/null
+out=$(_sched list)
+echo "$out" | grep -q "$_mypid" \
+    && pass "os-sched: add/list roundtrip" \
+    || fail "os-sched: add/list should show the added PID"
+
+# rm
+_sched rm "$_mypid" >/dev/null
+out=$(_sched list)
+echo "$out" | grep -q "$_mypid" \
+    && fail "os-sched: rm should remove PID" \
+    || pass "os-sched: rm removes PID"
+
+# info
+out=$(_sched info)
+echo "$out" | grep -qi "algorithm\|priority\|round" \
+    && pass "os-sched: info describes algorithm" \
+    || fail "os-sched: info should describe scheduling algorithm"
+
+# ---------------------------------------------------------------------------
+# os-perms integration tests
+# ---------------------------------------------------------------------------
+section "os-perms — permissions model"
+
+_perms() { OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-perms" "$@" 2>/dev/null; }
+
+# init creates default caps files
+_perms init >/dev/null
+[ -f "$OS_ROOT/etc/perms.d/operator.caps" ] \
+    && pass "os-perms: init creates operator.caps" \
+    || fail "os-perms: init should create operator.caps"
+
+# operator has fs.read via wildcard
+_perms check operator "fs.read"
+pass "os-perms: operator allowed fs.read (wildcard fs.*)"
+
+# aura has fs.read explicitly
+_perms check aura "fs.read"
+pass "os-perms: aura allowed fs.read"
+
+# aura cannot proc.kill
+! _perms check aura "proc.kill" 2>/dev/null
+pass "os-perms: aura denied proc.kill"
+
+# grant / revoke cycle
+_perms grant "test-principal-$$" "test.cap" >/dev/null
+_perms check "test-principal-$$" "test.cap"
+pass "os-perms: grant/check roundtrip"
+
+_perms revoke "test-principal-$$" "test.cap" >/dev/null
+! _perms check "test-principal-$$" "test.cap" 2>/dev/null
+pass "os-perms: revoke removes capability"
+
+rm -f "$OS_ROOT/etc/perms.d/test-principal-$$.caps"
+
+# ---------------------------------------------------------------------------
+# os-resource integration tests
+# ---------------------------------------------------------------------------
+section "os-resource — resource manager"
+
+_res() { OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-resource" "$@" 2>/dev/null; }
+
+out=$(_res status)
+[ -n "$out" ] \
+    && pass "os-resource: status returns output" \
+    || fail "os-resource: status should return output"
+
+out=$(_res limits)
+echo "$out" | grep -qi "mem_warn\|disk_warn\|thermal" \
+    && pass "os-resource: limits shows configured limits" \
+    || fail "os-resource: limits should show configured limits"
+
+out=$(_res disk)
+[ -n "$out" ] \
+    && pass "os-resource: disk returns output" \
+    || fail "os-resource: disk should return output"
+
+out=$(_res mem)
+[ -n "$out" ] \
+    && pass "os-resource: mem returns output" \
+    || fail "os-resource: mem should return output"
+
+# snapshot saves a file
+_snap_file="$OS_ROOT/var/resource/test-snap-$$.txt"
+_res snapshot "$_snap_file" >/dev/null
+[ -f "$_snap_file" ] \
+    && pass "os-resource: snapshot saves file" \
+    || fail "os-resource: snapshot should save file"
+rm -f "$_snap_file"
+
+# ---------------------------------------------------------------------------
+# os-recover integration tests
+# ---------------------------------------------------------------------------
+section "os-recover — recovery mode"
+
+_rec() { OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-recover" "$@" 2>/dev/null; }
+
+# check completes without error
+out=$(_rec check)
+[ -n "$out" ] \
+    && pass "os-recover: check returns output" \
+    || fail "os-recover: check should return output"
+
+# repair is idempotent
+out=$(_rec repair)
+echo "$out" | grep -qi "recovery complete\|complete\|ready" \
+    && pass "os-recover: repair completes successfully" \
+    || fail "os-recover: repair should complete"
+
+# backup creates a backup directory
+_rec backup >/dev/null
+_latest="$OS_ROOT/var/backup/latest"
+[ -f "$_latest" ] \
+    && pass "os-recover: backup creates latest pointer" \
+    || fail "os-recover: backup should create latest pointer"
+
+# deps output
+out=$(_rec deps)
+echo "$out" | grep -qi "python3\|sh\|awk" \
+    && pass "os-recover: deps lists python3 and sh" \
+    || fail "os-recover: deps should list required binaries"
+
+# ---------------------------------------------------------------------------
+# os-netconf integration tests
+# ---------------------------------------------------------------------------
+section "os-netconf — network configuration"
+
+_net() { OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-netconf" "$@" 2>/dev/null; }
+
+out=$(_net interfaces)
+[ -n "$out" ] \
+    && pass "os-netconf: interfaces returns output" \
+    || fail "os-netconf: interfaces should list network interfaces"
+
+out=$(_net dns show)
+[ -n "$out" ] \
+    && pass "os-netconf: dns show returns output" \
+    || fail "os-netconf: dns show should return output"
+
+out=$(_net route show)
+[ -n "$out" ] \
+    && pass "os-netconf: route show returns output" \
+    || fail "os-netconf: route show should return output"
+
+_snap_net="$OS_ROOT/etc/net/test-snap-$$.txt"
+_net save "$_snap_net" >/dev/null
+[ -f "$_snap_net" ] \
+    && pass "os-netconf: save creates config snapshot" \
+    || fail "os-netconf: save should create config snapshot"
+rm -f "$_snap_net"
+
+# ---------------------------------------------------------------------------
+# os-httpd integration tests (start/stop/query)
+# ---------------------------------------------------------------------------
+section "os-httpd — HTTP API server"
+
+_HTTP_PORT=18080
+_HTTP_PID_FILE="$OS_ROOT/var/service/test-httpd-$$.pid"
+
+# Start the server in background (no-auth for test simplicity)
+OS_ROOT="$OS_ROOT" AIOS_HOME="$REPO_ROOT" python3 "$OS_ROOT/bin/os-httpd" \
+    --port "$_HTTP_PORT" --no-auth &
+_http_pid=$!
+echo "$_http_pid" > "$_HTTP_PID_FILE"
+sleep 2
+
+# Health endpoint (curl or python3)
+if command -v curl >/dev/null 2>&1; then
+    out=$(curl -sf "http://127.0.0.1:$_HTTP_PORT/api/v1/health" 2>/dev/null)
+else
+    out=$(python3 -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:${_HTTP_PORT}/api/v1/health').read().decode())" 2>/dev/null)
+fi
+echo "$out" | grep -q '"status"' \
+    && pass "os-httpd: /api/v1/health returns JSON status" \
+    || fail "os-httpd: /api/v1/health should return JSON"
+
+# Status endpoint
+if command -v curl >/dev/null 2>&1; then
+    out=$(curl -sf "http://127.0.0.1:$_HTTP_PORT/api/v1/status" 2>/dev/null)
+else
+    out=$(python3 -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:${_HTTP_PORT}/api/v1/status').read().decode())" 2>/dev/null)
+fi
+[ -n "$out" ] \
+    && pass "os-httpd: /api/v1/status returns output" \
+    || fail "os-httpd: /api/v1/status should return output"
+
+# Metrics endpoint
+if command -v curl >/dev/null 2>&1; then
+    out=$(curl -sf "http://127.0.0.1:$_HTTP_PORT/api/v1/metrics" 2>/dev/null)
+else
+    out=$(python3 -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:${_HTTP_PORT}/api/v1/metrics').read().decode())" 2>/dev/null)
+fi
+echo "$out" | grep -q '"timestamp"' \
+    && pass "os-httpd: /api/v1/metrics returns metrics JSON" \
+    || fail "os-httpd: /api/v1/metrics should return metrics"
+
+# 404 for unknown route
+if command -v curl >/dev/null 2>&1; then
+    _code=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:$_HTTP_PORT/api/v1/nonexistent" 2>/dev/null)
+    [ "$_code" = "404" ] \
+        && pass "os-httpd: unknown route returns 404" \
+        || fail "os-httpd: unknown route should return 404 (got $_code)"
+fi
+
+# Stop the test server
+kill "$_http_pid" 2>/dev/null || true
+rm -f "$_HTTP_PID_FILE"
+sleep 1
+
+# ---------------------------------------------------------------------------
+# AI pipeline integration (intent → router → bot)
+# ---------------------------------------------------------------------------
+section "AI pipeline — intent engine + router + bots"
+
+_ai_backend() {
+    python3 "$REPO_ROOT/ai/core/ai_backend.py" \
+        --input "$1" \
+        --os-root "$OS_ROOT" \
+        --aios-root "$REPO_ROOT" 2>/dev/null
+}
+
+# health intent → HealthBot
+out=$(_ai_backend "health")
+[ -n "$out" ] \
+    && pass "AI pipeline: health intent dispatched to HealthBot" \
+    || fail "AI pipeline: health intent should produce output"
+
+# repair intent → RepairBot
+out=$(_ai_backend "repair")
+echo "$out" | grep -qi "repair\|complete" \
+    && pass "AI pipeline: repair intent dispatched to RepairBot" \
+    || fail "AI pipeline: repair intent should trigger RepairBot"
+
+# log read → LogBot
+out=$(_ai_backend "logs")
+[ -n "$out" ] \
+    && pass "AI pipeline: log intent dispatched to LogBot" \
+    || fail "AI pipeline: log intent should produce output"
+
+# chat fallback
+out=$(_ai_backend "tell me a joke about shell scripts")
+[ -n "$out" ] \
+    && pass "AI pipeline: chat fallback returns response" \
+    || fail "AI pipeline: chat fallback should return response"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo

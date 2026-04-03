@@ -201,6 +201,23 @@ rm -rf "$_STATE_DIR" "$_AURA_LOG_FILE" "$_EVENTS_LOG"
 [ "$_created_os_state" = true ] && rm -f "$_STUB_OS_STATE"
 
 # ---------------------------------------------------------------------------
+# Python AI core unit tests (test_python_modules.py)
+# ---------------------------------------------------------------------------
+echo
+echo "=== Python AI core module tests ==="
+
+_PY_TEST="$REPO_ROOT/tests/test_python_modules.py"
+if [ -f "$_PY_TEST" ]; then
+    if python3 "$_PY_TEST" 2>&1; then
+        pass "python-modules: all Python AI core tests passed"
+    else
+        fail "python-modules: one or more Python AI core tests failed"
+    fi
+else
+    fail "python-modules: test_python_modules.py not found at $_PY_TEST"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo

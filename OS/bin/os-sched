@@ -1,0 +1,190 @@
+#!/bin/sh
+# OS/bin/os-sched — AIOS Process Scheduler
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# Implements a simple priority-based round-robin scheduler daemon.
+# Manages the process priority table in OS_ROOT/proc/sched.table.
+#
+# Usage:
+#   os-sched start              — start scheduler daemon
+#   os-sched stop               — stop scheduler daemon
+#   os-sched status             — print scheduler state
+#   os-sched add  <pid> <pri>   — add/update process (pri: 0=high,19=low)
+#   os-sched rm   <pid>         — remove process from scheduler
+#   os-sched list               — list all tracked processes
+#   os-sched renice <pid> <inc> — adjust niceness
+#   os-sched info               — display scheduler algorithm info
+
+set -e
+
+_SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+OS_ROOT="${OS_ROOT:-$(cd "$_SCRIPT_DIR/.." 2>/dev/null && pwd)}"
+export OS_ROOT
+
+SCHED_TABLE="$OS_ROOT/proc/sched.table"
+SCHED_PID="$OS_ROOT/var/service/os-sched.pid"
+SCHED_LOG="$OS_ROOT/var/log/os.log"
+SCAN_INTERVAL=5
+
+_ts()    { date '+%Y-%m-%dT%H:%M:%SZ'; }
+_log()   { echo "[$(_ts)] [sched] $*" >> "$SCHED_LOG"; }
+_out()   { echo "[sched] $*"; }
+_err()   { echo "[sched] ERROR: $*" >&2; }
+
+mkdir -p "$(dirname "$SCHED_TABLE")" "$(dirname "$SCHED_PID")" \
+         "$(dirname "$SCHED_LOG")"   2>/dev/null
+
+# ---------------------------------------------------------------------------
+_usage() {
+    cat >&2 << 'EOF'
+Usage: os-sched <command> [args]
+Commands: start | stop | status | add <pid> <pri> | rm <pid> | list | renice <pid> <inc> | info
+EOF
+    exit 1
+}
+
+# ---------------------------------------------------------------------------
+_add_process() {
+    _pid="$1"
+    _pri="${2:-10}"
+    case "$_pid" in *[!0-9]*) _err "invalid PID: $_pid"; exit 1 ;; esac
+    case "$_pri" in *[!0-9-]*) _err "invalid priority: $_pri"; exit 1 ;; esac
+    # Remove existing entry for this PID, then append
+    if [ -f "$SCHED_TABLE" ]; then
+        grep -v "^${_pid} " "$SCHED_TABLE" > "${SCHED_TABLE}.tmp" 2>/dev/null || true
+        mv "${SCHED_TABLE}.tmp" "$SCHED_TABLE"
+    fi
+    printf '%s %s %s\n' "$_pid" "$_pri" "$(_ts)" >> "$SCHED_TABLE"
+    _log "add pid=$_pid pri=$_pri"
+    _out "added pid=$_pid priority=$_pri"
+}
+
+_rm_process() {
+    _pid="$1"
+    [ -f "$SCHED_TABLE" ] || { _out "table empty"; return; }
+    grep -v "^${_pid} " "$SCHED_TABLE" > "${SCHED_TABLE}.tmp" 2>/dev/null || true
+    mv "${SCHED_TABLE}.tmp" "$SCHED_TABLE"
+    _log "remove pid=$_pid"
+    _out "removed pid=$_pid"
+}
+
+_renice_process() {
+    _pid="$1"
+    _inc="${2:-0}"
+    case "$_pid" in *[!0-9]*) _err "invalid PID"; exit 1 ;; esac
+    renice "$_inc" -p "$_pid" 2>&1 && _log "renice pid=$_pid inc=$_inc" || _err "renice failed for PID $_pid"
+}
+
+_scan_once() {
+    # Prune dead processes from the table
+    [ -f "$SCHED_TABLE" ] || return
+    _newtable=$(mktemp)
+    while IFS=' ' read -r _p _pr _ts_added; do
+        [ -z "$_p" ] && continue
+        if [ -d "/proc/$_p" ]; then
+            echo "$_p $_pr $_ts_added" >> "$_newtable"
+        else
+            _log "pruned dead pid=$_p"
+        fi
+    done < "$SCHED_TABLE"
+    mv "$_newtable" "$SCHED_TABLE"
+}
+
+_daemon_loop() {
+    _log "scheduler daemon started (pid=$$)"
+    while true; do
+        _scan_once
+        sleep "$SCAN_INTERVAL"
+    done
+}
+
+# ---------------------------------------------------------------------------
+CMD="${1:-status}"; shift 2>/dev/null || true
+
+case "$CMD" in
+
+    start)
+        if [ -f "$SCHED_PID" ]; then
+            _pid=$(cat "$SCHED_PID")
+            if [ -d "/proc/$_pid" ]; then
+                _out "already running (pid=$_pid)"; exit 0
+            fi
+        fi
+        touch "$SCHED_TABLE"
+        _daemon_loop &
+        echo $! > "$SCHED_PID"
+        _out "started (pid=$(cat "$SCHED_PID"))"
+        ;;
+
+    stop)
+        [ -f "$SCHED_PID" ] || { _out "not running"; exit 0; }
+        _pid=$(cat "$SCHED_PID")
+        kill "$_pid" 2>/dev/null && _out "stopped pid=$_pid" || _out "process not found"
+        rm -f "$SCHED_PID"
+        _log "scheduler stopped"
+        ;;
+
+    status)
+        if [ -f "$SCHED_PID" ]; then
+            _pid=$(cat "$SCHED_PID")
+            if [ -d "/proc/$_pid" ]; then
+                _count=0
+                [ -f "$SCHED_TABLE" ] && _count=$(wc -l < "$SCHED_TABLE" | tr -d ' ')
+                _out "running (pid=$_pid) tracked=$_count processes"
+            else
+                _out "dead (stale pidfile)"
+            fi
+        else
+            _out "not running"
+        fi
+        ;;
+
+    add)
+        [ $# -ge 2 ] || { _err "add requires <pid> <priority>"; exit 1; }
+        _add_process "$1" "$2"
+        ;;
+
+    rm|remove)
+        [ $# -ge 1 ] || { _err "rm requires <pid>"; exit 1; }
+        _rm_process "$1"
+        ;;
+
+    list)
+        if [ -f "$SCHED_TABLE" ] && [ -s "$SCHED_TABLE" ]; then
+            printf '%-10s %-10s %s\n' "PID" "PRIORITY" "ADDED"
+            while IFS=' ' read -r _p _pr _ts_added; do
+                [ -z "$_p" ] && continue
+                printf '%-10s %-10s %s\n' "$_p" "$_pr" "${_ts_added:-unknown}"
+            done < "$SCHED_TABLE"
+        else
+            _out "no processes tracked"
+        fi
+        ;;
+
+    renice)
+        [ $# -ge 2 ] || { _err "renice requires <pid> <increment>"; exit 1; }
+        _renice_process "$1" "$2"
+        ;;
+
+    info)
+        cat << 'EOF'
+AIOS Scheduler — Design
+=======================
+Algorithm : Priority Round-Robin
+Priority  : 0 (highest) → 19 (lowest), POSIX nice values
+Interval  : 5 s background scan (prune dead processes)
+Table     : OS_ROOT/proc/sched.table  (pid priority added_ts)
+PID file  : OS_ROOT/var/service/os-sched.pid
+Log       : OS_ROOT/var/log/os.log
+
+Real OS scheduling (CPU time slicing) is delegated to the host kernel
+via the standard POSIX renice(1) interface.  The AIOS scheduler layer
+tracks process priorities, auto-prunes dead PIDs, and provides the
+add/rm/renice management API to other OS components.
+EOF
+        ;;
+
+    *)
+        _usage
+        ;;
+esac
