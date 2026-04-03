@@ -1,3 +1,29 @@
+line 6 of 55
+line 7 of 55
+line 8 of 55
+line 9 of 55
+line 10 of 55
+line 11 of 55
+line 12 of 55
+line 13 of 55
+line 14 of 55
+line 15 of 55
+line 16 of 55
+line 17 of 55
+line 18 of 55
+line 19 of 55
+line 20 of 55
+line 21 of 55
+line 22 of 55
+line 23 of 55
+line 24 of 55
+line 25 of 55
+line 26 of 55
+line 27 of 55
+line 28 of 55
+line 29 of 55
+line 30 of 55
+line 31 of 55
 line 32 of 55
 line 33 of 55
 line 34 of 55
@@ -22,29 +48,3 @@ line 52 of 55
 line 53 of 55
 line 54 of 55
 line 55 of 55
-help
-sysinfo
-uptime
-disk
-ls
-mem.set test.key.7971 integration_value
-mem.get test.key.7971
-sem.set sem.test.7971 hello semantic world
-sem.search hello
-sysinf
-sysinfo
-ask hello
-ai: Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?
-mode system
-mode operator
-write integration-test-file.txt hello_integration
-read integration-test-file.txt
-services
-help
-sysinfo
-netinfo
-diskinfo
-logread aura
-echo test_passthrough_7971
-sysinf
-sysinfo

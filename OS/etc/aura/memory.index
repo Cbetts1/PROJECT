@@ -6,9 +6,9 @@ test.key.debug | test_key_debug.mem |
 testkey123 | testkey123.mem | 
 test.key.6606 | test_key_6606.mem | 
 test.key.4036 | test_key_4036.mem | 
+test.key.7971 | test_key_7971.mem | 
+inttest.key | inttest_key.mem | 
 listtest.key | listtest_key.mem | 
 tagtest.key | tagtest_key.mem | important urgent
 hybrecall.key | hybrecall_key.mem | 
 hybtest.unique | hybtest_unique.mem | 
-test.key.7971 | test_key_7971.mem | 
-inttest.key | inttest_key.mem | 

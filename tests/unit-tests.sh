@@ -574,7 +574,7 @@ echo "$out" | grep -q "exit:127" \
 echo
 echo "=== lib/aura-core.sh — log() output format ==="
 
-# 49. log() emits ISO-8601 timestamp and level
+# 49. log() writes message to log file
 _tmplog=$(mktemp)
 AIOS_HOME="$REPO_ROOT" OS_ROOT="$OS_ROOT" bash -c "
 . \"$REPO_ROOT/lib/aura-core.sh\"
@@ -584,9 +584,11 @@ log INFO 'test-log-message-$$'
 grep -q "test-log-message-$$" "$_tmplog" \
     && pass "log: message written to log file" \
     || fail "log: message should be written to log file"
+# 50. log() entry contains ISO-8601 timestamp
 grep -qE "\[20[0-9]{2}-[0-9]{2}-[0-9]{2}T" "$_tmplog" \
     && pass "log: entry contains ISO-8601 timestamp" \
     || fail "log: entry should contain ISO-8601 timestamp"
+# 51. log() entry contains log level
 grep -q "\[INFO\]" "$_tmplog" \
     && pass "log: entry contains log level" \
     || fail "log: entry should contain log level"
