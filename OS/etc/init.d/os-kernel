@@ -77,7 +77,10 @@ OS_VERSION="0.1"
 OS_VENDOR="Chris"
 EOP
 
-    # Seed static section files on first boot only
+    # Seed static section files on first boot only.
+    # services, ai, bridge, health, and logs are updated at runtime by their
+    # respective subsystems (os-service, os-ai, os-bridge, os-selftest, etc.)
+    # and must not be overwritten on restart so that runtime state is preserved.
     [ -f "$PROCDIR/services" ] || cat > "$PROCDIR/services" << 'EOP'
 # Service registry — updated by os-service at runtime
 # Format: <service_name>=<status>
