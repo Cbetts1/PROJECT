@@ -16,6 +16,26 @@ fail() { echo "[FAIL] $1"; FAIL=$((FAIL+1)); ERRORS="$ERRORS\n  - $1"; }
 echo "Running unit tests..."
 
 # ---------------------------------------------------------------------------
+# Test fixtures: create runtime-generated stub files that are gitignored
+# ---------------------------------------------------------------------------
+_STUB_OS_LOG="$OS_ROOT/var/log/os.log"
+_STUB_OS_STATE="$OS_ROOT/proc/os.state"
+_created_os_log=false
+_created_os_state=false
+
+mkdir -p "$OS_ROOT/var/log" "$OS_ROOT/proc"
+
+if [ ! -f "$_STUB_OS_LOG" ]; then
+    echo "[stub] os-kernel heartbeat stub" > "$_STUB_OS_LOG"
+    _created_os_log=true
+fi
+
+if [ ! -f "$_STUB_OS_STATE" ]; then
+    printf "boot_time=0\nkernel_pid=0\nos_version=0.1\nrunlevel=3\nlast_heartbeat=0\n" > "$_STUB_OS_STATE"
+    _created_os_state=true
+fi
+
+# ---------------------------------------------------------------------------
 # filesystem.py tests
 # ---------------------------------------------------------------------------
 echo
@@ -148,6 +168,12 @@ grep -q "service dead: fake-svc" "$_AURA_LOG_FILE" && pass "heartbeat: dead serv
 [ ! -f "$_STATE_DIR/fake-svc.pid" ] && pass "heartbeat: stale pid file removed" || fail "heartbeat: stale pid file should be removed"
 
 rm -rf "$_STATE_DIR" "$_AURA_LOG_FILE" "$_EVENTS_LOG"
+
+# ---------------------------------------------------------------------------
+# Cleanup test fixtures
+# ---------------------------------------------------------------------------
+[ "$_created_os_log" = true ]   && rm -f "$_STUB_OS_LOG"
+[ "$_created_os_state" = true ] && rm -f "$_STUB_OS_STATE"
 
 # ---------------------------------------------------------------------------
 # Summary
