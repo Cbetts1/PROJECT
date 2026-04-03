@@ -104,9 +104,23 @@ class TestLlamaClient(unittest.TestCase):
         self.assertIsInstance(out, str)
         self.assertGreater(len(out), 0)
 
-    def test_mock_echoes_prompt(self):
+    def test_mock_includes_prompt_in_fallback(self):
+        # Unrecognised input → default fallback should include the original text
         out = llama_client.run_mock("test prompt")
         self.assertIn("test prompt", out)
+
+    def test_mock_greeting_response(self):
+        out = llama_client.run_mock("hello")
+        self.assertIn("AURA", out)
+        self.assertGreater(len(out), 30)
+
+    def test_mock_help_response(self):
+        out = llama_client.run_mock("help")
+        self.assertIn("ls", out)
+
+    def test_mock_model_guidance(self):
+        out = llama_client.run_mock("how do I set up the llm model")
+        self.assertIn("gguf", out.lower())
 
     def test_llama_binary_not_found(self):
         # With no llama binary in a restricted PATH, should report an error
