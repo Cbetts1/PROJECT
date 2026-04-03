@@ -1,21 +1,38 @@
-# AIOSCPU Legal Notice
+# AIOSCPU — Legal Index
 
-> © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+> © 2026 Christopher Betts | AIOS-Lite / AIOSCPU Official  
+> Author: Christopher Betts  
+> AI-Generated Original Content — No Open-Source Template Reproduction
 
 ---
 
 ## Overview
 
-AIOSCPU is an AI-integrated operating system that includes **AURA**
-(Autonomous Unified Resource Agent), a software agent capable of reading
-system data and executing commands on the host system.
+AIOS-Lite / AIOSCPU is an AI-integrated, portable operating-system framework authored by
+**Christopher Betts**. It includes **AURA** (Autonomous Unified Resource Agent), a software
+agent capable of reading system data, executing commands, and bridging to connected devices.
 
-**By using, running, or distributing AIOSCPU you agree to the terms in this
-document.**
+**By installing, booting, or otherwise using AIOS-Lite / AIOSCPU in any form, you agree to
+all of the legal documents listed below.**
 
 ---
 
-## AURA AI Agent — Privacy & Security Notice
+## Legal Document Suite
+
+| Document | Purpose |
+|---|---|
+| [EULA](EULA.md) | End User License Agreement — the binding software license |
+| [TERMS_OF_SERVICE](TERMS_OF_SERVICE.md) | Full terms governing use of the Software |
+| [PRIVACY_POLICY](PRIVACY_POLICY.md) | How data is (and is not) collected and used |
+| [DISCLAIMER](DISCLAIMER.md) | Disclaimer of warranties and limitation of liability |
+| [USER_WARNINGS](USER_WARNINGS.md) | Critical safety and security warnings for all users |
+| [ACCEPTABLE_USE_POLICY](ACCEPTABLE_USE_POLICY.md) | What uses are and are not permitted |
+| [SECURITY](SECURITY.md) | Security policy and responsible disclosure process |
+| [../licenses/THIRD_PARTY_LICENSES.md](../licenses/THIRD_PARTY_LICENSES.md) | Third-party dependency licenses |
+
+---
+
+## AURA AI Agent — Privacy & Security Summary
 
 AURA is embedded in AIOSCPU and has the following capabilities:
 
@@ -25,46 +42,33 @@ AURA is embedded in AIOSCPU and has the following capabilities:
 - **Command execution:** AURA can execute shell commands **only** through
   the `aioscpu-secure-run` wrapper, which enforces a denylist of
   catastrophically dangerous operations and **logs every invocation** to
-  `/var/log/aioscpu-secure-run.log`.
-- **Persistent memory:** AURA stores key/value data in a local SQLite
-  database at `/var/lib/aura/aura-memory.db`. This data is stored on your
-  local filesystem only — it is not transmitted externally by default.
+  `$OS_ROOT/var/log/aioscpu-secure-run.log`.
+- **Persistent memory:** AURA stores key/value data in a local file-based
+  database at `$OS_ROOT/var/lib/aura/`. This data is stored on your local
+  filesystem only and is **not** transmitted externally by default.
 
 ### What AURA Cannot Do (by design)
 
-- AURA cannot log in interactively (its account uses `/usr/sbin/nologin`).
 - AURA cannot execute commands without going through `aioscpu-secure-run`.
 - AURA cannot execute destructive commands (recursive root deletion, raw
   disk writes, fork bombs — see the denylist in `aioscpu-secure-run`).
-- AURA has no outbound network capability by default (no model backend
-  is configured unless you explicitly set `model_backend` in
-  `aura-config.json`).
+- AURA has no outbound network capability by default; a model backend must
+  be explicitly configured in `etc/aios.conf`.
 
 ---
 
-## "As-Is" Disclaimer
-
-AIOSCPU is provided **"as is", without warranty of any kind**, express or
-implied, including but not limited to the warranties of merchantability,
-fitness for a particular purpose, and non-infringement.
-
-In no event shall the authors or copyright holders be liable for any claim,
-damages, or other liability, whether in an action of contract, tort, or
-otherwise, arising from, out of, or in connection with the software or the
-use or other dealings in the software.
-
----
-
-## User Responsibility
+## User Responsibility Summary
 
 - You are responsible for all actions taken on a system running AIOSCPU.
-- You are responsible for securing your installation (changing default
-  passwords, reviewing sudoers rules, auditing AURA's permissions).
+- You are responsible for securing your installation and reviewing AURA's
+  permissions before granting elevated access.
 - You are responsible for compliance with all applicable laws in your
-  jurisdiction regarding the use of AI agents and automated system access.
-- If you configure AURA with an external model backend (`model_backend`
-  in `aura-config.json`), you are solely responsible for the privacy
-  implications of transmitting system data to that backend.
+  jurisdiction regarding AI agents and automated system access.
+- If you configure an external model backend, you are solely responsible
+  for the privacy implications of transmitting data to that backend.
+
+Full details: [TERMS_OF_SERVICE.md](TERMS_OF_SERVICE.md) and
+[USER_WARNINGS.md](USER_WARNINGS.md).
 
 ---
 
@@ -79,10 +83,10 @@ for a full list of third-party components and their licenses.
 ## Watermark
 
 ```
-© 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+© 2026 Christopher Betts | AIOSCPU Official | AI-Generated Original Content
 ```
 
-This watermark must be preserved in all distributions of AIOSCPU.
+This watermark must be preserved in all permitted distributions of AIOSCPU.
 
 ---
 
