@@ -385,13 +385,11 @@ def handle_command(line: str) -> str:
         return secure_run(rest)
 
     elif verb == "upgrade":
-        # Syntax: upgrade [--apply]
+        # Syntax: upgrade [--apply | --check | --status]
         # Delegates to aioscpu-upgrade via the secure-run wrapper.
         flag = rest.strip() if rest else "--check"
-        if flag not in ("--apply", "--check", "--status", ""):
+        if flag not in ("--apply", "--check", "--status"):
             return "ERROR: Usage: upgrade [--check | --apply | --status]"
-        if not flag:
-            flag = "--check"
         return secure_run(f"aioscpu-upgrade {flag}")
 
     elif verb == "version":

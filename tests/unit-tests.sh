@@ -230,17 +230,18 @@ echo "=== aura-agent upgrade/version tests ==="
 
 _AURA_AGENT="$REPO_ROOT/aura/aura-agent.py"
 _AURA_CFG="$REPO_ROOT/aura/aura-config.json"
+_AURA_EXPECTED_VERSION="v1.1"
 
 if ! command -v python3 >/dev/null 2>&1; then
-    echo "[SKIP] python3 not available — skipping aura-agent tests"
+    echo "[SKIP] python3 not available - skipping aura-agent tests"
 else
     # version command returns "AURA v1.1"
     out=$(printf 'version\nquit\n' | python3 "$_AURA_AGENT" --config "$_AURA_CFG" 2>/dev/null | grep -v "^AURA>" | head -5)
-    echo "$out" | grep -q "v1.1" && pass "aura-agent: version reports v1.1" || fail "aura-agent: version should report v1.1"
+    echo "$out" | grep -q "$_AURA_EXPECTED_VERSION" && pass "aura-agent: version reports $_AURA_EXPECTED_VERSION" || fail "aura-agent: version should report $_AURA_EXPECTED_VERSION"
 
     # --version flag prints version and exits
     out=$(python3 "$_AURA_AGENT" --config "$_AURA_CFG" --version 2>/dev/null)
-    echo "$out" | grep -q "v1.1" && pass "aura-agent: --version flag works" || fail "aura-agent: --version flag should print v1.1"
+    echo "$out" | grep -q "$_AURA_EXPECTED_VERSION" && pass "aura-agent: --version flag works" || fail "aura-agent: --version flag should print $_AURA_EXPECTED_VERSION"
 
     # upgrade command exists and returns something (secure-run may not be present; just check no crash)
     out=$(printf 'upgrade\nquit\n' | python3 "$_AURA_AGENT" --config "$_AURA_CFG" 2>/dev/null | grep -v "^AURA>" | head -5)
