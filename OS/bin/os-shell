@@ -77,10 +77,13 @@ aura_log() {
 . "$BRIDGEDIR/linux.mod"
 . "$BRIDGEDIR/mirror.mod"
 . "$MODDIR/sysinfo.mod"
+. "$MODDIR/bus.mod"
+. "$MODDIR/intent.mod"
+. "$MODDIR/router.mod"
 
 # === Fuzzy Command Matching (awk Levenshtein) ===
 # All known commands — used for typo suggestion / intent correction.
-KNOWN_CMDS="ask recall recall.best ctx.show ctx.add sem.set sem.get sem.search sem.delete sem.list mem.set mem.get mem.search mem.delete mem.tag mem.list bridge bridge.detect bridge.ios bridge.android mirror mirror.mount mirror.unmount mirror.ls msg event mode status services ps info help exit quit sysinfo uptime disk ls cd read write start stop restart kill upgrade"
+KNOWN_CMDS="ask recall recall.best ctx.show ctx.add sem.set sem.get sem.search sem.delete sem.list mem.set mem.get mem.search mem.delete mem.tag mem.list bridge bridge.detect bridge.ios bridge.android mirror mirror.mount mirror.unmount mirror.ls msg event mode status services ps info help exit quit sysinfo uptime disk ls cd read write start stop restart kill upgrade intent.history bots"
 
 cmd_fuzzy_match() {
     input="$1"
@@ -195,6 +198,8 @@ System:
   services             Show service status
   ps                   List processes
   info                 System information
+  intent.history       Show recent intent classifications
+  bots                 Show bot system status
   exit                 Exit shell
 
 Files (OS_ROOT isolated):
@@ -447,6 +452,11 @@ while true; do
             fi
             ;;
 
+        intent.history)
+            shift; intent_history "${1:-20}" ;;
+        bots)
+            sh "$OS_ROOT/lib/aura-agents/bot.agent" status ;;
+
         help)
             help_cmd ;;
         upgrade)
@@ -483,11 +493,26 @@ while true; do
                 shift
                 _pending="$suggestion${*:+ $*}"
             else
-                # Route to AI
-                response=$(llm_query "$line")
-                ctx_add "ai: $response"
-                aura_log "AI: $response"
-                echo "$response"
+                # Classify intent before routing to AI
+                intent_class=$(intent_classify "$line")
+                aura_log "INTENT: class=$intent_class input=$line"
+                case "$intent_class" in
+                    chat)
+                        response=$(llm_query "$line")
+                        ctx_add "ai: $response"
+                        aura_log "AI: $response"
+                        echo "$response"
+                        ;;
+                    *)
+                        # Non-chat intents: publish to router then fall back to LLM
+                        router_dispatch "intent:$line" 2>/dev/null || {
+                            response=$(llm_query "$line")
+                            ctx_add "ai: $response"
+                            aura_log "AI: $response"
+                            echo "$response"
+                        }
+                        ;;
+                esac
             fi
             ;;
     esac

@@ -1,0 +1,206 @@
+#!/bin/sh
+# OS/lib/aura-agents/bot.agent — AIOS Bot System
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# Manages a pool of lightweight autonomous bots that monitor the system,
+# respond to events, and surface suggestions to the user.
+#
+# Bots:
+#   sysmon   — system resource monitor (CPU, memory, disk)
+#   advisor  — surfaces tips and warnings based on system state
+#   doctor   — error detection and self-repair suggestions
+#
+# Usage (called by agents launcher or manually):
+#   OS_ROOT=/path/to/OS sh bot.agent [start|stop|status|run-once]
+
+OS_ROOT="${OS_ROOT:-/}"
+BOT_DIR="${OS_ROOT}/proc/aura/bots"
+BOT_LOG="${OS_ROOT}/var/log/bots.log"
+BUS_LOG="${OS_ROOT}/var/log/bus.log"
+AURA_LOG="${OS_ROOT}/var/log/aura.log"
+mkdir -p "$BOT_DIR" "$(dirname "$BOT_LOG")"
+
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
+bot_log() {
+    ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
+    echo "[$ts] [bot] $*" >> "$BOT_LOG"
+    echo "[$ts] [bot] $*" >> "$AURA_LOG"
+}
+
+bot_publish() {
+    ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
+    echo "[$ts] [bot] $*" >> "$BUS_LOG"
+}
+
+# ---------------------------------------------------------------------------
+# Bot: sysmon
+# Monitors CPU load average, memory, and disk usage. Writes to state file.
+# ---------------------------------------------------------------------------
+bot_sysmon() {
+    state_file="$BOT_DIR/sysmon.state"
+
+    # Load average (1m)
+    load=""
+    if [ -f /proc/loadavg ]; then
+        load=$(awk '{print $1}' /proc/loadavg)
+    elif command -v uptime >/dev/null 2>&1; then
+        load=$(uptime 2>/dev/null | awk -F'load average[s:]?' '{print $2}' | awk '{print $1}' | tr -d ',')
+    fi
+
+    # Memory (MB free) — Linux /proc/meminfo or free command
+    mem_free=""
+    if [ -f /proc/meminfo ]; then
+        mem_free=$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo)
+    elif command -v free >/dev/null 2>&1; then
+        mem_free=$(free -m 2>/dev/null | awk '/^Mem:/ {print $7}')
+    fi
+
+    # Disk usage of OS_ROOT (%)
+    disk_use=""
+    if command -v df >/dev/null 2>&1; then
+        disk_use=$(df "$OS_ROOT" 2>/dev/null | awk 'NR==2 {gsub(/%/,"",$5); print $5}')
+    fi
+
+    ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
+    cat > "$state_file" <<STATE
+ts=$ts
+load=${load:-unknown}
+mem_free_mb=${mem_free:-unknown}
+disk_use_pct=${disk_use:-unknown}
+STATE
+
+    bot_log "sysmon: load=${load:-?} mem_free=${mem_free:-?}MB disk=${disk_use:-?}%"
+
+    # Alert if disk >= 90%
+    if [ -n "$disk_use" ] && [ "$disk_use" -ge 90 ] 2>/dev/null; then
+        bot_publish "ALERT sysmon: disk ${disk_use}% full at OS_ROOT"
+        bot_log "ALERT: disk usage ${disk_use}% — consider cleanup"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# Bot: advisor
+# Reads system state and surfaces tips.
+# ---------------------------------------------------------------------------
+bot_advisor() {
+    state_file="$BOT_DIR/advisor.state"
+    tips=""
+
+    # Check if LLM model dir is empty
+    model_dir="${OS_ROOT}/../llama_model"
+    # shellcheck disable=SC2012
+    model_count=$(ls "$model_dir"/*.gguf 2>/dev/null | wc -l | awk '{print $1+0}')
+    if [ "${model_count:-0}" -eq 0 ]; then
+        tips="${tips}• No GGUF model found in llama_model/ — AI uses rule-based fallback.\n"
+    fi
+
+    # Check if aura.log is growing very large (>5MB)
+    if [ -f "$AURA_LOG" ]; then
+        log_size=$(wc -c < "$AURA_LOG" 2>/dev/null | tr -d ' ')
+        if [ "${log_size:-0}" -gt 5242880 ]; then
+            tips="${tips}• aura.log exceeds 5MB — consider rotation.\n"
+        fi
+    fi
+
+    ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
+    printf 'ts=%s\ntips=%s\n' "$ts" "${tips:-(none)}" > "$state_file"
+    bot_log "advisor: check complete"
+}
+
+# ---------------------------------------------------------------------------
+# Bot: doctor
+# Detects errors in logs and attempts self-repair suggestions.
+# ---------------------------------------------------------------------------
+bot_doctor() {
+    state_file="$BOT_DIR/doctor.state"
+    issues=""
+
+    # Check for ERROR lines in aura.log (last 100 lines)
+    err_count=0
+    if [ -f "$AURA_LOG" ]; then
+        err_count=$(tail -n 100 "$AURA_LOG" | grep -c '\[ERROR\]' 2>/dev/null | awk '{print $1+0}')
+        if [ "$err_count" -gt 0 ]; then
+            issues="${issues}• ${err_count} ERROR(s) in last 100 aura.log lines.\n"
+            last_err=$(tail -n 100 "$AURA_LOG" | grep '\[ERROR\]' | tail -1)
+            issues="${issues}  Last: $last_err\n"
+        fi
+    fi
+
+    # Check for missing runtime dirs
+    for d in "$OS_ROOT/var/log" "$OS_ROOT/proc" "$OS_ROOT/tmp"; do
+        if [ ! -d "$d" ]; then
+            issues="${issues}• Missing runtime dir: $d\n"
+            mkdir -p "$d" && issues="${issues}  → auto-repaired: mkdir $d\n"
+        fi
+    done
+
+    ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
+    printf 'ts=%s\nissues=%s\n' "$ts" "${issues:-(none)}" > "$state_file"
+    bot_log "doctor: scan complete (issues=${err_count:-0})"
+
+    # Publish any issues to the bus
+    if [ -n "$issues" ]; then
+        bot_publish "DOCTOR issues detected: see $state_file"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# Run all bots once
+# ---------------------------------------------------------------------------
+bots_run_once() {
+    bot_log "running all bots (run-once)"
+    bot_sysmon
+    bot_advisor
+    bot_doctor
+    bot_log "all bots complete"
+}
+
+# ---------------------------------------------------------------------------
+# Status summary
+# ---------------------------------------------------------------------------
+bots_status() {
+    echo "Bot System Status"
+    echo "================="
+    for bot in sysmon advisor doctor; do
+        f="$BOT_DIR/$bot.state"
+        if [ -f "$f" ]; then
+            echo
+            echo "[$bot]"
+            cat "$f"
+        else
+            echo "[$bot] (no state — not yet run)"
+        fi
+    done
+}
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+cmd="${1:-run-once}"
+case "$cmd" in
+    start)
+        bot_log "bot daemon starting (pid=$$)"
+        printf '%s' "$$" > "$BOT_DIR/bot.pid"
+        while true; do
+            bots_run_once
+            sleep "${BOT_INTERVAL:-60}"
+        done
+        ;;
+    stop)
+        if [ -f "$BOT_DIR/bot.pid" ]; then
+            pid=$(cat "$BOT_DIR/bot.pid")
+            kill "$pid" 2>/dev/null && bot_log "bot daemon stopped (pid=$pid)"
+            rm -f "$BOT_DIR/bot.pid"
+        else
+            echo "[bot] not running"
+        fi
+        ;;
+    status)
+        bots_status
+        ;;
+    run-once|*)
+        bots_run_once
+        ;;
+esac
