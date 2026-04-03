@@ -1,5 +1,0 @@
-# Bridge subsystem state — updated by os-bridge at runtime
-bridge_status=offline
-ios=disconnected
-android=disconnected
-linux=disconnected

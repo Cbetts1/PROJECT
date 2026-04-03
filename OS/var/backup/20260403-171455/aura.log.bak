@@ -1,0 +1,200 @@
+[2026-04-03T12:04:47Z] [real-shell] EOF exit
+[2026-04-03T12:04:47Z] [real-shell] real-shell started
+[2026-04-03T12:04:47Z] [real-shell] CMD: sysinfo
+[2026-04-03T12:04:47Z] [real-shell] EOF exit
+[2026-04-03T12:04:47Z] [real-shell] real-shell started
+[2026-04-03T12:04:47Z] [real-shell] CMD: netinfo
+[2026-04-03T12:04:47Z] [real-shell] EOF exit
+[2026-04-03T12:04:47Z] [real-shell] real-shell started
+[2026-04-03T12:04:47Z] [real-shell] CMD: diskinfo
+[2026-04-03T12:04:47Z] [real-shell] EOF exit
+[2026-04-03T12:04:47Z] [real-shell] real-shell started
+[2026-04-03T12:04:47Z] [real-shell] CMD: logread aura
+[2026-04-03T12:04:47Z] [real-shell] EOF exit
+[2026-04-03T12:04:47Z] [real-shell] real-shell started
+[2026-04-03T12:04:47Z] [real-shell] CMD: echo test_passthrough_11406
+[2026-04-03T12:04:47Z] [real-shell] EXEC: echo test_passthrough_11406
+[2026-04-03T12:04:47Z] [real-shell] EOF exit
+[2026-04-03T12:04:47Z] [real-shell] real-shell started
+[2026-04-03T12:04:47Z] [real-shell] CMD: sysinf
+[2026-04-03T12:04:47Z] [real-shell] TYPO: 'sysinf' -> 'sysinfo'
+[2026-04-03T12:04:47Z] [real-shell] CMD: sysinfo
+[2026-04-03T12:04:47Z] [real-shell] EOF exit
+[2026-04-03T12:04:47Z] [kernel] kernel started pid=12098
+[2026-04-03T12:04:47Z] [kernel] heartbeat 1 pid=12098
+[2026-04-03T12:04:50Z] [kernel] kernel stopped pid=12098
+[2026-04-03T12:04:52Z] [agents] agent loaded: heartbeat
+[2026-04-03T12:04:52Z] [agents] agent loaded: listener
+[2026-04-03T12:04:52Z] [agents] agent loaded: autosys
+[2026-04-03T12:04:52Z] [agents] agent loaded: bridge
+[2026-04-03T12:04:52Z] [agents] agent daemon launched pid=12192
+[2026-04-03T12:04:52Z] [agents] agent daemon started pid=12192
+[2026-04-03T12:04:56Z] [agents] agent daemon stopped pid=12192
+[2026-04-03T12:04:56Z] [tasks] task scheduler launched pid=13192
+[2026-04-03T12:04:57Z] [tasks] task scheduler started pid=13192
+[2026-04-03T12:04:57Z] [tasks] task ran: healthcheck
+[2026-04-03T12:04:57Z] [tasks] task ran: autosave
+[2026-04-03T12:04:57Z] [tasks] task ran: bridge-monitor
+[2026-04-03T12:04:57Z] [tasks] task ran: logwatch
+[2026-04-03T12:04:57Z] [tasks] task ran: logwatch
+[2026-04-03T12:04:57Z] [tasks] task ran: logwatch
+[2026-04-03T12:05:02Z] [tasks] task ran: logwatch
+[2026-04-03T12:05:02Z] [tasks] task ran: logwatch
+[2026-04-03T12:05:02Z] [tasks] task ran: logwatch
+[2026-04-03T12:05:02Z] [tasks] task ran: logwatch
+[2026-04-03T12:05:04Z] [tasks] task scheduler stopped pid=13192
+[2026-04-03T12:05:05Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/inttest-py-11406.txt
+[2026-04-03T12:05:05Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/inttest-py-11406.txt
+[2026-04-03T12:05:05Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T12:05:05Z] inttest log entry 11406
+[2026-04-03T12:05:05Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T12:05:05Z] [syscall] invoke syscall=getpid caller_pid=13593 args=
+[2026-04-03T12:05:05Z] [syscall] invoke syscall=uptime caller_pid=13603 args=
+[2026-04-03T12:05:05Z] [syscall] invoke syscall=write caller_pid=13611 args=tmp/syscall-test-11406.txt syscall_test_value_11406
+[2026-04-03T12:05:05Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/syscall-test-11406.txt
+[2026-04-03T12:05:05Z] [syscall] invoke syscall=read caller_pid=13620 args=tmp/syscall-test-11406.txt
+[2026-04-03T12:05:05Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/syscall-test-11406.txt
+[2026-04-03T12:05:05Z] [syscall] invoke syscall=exists caller_pid=13631 args=tmp/syscall-test-11406.txt
+[2026-04-03T12:05:05Z] [syscall] invoke syscall=read caller_pid=13640 args=../../etc/passwd
+[2026-04-03T12:05:05Z] [syscall] invoke syscall=sysinfo caller_pid=13651 args=
+[2026-04-03T12:05:05Z] [syscall] invoke syscall=log caller_pid=13662 args=integration-test-marker-11406
+[2026-04-03T12:05:05Z] [syscall] integration-test-marker-11406
+[2026-04-03T16:48:02Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T16:48:02Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4157.txt
+[2026-04-03T16:48:02Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4157.txt
+[2026-04-03T16:48:02Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4157.txt
+[2026-04-03T16:48:02Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4157.txt
+[2026-04-03T16:48:02Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4157.txt
+[2026-04-03T16:48:02Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T16:48:02Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T16:48:02Z] unit-test marker 4157
+[2026-04-03T16:48:02Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T16:48:02Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T16:48:02Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-03T16:51:22Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T16:51:22Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4357.txt
+[2026-04-03T16:51:22Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4357.txt
+[2026-04-03T16:51:22Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4357.txt
+[2026-04-03T16:51:22Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4357.txt
+[2026-04-03T16:51:22Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4357.txt
+[2026-04-03T16:51:22Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T16:51:22Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T16:51:22Z] unit-test marker 4357
+[2026-04-03T16:51:22Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T16:51:22Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T16:51:22Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-03T16:52:53Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T16:52:53Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-5157.txt
+[2026-04-03T16:52:53Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-5157.txt
+[2026-04-03T16:52:53Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-5157.txt
+[2026-04-03T16:52:53Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-5157.txt
+[2026-04-03T16:52:53Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-5157.txt
+[2026-04-03T16:52:53Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T16:52:53Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T16:52:53Z] unit-test marker 5157
+[2026-04-03T16:52:53Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T16:52:53Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T16:52:53Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-03T17:14:32Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T17:14:32Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-3889.txt
+[2026-04-03T17:14:32Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-3889.txt
+[2026-04-03T17:14:32Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-3889.txt
+[2026-04-03T17:14:32Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-3889.txt
+[2026-04-03T17:14:32Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-3889.txt
+[2026-04-03T17:14:32Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T17:14:32Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T17:14:32Z] unit-test marker 3889
+[2026-04-03T17:14:32Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T17:14:32Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T17:14:32Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-03T17:14:37Z] [shell] shell started (mode=operator)
+[2026-04-03T17:14:37Z] [shell] CMD: help
+[2026-04-03T17:14:37Z] [shell] shell started (mode=operator)
+[2026-04-03T17:14:37Z] [shell] CMD: sysinfo
+[2026-04-03T17:14:37Z] [shell] shell started (mode=operator)
+[2026-04-03T17:14:37Z] [shell] CMD: uptime
+[2026-04-03T17:14:37Z] [shell] shell started (mode=operator)
+[2026-04-03T17:14:37Z] [shell] CMD: disk
+[2026-04-03T17:14:37Z] [shell] shell started (mode=operator)
+[2026-04-03T17:14:37Z] [shell] CMD: ls
+[2026-04-03T17:14:37Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS
+[2026-04-03T17:14:37Z] [shell] shell started (mode=operator)
+[2026-04-03T17:14:37Z] [shell] CMD: mem.set test.key.3955 integration_value
+[2026-04-03T17:14:37Z] [shell] CMD: mem.get test.key.3955
+[2026-04-03T17:14:37Z] [shell] shell started (mode=operator)
+[2026-04-03T17:14:37Z] [shell] CMD: sem.set sem.test.3955 hello semantic world
+[2026-04-03T17:14:37Z] [shell] CMD: sem.search hello
+[2026-04-03T17:14:37Z] [shell] shell started (mode=operator)
+[2026-04-03T17:14:37Z] [shell] CMD: sysinf
+[2026-04-03T17:14:37Z] [shell] TYPO: 'sysinf' -> 'sysinfo'
+[2026-04-03T17:14:37Z] [shell] CMD: sysinfo
+[2026-04-03T17:14:37Z] [shell] shell started (mode=operator)
+[2026-04-03T17:14:37Z] [shell] CMD: ask hello
+[2026-04-03T17:14:37Z] [shell] AI: Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?
+[2026-04-03T17:14:37Z] [shell] shell started (mode=operator)
+[2026-04-03T17:14:37Z] [shell] CMD: mode system
+[2026-04-03T17:14:37Z] [shell] CMD: mode operator
+[2026-04-03T17:14:37Z] [shell] shell started (mode=operator)
+[2026-04-03T17:14:37Z] [shell] CMD: write integration-test-file.txt hello_integration
+[2026-04-03T17:14:37Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/integration-test-file.txt
+[2026-04-03T17:14:37Z] [shell] CMD: read integration-test-file.txt
+[2026-04-03T17:14:37Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/integration-test-file.txt
+[2026-04-03T17:14:37Z] [shell] shell started (mode=operator)
+[2026-04-03T17:14:37Z] [shell] CMD: services
+[2026-04-03T17:14:37Z] [real-shell] real-shell started
+[2026-04-03T17:14:37Z] [real-shell] CMD: help
+[2026-04-03T17:14:37Z] [real-shell] EOF exit
+[2026-04-03T17:14:37Z] [real-shell] real-shell started
+[2026-04-03T17:14:37Z] [real-shell] CMD: sysinfo
+[2026-04-03T17:14:37Z] [real-shell] EOF exit
+[2026-04-03T17:14:37Z] [real-shell] real-shell started
+[2026-04-03T17:14:37Z] [real-shell] CMD: netinfo
+[2026-04-03T17:14:37Z] [real-shell] EOF exit
+[2026-04-03T17:14:37Z] [real-shell] real-shell started
+[2026-04-03T17:14:37Z] [real-shell] CMD: diskinfo
+[2026-04-03T17:14:37Z] [real-shell] EOF exit
+[2026-04-03T17:14:37Z] [real-shell] real-shell started
+[2026-04-03T17:14:37Z] [real-shell] CMD: logread aura
+[2026-04-03T17:14:37Z] [real-shell] EOF exit
+[2026-04-03T17:14:37Z] [real-shell] real-shell started
+[2026-04-03T17:14:37Z] [real-shell] CMD: echo test_passthrough_3955
+[2026-04-03T17:14:37Z] [real-shell] EXEC: echo test_passthrough_3955
+[2026-04-03T17:14:37Z] [real-shell] EOF exit
+[2026-04-03T17:14:37Z] [real-shell] real-shell started
+[2026-04-03T17:14:37Z] [real-shell] CMD: sysinf
+[2026-04-03T17:14:37Z] [real-shell] TYPO: 'sysinf' -> 'sysinfo'
+[2026-04-03T17:14:37Z] [real-shell] CMD: sysinfo
+[2026-04-03T17:14:37Z] [real-shell] EOF exit
+[2026-04-03T17:14:37Z] [kernel] kernel started pid=4762
+[2026-04-03T17:14:37Z] [kernel] heartbeat 1 pid=4762
+[2026-04-03T17:14:40Z] [kernel] kernel stopped pid=4762
+[2026-04-03T17:14:42Z] [agents] agent loaded: heartbeat
+[2026-04-03T17:14:42Z] [agents] agent loaded: listener
+[2026-04-03T17:14:42Z] [agents] agent loaded: autosys
+[2026-04-03T17:14:42Z] [agents] agent loaded: bridge
+[2026-04-03T17:14:42Z] [agents] agent daemon launched pid=4856
+[2026-04-03T17:14:42Z] [agents] agent daemon started pid=4856
+[2026-04-03T17:14:46Z] [agents] agent daemon stopped pid=4856
+[2026-04-03T17:14:46Z] [tasks] task scheduler launched pid=5338
+[2026-04-03T17:14:46Z] [tasks] task scheduler started pid=5338
+[2026-04-03T17:14:46Z] [tasks] task ran: healthcheck
+[2026-04-03T17:14:46Z] [tasks] task ran: autosave
+[2026-04-03T17:14:46Z] [tasks] task ran: bridge-monitor
+[2026-04-03T17:14:51Z] [tasks] task ran: logwatch
+[2026-04-03T17:14:54Z] [tasks] task scheduler stopped pid=5338
+[2026-04-03T17:14:54Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/inttest-py-3955.txt
+[2026-04-03T17:14:55Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/inttest-py-3955.txt
+[2026-04-03T17:14:55Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T17:14:55Z] inttest log entry 3955
+[2026-04-03T17:14:55Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T17:14:55Z] [syscall] invoke syscall=getpid caller_pid=5576 args=
+[2026-04-03T17:14:55Z] [syscall] invoke syscall=uptime caller_pid=5586 args=
+[2026-04-03T17:14:55Z] [syscall] invoke syscall=write caller_pid=5594 args=tmp/syscall-test-3955.txt syscall_test_value_3955
+[2026-04-03T17:14:55Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/syscall-test-3955.txt
+[2026-04-03T17:14:55Z] [syscall] invoke syscall=read caller_pid=5603 args=tmp/syscall-test-3955.txt
+[2026-04-03T17:14:55Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/syscall-test-3955.txt
+[2026-04-03T17:14:55Z] [syscall] invoke syscall=exists caller_pid=5614 args=tmp/syscall-test-3955.txt
+[2026-04-03T17:14:55Z] [syscall] invoke syscall=read caller_pid=5623 args=../../etc/passwd
+[2026-04-03T17:14:55Z] [syscall] invoke syscall=sysinfo caller_pid=5634 args=
+[2026-04-03T17:14:55Z] [syscall] invoke syscall=log caller_pid=5645 args=integration-test-marker-3955
+[2026-04-03T17:14:55Z] [syscall] integration-test-marker-3955
