@@ -6,7 +6,7 @@ export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
 
 STATE="$OS_ROOT/var/service"
 PIDFILE="$STATE/os-kernel.pid"
-PROCFILE="$OS_ROOT/proc/os"
+PROCFILE="$OS_ROOT/proc/os/state"
 STATEFILE="$OS_ROOT/proc/os.state"
 LOG="$OS_ROOT/var/log/os.log"
 AURA_LOG="$OS_ROOT/var/log/aura.log"
@@ -63,8 +63,8 @@ start() {
         rm -f "$PIDFILE"
     fi
 
-    # Write kernel personality
-    [ -f "$PROCFILE" ] || [ -d "$PROCFILE" ] && rm -rf "$PROCFILE"
+    # Write kernel personality into proc/os/state
+    mkdir -p "$(dirname "$PROCFILE")"
     cat > "$PROCFILE" << EOP
 OS_NAME="AIOS-Lite"
 OS_VERSION="0.1"
