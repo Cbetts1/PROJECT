@@ -1,29 +1,3 @@
-sem.search hello
-sysinf
-sysinfo
-ask hello
-ai: Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?
-mode system
-mode operator
-write integration-test-file.txt hello_integration
-read integration-test-file.txt
-services
-help
-sysinfo
-netinfo
-diskinfo
-logread aura
-echo test_passthrough_4541
-sysinf
-sysinfo
-mem.set test.key.debug hello
-mem.get test.key.debug
-exit
-mem.set testkey123 helloworld
-mem.get testkey123
-exit
-help
-sysinfo
 uptime
 disk
 ls
@@ -46,5 +20,31 @@ netinfo
 diskinfo
 logread aura
 echo test_passthrough_6606
+sysinf
+sysinfo
+help
+sysinfo
+uptime
+disk
+ls
+mem.set test.key.4166 integration_value
+mem.get test.key.4166
+sem.set sem.test.4166 hello semantic world
+sem.search hello
+sysinf
+sysinfo
+ask hello
+ai: Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?
+mode system
+mode operator
+write integration-test-file.txt hello_integration
+read integration-test-file.txt
+services
+help
+sysinfo
+netinfo
+diskinfo
+logread aura
+echo test_passthrough_4166
 sysinf
 sysinfo
