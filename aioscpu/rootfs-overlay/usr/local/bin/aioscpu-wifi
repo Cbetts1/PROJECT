@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# aioscpu-wifi - Wi-Fi management wrapper for AIOSCPU
+#
+# Requires: NetworkManager (nmcli)
+#
+# Usage:
+#   aioscpu-wifi list                     List available Wi-Fi networks
+#   aioscpu-wifi connect <SSID> <pass>    Connect to a Wi-Fi network
+#   aioscpu-wifi status                   Show current Wi-Fi status
+#   aioscpu-wifi disconnect               Disconnect current Wi-Fi
+#
+# All operations are logged via aioscpu-logwrap.
+#
+# NOTE: Requires NetworkManager to be installed and running.
+#       Install with: apt-get install network-manager
+#       Enable with:  systemctl enable --now NetworkManager
+#
+# Make this script executable: chmod +x /usr/local/bin/aioscpu-wifi
+
+set -uo pipefail
+
+LOGWRAP="/usr/local/bin/aioscpu-logwrap"
+TAG="aioscpu-wifi"
+
+# ---------------------------------------------------------------------------
+# Dependency check
+# ---------------------------------------------------------------------------
+if ! command -v nmcli >/dev/null 2>&1; then
+    echo "[aioscpu-wifi] ERROR: nmcli not found." >&2
+    echo "[aioscpu-wifi] Please install NetworkManager: apt-get install network-manager" >&2
+    exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# Usage
+# ---------------------------------------------------------------------------
+usage() {
+    echo "Usage: aioscpu-wifi <command> [args]"
+    echo ""
+    echo "Commands:"
+    echo "  list                    Scan and list available Wi-Fi networks"
+    echo "  connect <SSID> <pass>   Connect to a Wi-Fi network"
+    echo "  disconnect              Disconnect current Wi-Fi connection"
+    echo "  status                  Show current Wi-Fi connection status"
+    echo "  help                    Show this help"
+    echo ""
+    echo "Requires: NetworkManager (nmcli)"
+    echo "© 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal"
+}
+
+# ---------------------------------------------------------------------------
+# Logging wrapper helper
+# ---------------------------------------------------------------------------
+run_logged() {
+    if [[ -x "${LOGWRAP}" ]]; then
+        "${LOGWRAP}" "${TAG}" "$@"
+    else
+        "$@"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# Commands
+# ---------------------------------------------------------------------------
+CMD="${1:-help}"
+
+case "${CMD}" in
+    list)
+        echo "[aioscpu-wifi] Scanning for Wi-Fi networks..."
+        run_logged nmcli device wifi list
+        ;;
+
+    connect)
+        if [[ $# -lt 3 ]]; then
+            echo "[aioscpu-wifi] ERROR: connect requires <SSID> and <password>" >&2
+            usage
+            exit 1
+        fi
+        SSID="$2"
+        PASS="$3"
+        echo "[aioscpu-wifi] Connecting to SSID: ${SSID}..."
+        run_logged nmcli device wifi connect "${SSID}" password "${PASS}"
+        ;;
+
+    disconnect)
+        echo "[aioscpu-wifi] Disconnecting Wi-Fi..."
+        run_logged nmcli device disconnect "$(nmcli -t -f DEVICE,TYPE device | grep ':wifi' | cut -d: -f1 | head -1)"
+        ;;
+
+    status)
+        run_logged nmcli device status
+        echo ""
+        run_logged nmcli connection show --active
+        ;;
+
+    help|--help|-h)
+        usage
+        ;;
+
+    *)
+        echo "[aioscpu-wifi] Unknown command: ${CMD}" >&2
+        usage
+        exit 1
+        ;;
+esac

@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# aioscpu-logwrap - Audited command wrapper with start/end/exit-code logging
+#
+# Usage: aioscpu-logwrap <tag> <command> [args...]
+#
+#   <tag>     - A short label for this log session (e.g. "aura", "cron", "user")
+#   <command> - The command to execute, followed by its arguments
+#
+# All invocations are appended to /var/log/aioscpu-audit.log with:
+#   - ISO-8601 timestamp
+#   - The tag
+#   - PID of the spawned process
+#   - Start event
+#   - End event with exit code
+#
+# The environment variable AIOSCPU_LOG_TAG is exported so child processes
+# can identify that they were invoked under an audited session.
+#
+# Make this script executable: chmod +x /usr/local/bin/aioscpu-logwrap
+
+set -uo pipefail
+
+AUDIT_LOG="/var/log/aioscpu-audit.log"
+
+# ---------------------------------------------------------------------------
+# Usage
+# ---------------------------------------------------------------------------
+if [[ $# -lt 2 ]]; then
+    echo "Usage: aioscpu-logwrap <tag> <command> [args...]" >&2
+    exit 1
+fi
+
+TAG="$1"
+shift
+CMD=("$@")
+
+# Export tag so child processes know they are running in an audited session
+export AIOSCPU_LOG_TAG="${TAG}"
+
+# ---------------------------------------------------------------------------
+# Logging helper
+# ---------------------------------------------------------------------------
+audit_log() {
+    local event="$1"
+    local timestamp
+    timestamp=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+    touch "${AUDIT_LOG}" 2>/dev/null || true
+    echo "[${timestamp}] TAG=${TAG} PID=${CHILD_PID:-self} EVENT=${event} CMD=${CMD[*]}" \
+        >> "${AUDIT_LOG}" 2>/dev/null || true
+}
+
+# ---------------------------------------------------------------------------
+# Execute
+# ---------------------------------------------------------------------------
+audit_log "START"
+
+# Run the command; capture PID; wait for exit code
+"${CMD[@]}" &
+CHILD_PID=$!
+wait "${CHILD_PID}"
+EXIT_CODE=$?
+
+audit_log "END EXIT_CODE=${EXIT_CODE}"
+
+exit "${EXIT_CODE}"

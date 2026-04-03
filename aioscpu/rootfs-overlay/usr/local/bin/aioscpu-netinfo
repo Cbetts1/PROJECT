@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# aioscpu-netinfo - Print a summary of network information
+#
+# Usage: aioscpu-netinfo
+#
+# Designed to be called by human users and the AURA AI agent.
+# Output is plain text for easy parsing.
+#
+# Make this script executable: chmod +x /usr/local/bin/aioscpu-netinfo
+
+set -euo pipefail
+
+DIVIDER="------------------------------------------------------------"
+
+echo "============================================================"
+echo "  AIOSCPU Network Information"
+echo "  © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal"
+echo "  Generated: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+echo "============================================================"
+echo ""
+
+# --- Hostname ---
+echo "=== Hostname ==="
+hostname -f 2>/dev/null || hostname
+echo ""
+
+# --- Network Interfaces ---
+echo "=== Network Interfaces (ip addr) ==="
+ip addr show 2>/dev/null || ifconfig 2>/dev/null || echo "(ip/ifconfig not available)"
+echo ""
+
+# --- Routing Table ---
+echo "=== Routes (ip route) ==="
+ip route show 2>/dev/null || route -n 2>/dev/null || echo "(ip route not available)"
+echo ""
+
+# --- DNS Configuration ---
+echo "=== DNS (/etc/resolv.conf) ==="
+if [[ -f /etc/resolv.conf ]]; then
+    # Strip comments for brevity but keep them for transparency
+    cat /etc/resolv.conf
+else
+    echo "(No /etc/resolv.conf found)"
+fi
+echo ""
+
+# --- ARP Table ---
+echo "=== ARP Table ==="
+if command -v arp >/dev/null 2>&1; then
+    arp -n 2>/dev/null || echo "(arp command failed)"
+elif command -v ip >/dev/null 2>&1; then
+    ip neigh show 2>/dev/null
+else
+    echo "(Neither arp nor ip neigh available)"
+fi
+echo ""
+
+# --- Active Connections (brief) ---
+echo "=== Active Connections (ss -tuln) ==="
+if command -v ss >/dev/null 2>&1; then
+    ss -tuln 2>/dev/null || echo "(ss failed)"
+else
+    netstat -tuln 2>/dev/null || echo "(netstat not available)"
+fi
+echo ""
+
+echo "${DIVIDER}"
+echo "PRIVACY WARNING: This output may contain sensitive network information"
+echo "including IP addresses, open ports, and peer connections."
+echo "Do not share it with untrusted parties."
+echo "All invocations by AURA AI agent are logged in /var/log/aioscpu-secure-run.log"
+echo "${DIVIDER}"

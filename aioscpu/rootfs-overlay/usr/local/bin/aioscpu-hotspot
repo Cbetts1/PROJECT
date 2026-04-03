@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# aioscpu-hotspot - Wi-Fi hotspot manager for AIOSCPU
+#
+# Creates or tears down a Wi-Fi hotspot using NetworkManager (nmcli).
+#
+# Requires: NetworkManager (nmcli) with Wi-Fi support
+#   Install: apt-get install network-manager
+#   Enable:  systemctl enable --now NetworkManager
+#
+# Usage:
+#   aioscpu-hotspot start [<SSID> [<password>]]
+#       Start a hotspot. Defaults: SSID=AIOSCPU-AP, password=aioscpu1234
+#   aioscpu-hotspot stop
+#       Stop the active hotspot connection
+#   aioscpu-hotspot status
+#       Show hotspot / AP connection status
+#   aioscpu-hotspot help
+#       Show this help
+#
+# Notes:
+#   - Your Wi-Fi adapter must support AP (access point) mode.
+#   - NetworkManager >= 1.2 is required for 'hotspot' connection type.
+#   - The hotspot shares the device's internet connection (NAT).
+#
+# Make this script executable: chmod +x /usr/local/bin/aioscpu-hotspot
+
+set -uo pipefail
+
+LOGWRAP="/usr/local/bin/aioscpu-logwrap"
+TAG="aioscpu-hotspot"
+
+DEFAULT_SSID="AIOSCPU-AP"
+DEFAULT_PASS="aioscpu1234"
+HOTSPOT_CON_NAME="aioscpu-hotspot"
+
+# ---------------------------------------------------------------------------
+# Dependency check
+# ---------------------------------------------------------------------------
+if ! command -v nmcli >/dev/null 2>&1; then
+    echo "[aioscpu-hotspot] ERROR: nmcli not found." >&2
+    echo "[aioscpu-hotspot] Install NetworkManager: apt-get install network-manager" >&2
+    exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# Usage
+# ---------------------------------------------------------------------------
+usage() {
+    echo "Usage: aioscpu-hotspot <command> [args]"
+    echo ""
+    echo "Commands:"
+    echo "  start [SSID [password]]   Start Wi-Fi hotspot"
+    echo "  stop                      Stop the hotspot"
+    echo "  status                    Show hotspot status"
+    echo "  help                      Show this help"
+    echo ""
+    echo "Defaults: SSID=${DEFAULT_SSID}  Password=${DEFAULT_PASS}"
+    echo ""
+    echo "Requires: NetworkManager with AP-capable Wi-Fi adapter"
+    echo "© 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal"
+}
+
+# ---------------------------------------------------------------------------
+# Logging wrapper helper
+# ---------------------------------------------------------------------------
+run_logged() {
+    if [[ -x "${LOGWRAP}" ]]; then
+        "${LOGWRAP}" "${TAG}" "$@"
+    else
+        "$@"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# Commands
+# ---------------------------------------------------------------------------
+CMD="${1:-help}"
+
+case "${CMD}" in
+    start)
+        SSID="${2:-${DEFAULT_SSID}}"
+        PASS="${3:-${DEFAULT_PASS}}"
+        echo "[aioscpu-hotspot] Starting hotspot: SSID=${SSID}..."
+        # Remove any existing hotspot connection with this name
+        nmcli connection delete "${HOTSPOT_CON_NAME}" 2>/dev/null || true
+        # Create and activate the hotspot
+        run_logged nmcli device wifi hotspot \
+            con-name "${HOTSPOT_CON_NAME}" \
+            ssid "${SSID}" \
+            password "${PASS}"
+        echo "[aioscpu-hotspot] Hotspot started. SSID=${SSID} Password=${PASS}"
+        ;;
+
+    stop)
+        echo "[aioscpu-hotspot] Stopping hotspot..."
+        run_logged nmcli connection down "${HOTSPOT_CON_NAME}" 2>/dev/null \
+            || echo "[aioscpu-hotspot] No active hotspot found."
+        ;;
+
+    status)
+        echo "=== Hotspot / AP Connection Status ==="
+        nmcli connection show "${HOTSPOT_CON_NAME}" 2>/dev/null \
+            || echo "[aioscpu-hotspot] No hotspot connection named '${HOTSPOT_CON_NAME}' found."
+        ;;
+
+    help|--help|-h)
+        usage
+        ;;
+
+    *)
+        echo "[aioscpu-hotspot] Unknown command: ${CMD}" >&2
+        usage
+        exit 1
+        ;;
+esac

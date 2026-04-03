@@ -1,0 +1,9 @@
+============================================================
+  AIOSCPU - AI Operating System
+  © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+  Boot mode: check /proc/cmdline for aioscpu_mode
+  AURA AI agent is available. Type 'auractl interactive' to start.
+  Type 'aioscpu-sysinfo' for system info, 'aioscpu-netinfo' for network info.
+============================================================
+WARNING: This system includes AURA, an AI agent with controlled access to
+system resources. All AI-triggered commands are logged. See LEGAL.md.

@@ -1,0 +1,12 @@
+{
+  "agent_name": "AURA",
+  "version": "1.0",
+  "db_path": "/var/lib/aura/aura-memory.db",
+  "log_path": "/var/log/aura-agent.log",
+  "secure_run_wrapper": "/usr/local/bin/aioscpu-secure-run",
+  "sysinfo_cmd": "/usr/local/bin/aioscpu-sysinfo",
+  "netinfo_cmd": "/usr/local/bin/aioscpu-netinfo",
+  "cmd_timeout": 60,
+  "model_backend": null,
+  "max_memory_entries": 10000
+}

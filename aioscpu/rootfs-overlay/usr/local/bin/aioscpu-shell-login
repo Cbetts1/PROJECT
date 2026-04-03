@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# aioscpu-shell-login - AIOSCPU OS-SHELL mode login entry point
+#
+# Shows the AIOSCPU banner and then hands off to the standard /bin/login.
+# This script can be set as the ExecStart for getty on tty1 when booting
+# in OS-SHELL (standard multi-user) mode.
+#
+# Make this script executable: chmod +x /usr/local/bin/aioscpu-shell-login
+
+set -uo pipefail
+
+# ---------------------------------------------------------------------------
+# Banner
+# ---------------------------------------------------------------------------
+clear
+cat <<'BANNER'
+============================================================
+   ___  ___ ___  ___ ___ ___  _   _
+  / _ \|_ _/ _ \/ __/ __| _ \| | | |
+ | (_) || || (_) \__ \__ \  _/ |_| |
+  \__,_|___\___/|___/___/_|  \___/
+
+  AIOSCPU - AI Operating System  (OS-SHELL mode)
+  © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+============================================================
+AIOSCPU - OS-SHELL mode: standard multi-user login
+============================================================
+BANNER
+echo ""
+
+# ---------------------------------------------------------------------------
+# Hand off to standard login
+# ---------------------------------------------------------------------------
+exec /bin/login "$@"

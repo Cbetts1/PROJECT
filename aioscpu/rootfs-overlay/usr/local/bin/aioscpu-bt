@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# aioscpu-bt - Bluetooth management wrapper for AIOSCPU
+#
+# Requires: BlueZ (bluetoothctl)
+#   Install: apt-get install bluez
+#   Enable:  systemctl enable --now bluetooth
+#
+# Usage:
+#   aioscpu-bt scan          Scan for nearby Bluetooth devices
+#   aioscpu-bt pair <addr>   Pair with a device (address from scan)
+#   aioscpu-bt connect <addr>  Connect to a paired device
+#   aioscpu-bt disconnect <addr>  Disconnect a device
+#   aioscpu-bt list          List paired/known devices
+#   aioscpu-bt status        Show Bluetooth adapter status
+#
+# Make this script executable: chmod +x /usr/local/bin/aioscpu-bt
+
+set -uo pipefail
+
+LOGWRAP="/usr/local/bin/aioscpu-logwrap"
+TAG="aioscpu-bt"
+SCAN_TIMEOUT=15   # seconds to scan for devices
+
+# ---------------------------------------------------------------------------
+# Dependency check
+# ---------------------------------------------------------------------------
+if ! command -v bluetoothctl >/dev/null 2>&1; then
+    echo "[aioscpu-bt] ERROR: bluetoothctl not found." >&2
+    echo "[aioscpu-bt] Install BlueZ: apt-get install bluez" >&2
+    echo "[aioscpu-bt] Then enable:  systemctl enable --now bluetooth" >&2
+    exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# Usage
+# ---------------------------------------------------------------------------
+usage() {
+    echo "Usage: aioscpu-bt <command> [args]"
+    echo ""
+    echo "Commands:"
+    echo "  scan               Scan for nearby Bluetooth devices (${SCAN_TIMEOUT}s)"
+    echo "  pair <addr>        Pair with a device"
+    echo "  connect <addr>     Connect to a paired device"
+    echo "  disconnect <addr>  Disconnect a connected device"
+    echo "  list               List known/paired devices"
+    echo "  status             Show Bluetooth adapter status"
+    echo "  help               Show this help"
+    echo ""
+    echo "Requires: BlueZ (bluetoothctl)"
+    echo "© 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal"
+}
+
+# ---------------------------------------------------------------------------
+# Logging wrapper helper
+# ---------------------------------------------------------------------------
+run_logged() {
+    if [[ -x "${LOGWRAP}" ]]; then
+        "${LOGWRAP}" "${TAG}" "$@"
+    else
+        "$@"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# Commands
+# ---------------------------------------------------------------------------
+CMD="${1:-help}"
+
+case "${CMD}" in
+    scan)
+        echo "[aioscpu-bt] Scanning for ${SCAN_TIMEOUT}s..."
+        # bluetoothctl requires power on + scan on; we pipe commands into it
+        timeout "${SCAN_TIMEOUT}" bluetoothctl -- scan on 2>/dev/null &
+        sleep "${SCAN_TIMEOUT}"
+        bluetoothctl -- devices
+        ;;
+
+    pair)
+        [[ $# -ge 2 ]] || { echo "Usage: aioscpu-bt pair <addr>" >&2; exit 1; }
+        ADDR="$2"
+        echo "[aioscpu-bt] Pairing with ${ADDR}..."
+        run_logged bluetoothctl -- pair "${ADDR}"
+        ;;
+
+    connect)
+        [[ $# -ge 2 ]] || { echo "Usage: aioscpu-bt connect <addr>" >&2; exit 1; }
+        ADDR="$2"
+        echo "[aioscpu-bt] Connecting to ${ADDR}..."
+        run_logged bluetoothctl -- connect "${ADDR}"
+        ;;
+
+    disconnect)
+        [[ $# -ge 2 ]] || { echo "Usage: aioscpu-bt disconnect <addr>" >&2; exit 1; }
+        ADDR="$2"
+        echo "[aioscpu-bt] Disconnecting ${ADDR}..."
+        run_logged bluetoothctl -- disconnect "${ADDR}"
+        ;;
+
+    list)
+        bluetoothctl -- devices
+        ;;
+
+    status)
+        bluetoothctl -- show
+        ;;
+
+    help|--help|-h)
+        usage
+        ;;
+
+    *)
+        echo "[aioscpu-bt] Unknown command: ${CMD}" >&2
+        usage
+        exit 1
+        ;;
+esac

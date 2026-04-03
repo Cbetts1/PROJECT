@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# aioscpu-secure-run - Audited command execution wrapper for AURA AI agent
+#
+# Usage: aioscpu-secure-run "<command string>"
+#
+# This script is the ONLY mechanism through which the AURA AI agent may
+# execute arbitrary shell commands on the host. It enforces:
+#   - Mandatory logging of every invocation (permitted AND rejected)
+#   - A denylist of catastrophically dangerous patterns
+#   - Execution via 'bash -c' with 'set -e' for clean error propagation
+#
+# The aura user is allowed to run this script as root via sudoers.
+# Despite running as root, the denylist prevents the worst abuses.
+#
+# Make this script executable: chmod +x /usr/local/bin/aioscpu-secure-run
+#
+# Exit codes:
+#   0  - Command succeeded
+#   1  - Usage error / internal error
+#   2  - Command REJECTED by denylist
+
+set -uo pipefail
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+LOG_FILE="/var/log/aioscpu-secure-run.log"
+TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+CALLER_USER="${SUDO_USER:-${USER:-unknown}}"
+
+# ---------------------------------------------------------------------------
+# Logging helper
+# ---------------------------------------------------------------------------
+log_entry() {
+    local status="$1"
+    local cmd="$2"
+    # Ensure the log file exists and is writable
+    touch "${LOG_FILE}" 2>/dev/null || true
+    echo "[${TIMESTAMP}] USER=${CALLER_USER} STATUS=${status} CMD=${cmd}" >> "${LOG_FILE}" 2>/dev/null || true
+}
+
+# ---------------------------------------------------------------------------
+# Usage check
+# ---------------------------------------------------------------------------
+if [[ $# -ne 1 ]]; then
+    echo "Usage: aioscpu-secure-run \"<command string>\"" >&2
+    echo "       The entire command must be passed as a single quoted argument." >&2
+    exit 1
+fi
+
+CMD="$1"
+
+# ---------------------------------------------------------------------------
+# Denylist – patterns that are ALWAYS rejected
+# ---------------------------------------------------------------------------
+# Each pattern is a case-insensitive extended regex tested against the full
+# command string. Add new patterns here to tighten restrictions.
+
+declare -a DENYLIST=(
+    # Recursive deletion of root filesystem
+    'rm[[:space:]].*-[[:alpha:]]*r[[:alpha:]]*[[:space:]].*/'
+    'rm[[:space:]].*--recursive.*/'
+    # Filesystem creation on raw devices
+    'mkfs'
+    'mke2fs'
+    'mkswap'
+    # Fork bomb
+    ':\(\)\{.*:\|:.*&.*\}'
+    # Writing zeros/random to disk devices
+    'dd[[:space:]].*of=/dev/(sd|nvme|hd|vd|xvd)'
+    'dd[[:space:]].*if=/dev/zero.*of=/dev/'
+    'dd[[:space:]].*if=/dev/urandom.*of=/dev/'
+    # Direct partition/disk writes via redirection
+    '>[[:space:]]*/dev/(sd|nvme|hd|vd|xvd)'
+    # Overwriting the kernel or bootloader
+    '>[[:space:]]*/boot/'
+    # Nulling out critical system files
+    '>[[:space:]]*/etc/passwd'
+    '>[[:space:]]*/etc/shadow'
+    '>[[:space:]]*/etc/sudoers'
+    # Loading kernel modules in destructive ways (rmmod core modules)
+    'rmmod[[:space:]]'
+    # :(){ :|:& };: style fork bombs (alternate whitespace forms)
+    '\(\)\s*\{.*\|.*&.*\}'
+)
+
+# Test the command against every denylist pattern
+for pattern in "${DENYLIST[@]}"; do
+    if echo "${CMD}" | grep -qEi "${pattern}"; then
+        log_entry "REJECTED(denylist:${pattern})" "${CMD}"
+        echo "[aioscpu-secure-run] REJECTED: command matches denylist pattern." >&2
+        echo "[aioscpu-secure-run] Pattern: ${pattern}" >&2
+        exit 2
+    fi
+done
+
+# ---------------------------------------------------------------------------
+# Execute the command
+# ---------------------------------------------------------------------------
+log_entry "EXEC" "${CMD}"
+
+# Run via bash -c; 'set -e' ensures the script exits on first error.
+# stdout/stderr flow through normally so callers can capture output.
+bash -c "set -e; ${CMD}"
+EXIT_CODE=$?
+
+log_entry "EXIT(${EXIT_CODE})" "${CMD}"
+exit "${EXIT_CODE}"

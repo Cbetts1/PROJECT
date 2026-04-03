@@ -1,0 +1,14 @@
+[Unit]
+Description=AIOSCPU Boot Mode Initializer
+Documentation=file:///usr/share/doc/aioscpu/ARCHITECTURE.md
+DefaultDependencies=no
+After=local-fs.target
+Before=sysinit.target getty.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/aioscpu-mode-init
+
+[Install]
+WantedBy=sysinit.target
