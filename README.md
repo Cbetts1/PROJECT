@@ -95,6 +95,7 @@ cd PROJECT
 # 3. Boot AIOS-Lite
 cd OS
 export OS_ROOT="$(pwd)"
+export AIOS_HOME="$(dirname $(pwd))"
 export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
 sh sbin/init
 ```
@@ -199,7 +200,9 @@ os-service start aura-bridge # Start bridge service
 os-service-health            # Health dashboard
 ```
 
----
+```sh
+# Auto-detect any connected device
+bridge.detect
 
 ## Directory Structure
 
@@ -235,6 +238,8 @@ See [`ROADMAP.md`](ROADMAP.md) for the full roadmap.
 - v0.4 — Web UI dashboard, REST API hardening, plugin marketplace
 - v0.5 — Multi-user sessions, encrypted memory store
 - v1.0 — Stable release with full AIOSCPU disk image
+
+See [`docs/AI_MODEL_SETUP.md`](docs/AI_MODEL_SETUP.md) for full LLM configuration details.
 
 ---
 
