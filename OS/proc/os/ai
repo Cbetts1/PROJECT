@@ -1,5 +1,0 @@
-# AI subsystem state — updated by os-ai at runtime
-ai_status=offline
-llm_backend=none
-model_loaded=false
-last_query=0
