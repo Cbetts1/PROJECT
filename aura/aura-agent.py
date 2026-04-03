@@ -23,6 +23,8 @@ Supported commands (see handle_command()):
     recall         - Retrieve a stored key
     recall-all     - Retrieve all keys in a scope
     run            - Execute a command via the secure-run wrapper
+    upgrade        - Check or apply system upgrades
+    version        - Show AURA version information
     help           - Show available commands
     quit           - Exit the agent
 """
@@ -43,7 +45,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 DEFAULT_CONFIG = {
     "agent_name": "AURA",
-    "version": "1.0",
+    "version": "1.1",
     "db_path": "/var/lib/aura/aura-memory.db",
     "log_path": "/var/log/aura-agent.log",
     "secure_run_wrapper": "/usr/local/bin/aioscpu-secure-run",
@@ -310,6 +312,8 @@ def handle_command(line: str) -> str:
         recall <scope> <key>
         recall-all <scope>
         run <shell command>
+        upgrade [--apply]
+        version
         help
         quit
 
@@ -380,6 +384,19 @@ def handle_command(line: str) -> str:
             return "ERROR: Usage: run <command>"
         return secure_run(rest)
 
+    elif verb == "upgrade":
+        # Syntax: upgrade [--apply | --check | --status]
+        # Delegates to aioscpu-upgrade via the secure-run wrapper.
+        flag = rest.strip() if rest else "--check"
+        if flag not in ("--apply", "--check", "--status"):
+            return "ERROR: Usage: upgrade [--check | --apply | --status]"
+        return secure_run(f"aioscpu-upgrade {flag}")
+
+    elif verb == "version":
+        agent_name = CONFIG.get("agent_name", "AURA")
+        version = CONFIG.get("version", "1.1")
+        return f"{agent_name} v{version}"
+
     elif verb == "help":
         return (
             "AURA commands:\n"
@@ -390,6 +407,8 @@ def handle_command(line: str) -> str:
             "  recall <scope> <key>          Retrieve a memory entry\n"
             "  recall-all <scope>            List all entries in a scope\n"
             "  run <cmd>                     Execute via secure-run wrapper\n"
+            "  upgrade [--apply]             Check or apply system upgrades\n"
+            "  version                       Show AURA version\n"
             "  help                          Show this help\n"
             "  quit                          Exit AURA"
         )
@@ -422,6 +441,11 @@ def main() -> None:
         default="/opt/aura/aura-config.json",
         help="Path to JSON config file (default: /opt/aura/aura-config.json)",
     )
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        help="Print AURA version and exit",
+    )
     args = parser.parse_args()
 
     # Load and apply config
@@ -429,7 +453,11 @@ def main() -> None:
     CONFIG = load_config(args.config)
 
     agent_name = CONFIG.get("agent_name", "AURA")
-    version = CONFIG.get("version", "1.0")
+    version = CONFIG.get("version", "1.1")
+
+    if args.version:
+        print(f"{agent_name} v{version}")
+        sys.exit(0)
 
     _log(f"{agent_name} v{version} starting. Config: {args.config}")
 

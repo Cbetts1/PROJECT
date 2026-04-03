@@ -1,6 +1,6 @@
 {
   "agent_name": "AURA",
-  "version": "1.0",
+  "version": "1.1",
   "db_path": "/var/lib/aura/aura-memory.db",
   "log_path": "/var/log/aura-agent.log",
   "secure_run_wrapper": "/usr/local/bin/aioscpu-secure-run",
