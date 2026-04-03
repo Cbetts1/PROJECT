@@ -26,11 +26,52 @@ case "$1" in
         echo "Not installed: $pkg"
     fi
     ;;
+  upgrade)
+    pkg="$2"
+    if [ -z "$pkg" ]; then
+        echo "Usage: os-install upgrade <package>"
+        exit 1
+    fi
+    if [ -f "$INSTALLED/$pkg" ]; then
+        if [ -f "$PKG_DIR/$pkg/upgrade.sh" ]; then
+            sh "$PKG_DIR/$pkg/upgrade.sh"
+            echo "Upgraded: $pkg"
+        elif [ -f "$PKG_DIR/$pkg/install.sh" ]; then
+            sh "$PKG_DIR/$pkg/install.sh"
+            echo "$pkg" > "$INSTALLED/$pkg"
+            echo "Upgraded (reinstalled): $pkg"
+        else
+            echo "No upgrade or install script found for: $pkg"
+            exit 1
+        fi
+    else
+        echo "Not installed: $pkg"
+        exit 1
+    fi
+    ;;
+  upgrade-all)
+    echo "Upgrading all installed packages..."
+    upgraded=0
+    for pkgfile in "$INSTALLED"/*; do
+        [ -f "$pkgfile" ] || continue
+        pkg=$(basename "$pkgfile")
+        if [ -f "$PKG_DIR/$pkg/upgrade.sh" ]; then
+            sh "$PKG_DIR/$pkg/upgrade.sh"
+            echo "Upgraded: $pkg"
+            upgraded=$((upgraded + 1))
+        elif [ -f "$PKG_DIR/$pkg/install.sh" ]; then
+            sh "$PKG_DIR/$pkg/install.sh"
+            echo "Upgraded (reinstalled): $pkg"
+            upgraded=$((upgraded + 1))
+        fi
+    done
+    echo "Done. $upgraded package(s) upgraded."
+    ;;
   list)
     echo "Installed packages:"
     ls "$INSTALLED"
     ;;
   *)
-    echo "Usage: os-install {install|remove|list} <package>"
+    echo "Usage: os-install {install|remove|upgrade|upgrade-all|list} [package]"
     ;;
 esac

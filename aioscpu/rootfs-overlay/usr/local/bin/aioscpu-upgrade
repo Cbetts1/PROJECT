@@ -1,0 +1,199 @@
+#!/usr/bin/env bash
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# aioscpu-upgrade - System upgrade tool for AIOSCPU
+#
+# Usage:
+#   aioscpu-upgrade [--check]    Check for available upgrades (default)
+#   aioscpu-upgrade --apply      Apply all available upgrades
+#   aioscpu-upgrade --status     Show current AIOSCPU version info
+#   aioscpu-upgrade --help       Show this help
+#
+# Must be run as root or via sudo for --apply.
+
+set -uo pipefail
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+LOG_FILE="/var/log/aioscpu-upgrade.log"
+RELEASE_FILE="/etc/aioscpu-release"
+AUDIT_LOG="/var/log/aioscpu-audit.log"
+TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+CALLER_USER="${SUDO_USER:-${USER:-unknown}}"
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+log() {
+    echo "[${TIMESTAMP}] USER=${CALLER_USER} $*" >> "${LOG_FILE}" 2>/dev/null || true
+    echo "[aioscpu-upgrade] $*"
+}
+
+log_audit() {
+    echo "[${TIMESTAMP}] aioscpu-upgrade: $*" >> "${AUDIT_LOG}" 2>/dev/null || true
+}
+
+die() {
+    echo "[aioscpu-upgrade] ERROR: $*" >&2
+    log "ERROR: $*"
+    exit 1
+}
+
+# Read a field from the release file
+release_field() {
+    local field="$1"
+    grep "^${field}=" "${RELEASE_FILE}" 2>/dev/null \
+        | head -1 \
+        | sed 's/^[^=]*=//;s/^"//;s/"$//'
+}
+
+print_banner() {
+    echo "============================================================"
+    echo "  AIOSCPU System Upgrade"
+    echo "  © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal"
+    echo "  Run as: ${CALLER_USER}   Time: ${TIMESTAMP}"
+    echo "============================================================"
+    echo ""
+}
+
+show_status() {
+    print_banner
+    echo "=== Current Version ==="
+    if [[ -f "${RELEASE_FILE}" ]]; then
+        cat "${RELEASE_FILE}"
+    else
+        echo "(release file not found: ${RELEASE_FILE})"
+    fi
+    echo ""
+
+    echo "=== Pending System Upgrades ==="
+    if command -v apt-get >/dev/null 2>&1; then
+        apt-get -s upgrade 2>/dev/null | grep "^Inst" | head -20 \
+            || echo "(no pending upgrades or apt-get not available)"
+    else
+        echo "(apt-get not available — cannot check pending upgrades)"
+    fi
+    echo ""
+}
+
+check_upgrades() {
+    print_banner
+    log "Checking for available upgrades..."
+    log_audit "check started"
+
+    if ! command -v apt-get >/dev/null 2>&1; then
+        log "apt-get not available; skipping package check."
+        log_audit "check complete (apt-get not available)"
+        return 0
+    fi
+
+    echo "=== Refreshing package lists ==="
+    apt-get update -q 2>&1 | tail -5
+    echo ""
+
+    echo "=== Available upgrades ==="
+    local upgradable
+    upgradable=$(apt-get -s upgrade 2>/dev/null | grep "^Inst" | wc -l)
+    if [[ "${upgradable}" -gt 0 ]]; then
+        apt-get -s upgrade 2>/dev/null | grep "^Inst"
+        echo ""
+        log "${upgradable} package(s) available for upgrade. Run with --apply to install."
+    else
+        log "System is up to date. No packages to upgrade."
+    fi
+
+    log_audit "check complete (${upgradable} packages available)"
+}
+
+apply_upgrades() {
+    [[ $EUID -eq 0 ]] || die "Must be run as root to apply upgrades. Use: sudo aioscpu-upgrade --apply"
+
+    print_banner
+    log "Applying system upgrades..."
+    log_audit "apply started"
+
+    if ! command -v apt-get >/dev/null 2>&1; then
+        log "apt-get not available; cannot apply upgrades."
+        log_audit "apply aborted (apt-get not available)"
+        return 1
+    fi
+
+    echo "=== Refreshing package lists ==="
+    apt-get update -q 2>&1 | tail -5
+    echo ""
+
+    echo "=== Upgrading packages ==="
+    DEBIAN_FRONTEND=noninteractive apt-get upgrade -y 2>&1
+    local apt_exit=$?
+    echo ""
+
+    if [[ "${apt_exit}" -eq 0 ]]; then
+        log "Package upgrade complete (exit 0)."
+        log_audit "apt-get upgrade succeeded"
+
+        echo "=== Updating AURA agent ==="
+        if [[ -f /opt/aura/aura-agent.py ]]; then
+            local aura_version
+            aura_version=$(python3 /opt/aura/aura-agent.py --version 2>/dev/null \
+                           || grep -oP '"version"\s*:\s*"\K[^"]+' /opt/aura/aura-config.json 2>/dev/null \
+                           || echo "unknown")
+            log "AURA agent version: ${aura_version} (in-place, no update source configured)"
+        else
+            log "AURA agent not found at /opt/aura/aura-agent.py — skipping."
+        fi
+        echo ""
+
+        log "Upgrade complete."
+        log_audit "apply complete"
+    else
+        die "apt-get upgrade failed with exit code ${apt_exit}. Check ${LOG_FILE} for details."
+    fi
+}
+
+show_help() {
+    cat <<'EOF'
+Usage: aioscpu-upgrade [OPTION]
+
+  (no option)   Check for available upgrades (same as --check)
+  --check       Refresh package lists and list upgradable packages
+  --apply       Apply all pending system upgrades (requires root)
+  --status      Show current AIOSCPU version and pending upgrades
+  --help        Show this help message
+
+Examples:
+  aioscpu-upgrade              # Check for upgrades
+  sudo aioscpu-upgrade --apply # Apply upgrades
+  aioscpu-upgrade --status     # Show version info
+
+Logs are written to: /var/log/aioscpu-upgrade.log
+Audit entries are appended to: /var/log/aioscpu-audit.log
+
+© 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+EOF
+}
+
+# ---------------------------------------------------------------------------
+# Argument dispatch
+# ---------------------------------------------------------------------------
+MODE="${1:---check}"
+
+case "${MODE}" in
+    --check|check)
+        check_upgrades
+        ;;
+    --apply|apply)
+        apply_upgrades
+        ;;
+    --status|status)
+        show_status
+        ;;
+    --help|-h|help)
+        show_help
+        ;;
+    *)
+        echo "[aioscpu-upgrade] Unknown option: ${MODE}" >&2
+        echo "Run 'aioscpu-upgrade --help' for usage." >&2
+        exit 1
+        ;;
+esac
