@@ -15,19 +15,6 @@
 [os-kernel] heartbeat 5216
 [os-kernel] heartbeat 5216
 [os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
-[os-kernel] heartbeat 5216
 [os-kernel] heartbeat 5889
 [os-kernel] heartbeat 5216
 [os-kernel] heartbeat 5889
@@ -211,4 +198,3 @@
 [2026-04-03T12:03:27Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-8567.txt
 [2026-04-03T12:03:27Z] [recover] recovery mode started
 [2026-04-03T12:03:27Z] [recover] recovery mode complete
-[2026-04-03T12:03:27Z] [recover] backup created: 20260403-120327

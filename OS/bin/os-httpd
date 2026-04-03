@@ -131,7 +131,7 @@ def _read_log_tail(source: str = "os.log", n: int = 50) -> str:
 
 
 def _collect_metrics() -> dict:
-    metrics: dict = {"timestamp": datetime.datetime.utcnow().isoformat() + "Z"}
+    metrics: dict = {"timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")}
     if os.path.isfile("/proc/meminfo"):
         with open("/proc/meminfo") as f:
             raw = {l.split(":")[0]: int(l.split()[1])
@@ -214,13 +214,13 @@ class AIOSHandler(http.server.BaseHTTPRequestHandler):
     # ------------------------------------------------------------------
 
     def log_message(self, fmt, *args):
-        ts = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         entry = f"[{ts}] {self.address_string()} {fmt % args}\n"
         with open(ACCESS_LOG, "a") as f:
             f.write(entry)
 
     def log_error(self, fmt, *args):
-        ts = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         entry = f"[{ts}] ERROR {self.address_string()} {fmt % args}\n"
         with open(ERROR_LOG, "a") as f:
             f.write(entry)
@@ -271,7 +271,7 @@ class AIOSHandler(http.server.BaseHTTPRequestHandler):
 
         # Liveness (unauthenticated)
         if path == "/api/v1/health":
-            self._json(200, {"status": "ok", "time": datetime.datetime.utcnow().isoformat() + "Z"})
+            self._json(200, {"status": "ok", "time": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z")})
             return
 
         # WebSocket upgrade
@@ -291,7 +291,7 @@ class AIOSHandler(http.server.BaseHTTPRequestHandler):
 
         if path == "/api/v1/status":
             state = _read_state()
-            state["server_time"] = datetime.datetime.utcnow().isoformat() + "Z"
+            state["server_time"] = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00","Z")
             self._json(200, state)
 
         elif path == "/api/v1/services":

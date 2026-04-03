@@ -1,9 +1,9 @@
 uptime
 disk
 ls
-mem.set test.key.6606 integration_value
-mem.get test.key.6606
-sem.set sem.test.6606 hello semantic world
+mem.set test.key.6194 integration_value
+mem.get test.key.6194
+sem.set sem.test.6194 hello semantic world
 sem.search hello
 sysinf
 sysinfo
@@ -19,7 +19,7 @@ sysinfo
 netinfo
 diskinfo
 logread aura
-echo test_passthrough_6606
+echo test_passthrough_6194
 sysinf
 sysinfo
 help
@@ -27,9 +27,9 @@ sysinfo
 uptime
 disk
 ls
-mem.set test.key.4045 integration_value
-mem.get test.key.4045
-sem.set sem.test.4045 hello semantic world
+mem.set test.key.8567 integration_value
+mem.get test.key.8567
+sem.set sem.test.8567 hello semantic world
 sem.search hello
 sysinf
 sysinfo
@@ -45,6 +45,6 @@ sysinfo
 netinfo
 diskinfo
 logread aura
-echo test_passthrough_4045
+echo test_passthrough_8567
 sysinf
 sysinfo
