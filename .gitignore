@@ -11,3 +11,8 @@ __pycache__/
 *.pyc
 *.pyo
 aura/__pycache__/
+# Runtime-generated event and log files
+OS/var/events/*.event
+OS/var/log/aura.log
+OS/var/log/bridge.log
+OS/proc/aura.memory.bak
