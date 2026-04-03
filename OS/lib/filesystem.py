@@ -249,8 +249,9 @@ def _cli() -> int:  # noqa: C901
 
         elif verb == "append":
             if len(sys.argv) < 4:
-                print("Usage: filesystem.py append <path> <text…>", file=sys.stderr)
+                print("Usage: filesystem.py append <path> <text…>  (appends text + newline)", file=sys.stderr)
                 return 1
+            # CLI append always adds a trailing newline so each call produces a new line.
             fs_append(sys.argv[2], " ".join(sys.argv[3:]) + "\n")
 
         elif verb == "list":
@@ -296,7 +297,7 @@ def _cli() -> int:  # noqa: C901
     except NotADirectoryError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
-    except Exception as exc:  # noqa: BLE001
+    except (OSError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 

@@ -48,12 +48,10 @@ out=$(OS_ROOT="$OS_ROOT" python3 "$FS_PY" read "$_tmp_path" 2>/dev/null)
 [ "$out" = "hello-unit-test" ] && pass "fs write/read roundtrip" || fail "fs write/read roundtrip"
 rm -f "$OS_ROOT/$_tmp_path"
 
-# 6. append + read
+# 6. append + read (CLI append adds a trailing newline per call)
 _tmp_path2="tmp/unit-append-$$.txt"
-OS_ROOT="$OS_ROOT" python3 "$FS_PY" append "$_tmp_path2" "line1
-"
-OS_ROOT="$OS_ROOT" python3 "$FS_PY" append "$_tmp_path2" "line2
-"
+OS_ROOT="$OS_ROOT" python3 "$FS_PY" append "$_tmp_path2" "line1"
+OS_ROOT="$OS_ROOT" python3 "$FS_PY" append "$_tmp_path2" "line2"
 out=$(OS_ROOT="$OS_ROOT" python3 "$FS_PY" read "$_tmp_path2" 2>/dev/null)
 echo "$out" | grep -q "line1" && echo "$out" | grep -q "line2" \
     && pass "fs append/read" || fail "fs append/read"

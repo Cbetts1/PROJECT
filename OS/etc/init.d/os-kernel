@@ -48,10 +48,7 @@ run_tasks() {
     for task_file in "$TASKDIR"/*.task; do
         [ -f "$task_file" ] || continue
         tname=$(basename "$task_file" .task)
-        (
-            . "$task_file"
-            task_run 2>/dev/null
-        ) 2>/dev/null
+        ( . "$task_file"; task_run ) 2>/dev/null
         aura_log "task ran: $tname"
     done
 }
