@@ -5,9 +5,16 @@ llama_model/*.safetensors
 OS/mirror/ios/*
 OS/mirror/android/*
 OS/mirror/linux/ssh_*
-OS/var/log/*.log.1
-OS/proc/aura/bridge/status
 __pycache__/
 *.pyc
 *.pyo
 aura/__pycache__/
+# Runtime-generated files (state, events, logs)
+OS/var/events/*.event
+OS/var/log/
+OS/var/service/
+OS/var/boot.time
+OS/proc/os.state
+OS/proc/os.messages
+OS/proc/aura/bridge/status
+OS/proc/aura.memory.bak

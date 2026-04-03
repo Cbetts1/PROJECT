@@ -1,4 +1,5 @@
 #!/bin/sh
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
 
 OS_ROOT="${OS_ROOT:-/}"
 export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
@@ -7,6 +8,8 @@ IDENTITY="$OS_ROOT/proc/os.identity"
 STATEFILE="$OS_ROOT/proc/os.state"
 MSGFILE="$OS_ROOT/proc/os.messages"
 EVENTLOG="$OS_ROOT/var/log/events.log"
+AURA_LOG="$OS_ROOT/var/log/aura.log"
+FS_PY="$OS_ROOT/lib/filesystem.py"
 
 HEALTHDIR="$OS_ROOT/var/service"
 MODDIR="$OS_ROOT/lib/aura-mods"
@@ -21,7 +24,7 @@ BRIDGEDIR="$OS_ROOT/lib/aura-bridge"
 
 MEMROOT="$OS_ROOT/proc/aura/memory"
 SEMROOT="$OS_ROOT/proc/aura/semantic"
-mkdir -p "$MEMROOT" "$SEMROOT" "$OS_ROOT/proc/aura/context"
+mkdir -p "$MEMROOT" "$SEMROOT" "$OS_ROOT/proc/aura/context" "$OS_ROOT/var/log"
 
 # Load identity
 [ -f "$IDENTITY" ] && . "$IDENTITY"
@@ -53,6 +56,13 @@ aura_prompt() {
     esac
 }
 
+# === AURA Audit Log ===
+# Logs every command and AI decision to OS/var/log/aura.log
+aura_log() {
+    ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
+    echo "[$ts] [shell] $*" >> "$AURA_LOG"
+}
+
 # === Load Engines ===
 . "$MEMDIR/engine.mod"
 . "$SEMDIR/embed.mod"
@@ -66,6 +76,58 @@ aura_prompt() {
 . "$BRIDGEDIR/android.mod"
 . "$BRIDGEDIR/linux.mod"
 . "$BRIDGEDIR/mirror.mod"
+. "$MODDIR/sysinfo.mod"
+
+# === Fuzzy Command Matching (awk Levenshtein) ===
+# All known commands — used for typo suggestion / intent correction.
+KNOWN_CMDS="ask recall recall.best ctx.show ctx.add sem.set sem.get sem.search sem.delete sem.list mem.set mem.get mem.search mem.delete mem.tag mem.list bridge bridge.detect bridge.ios bridge.android mirror mirror.mount mirror.unmount mirror.ls msg event mode status services ps info help exit quit sysinfo uptime disk ls cd read write start stop restart kill"
+
+cmd_fuzzy_match() {
+    input="$1"
+    awk -v input="$input" -v cmds="$KNOWN_CMDS" '
+    function min3(a, b, c,    m) {
+        m = (a < b) ? a : b
+        return (m < c) ? m : c
+    }
+    function lev(s, t,    m, n, i, j, cost, dtbl) {
+        m = length(s)
+        n = length(t)
+        if (m == 0) return n
+        if (n == 0) return m
+        for (i = 0; i <= m; i++) dtbl[i,0] = i
+        for (j = 0; j <= n; j++) dtbl[0,j] = j
+        for (i = 1; i <= m; i++) {
+            for (j = 1; j <= n; j++) {
+                cost = (substr(s,i,1) == substr(t,j,1)) ? 0 : 1
+                dtbl[i,j] = min3(dtbl[i-1,j]+1, dtbl[i,j-1]+1, dtbl[i-1,j-1]+cost)
+            }
+        }
+        return dtbl[m,n]
+    }
+    BEGIN {
+        n = split(cmds, ca, " ")
+        best = 999
+        bestcmd = ""
+        for (i = 1; i <= n; i++) {
+            dist = lev(input, ca[i])
+            if (dist < best) { best = dist; bestcmd = ca[i] }
+        }
+        if (best <= 2) print bestcmd
+    }' /dev/null
+}
+
+# === Filesystem helpers (OS_ROOT isolated via filesystem.py) ===
+_fs() { OS_ROOT="$OS_ROOT" python3 "$FS_PY" "$@" 2>/dev/null; }
+
+# Validate that a path stays within OS_ROOT (for shell-native cd)
+_path_safe() {
+    target_abs=$(cd "$1" 2>/dev/null && pwd)
+    [ -z "$target_abs" ] && return 1
+    case "$target_abs" in
+        "$OS_ROOT"|"$OS_ROOT/"*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
 
 banner() {
     echo "================================"
@@ -124,26 +186,51 @@ Cross-OS Bridge & Mirror:
   mirror.ls [t] [p]    List mirrored files
 
 System:
+  sysinfo              OS name, version, kernel, uptime
+  uptime               Time since boot
+  disk                 Disk usage under OS root
   msg <text>           Send message to message bus
   event <text>         Fire system event
-  status               Show OS state
+  status               Show full OS state
   services             Show service status
   ps                   List processes
   info                 System information
   exit                 Exit shell
+
+Files (OS_ROOT isolated):
+  ls [path]            List files/directories
+  cd <path>            Change directory (confined to OS_ROOT)
+  read <file>          Print file contents
+  write <file> <text>  Append text to file
+
+Services:
+  start <svc>          Start init.d service
+  stop <svc>           Stop init.d service
+  restart <svc>        Restart init.d service
 EOH
 }
 
 # === Start Shell ===
 banner
+aura_log "shell started (mode=$AURA_MODE)"
+
+_pending=""   # holds a corrected command to re-dispatch without re-reading stdin
 
 while true; do
-    aura_prompt
-    IFS= read -r line || exit 0
+    if [ -n "$_pending" ]; then
+        line="$_pending"
+        _pending=""
+    else
+        aura_prompt
+        IFS= read -r line || exit 0
+    fi
     [ -z "$line" ] && continue
     ctx_add "$line"
     set -- $line
     cmd="$1"
+
+    # Log every command to aura.log for auditability
+    aura_log "CMD: $line"
 
     case "$cmd" in
         ask)
@@ -151,6 +238,7 @@ while true; do
             [ -z "$*" ] && { aura_say "Usage: ask <question>"; continue; }
             response=$(llm_query "$*")
             ctx_add "ai: $response"
+            aura_log "AI: $response"
             echo "$response"
             ;;
         recall)
@@ -222,17 +310,161 @@ while true; do
             os-ps ;;
         info)
             os-info ;;
+
+        # === SYSTEM commands ===
+        sysinfo)
+            echo "=== System Info ==="
+            # Identity (proc/os.identity is authoritative; proc/os is runtime)
+            if [ -f "$IDENTITY" ]; then
+                _sname=$(awk -F'"' '/OS_NAME/ {print $2}' "$IDENTITY")
+                _sver=$(awk -F'"' '/OS_VERSION/ {print $2}' "$IDENTITY")
+                _svend=$(awk -F'"' '/OS_VENDOR/ {print $2}' "$IDENTITY")
+                echo "Name:    ${_sname:-unknown}"
+                echo "Version: ${_sver:-unknown}"
+                echo "Vendor:  ${_svend:-unknown}"
+            fi
+            if [ -f "$STATEFILE" ]; then
+                boot_t=$(awk -F= '/^boot_time=/ {print $2}' "$STATEFILE")
+                kpid=$(awk -F= '/^kernel_pid=/ {print $2}' "$STATEFILE")
+                now=$(date +%s)
+                up=$((now - ${boot_t:-now}))
+                echo "Kernel PID: ${kpid:-unknown}"
+                echo "Uptime:  ${up}s"
+            fi
+            echo "Host OS: $(detect_host_os 2>/dev/null)"
+            echo "==================="
+            ;;
+        uptime)
+            if [ -f "$STATEFILE" ]; then
+                boot_t=$(awk -F= '/^boot_time=/ {print $2}' "$STATEFILE")
+                now=$(date +%s)
+                up=$((now - ${boot_t:-now}))
+                echo "Uptime: ${up}s (since $(date -d "@${boot_t:-0}" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r "${boot_t:-0}" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo 'boot'))"
+            else
+                echo "Uptime: unknown (no state file)"
+            fi
+            ;;
+        disk)
+            echo "=== Disk Usage ==="
+            df -h "$OS_ROOT" 2>/dev/null || df -h . 2>/dev/null
+            echo "==================="
+            ;;
+
+        # === FILE commands (OS_ROOT isolated via filesystem.py) ===
+        ls)
+            shift
+            _target="${1:-.}"
+            if command -v python3 >/dev/null 2>&1 && [ -f "$FS_PY" ]; then
+                _fs list "$_target" || aura_say "Cannot list: $_target"
+            else
+                ls -la "$OS_ROOT/$_target" 2>/dev/null || aura_say "Cannot list: $_target"
+            fi
+            ;;
+        cd)
+            shift
+            if [ -z "$1" ]; then
+                cd "$OS_ROOT" 2>/dev/null || true
+            else
+                _dest="$OS_ROOT/${1#/}"
+                if [ -d "$_dest" ] && _path_safe "$_dest"; then
+                    cd "$_dest" || aura_say "Cannot cd to: $1"
+                else
+                    aura_say "No such directory or access denied: $1"
+                fi
+            fi
+            ;;
+        read)
+            shift
+            if [ -z "$1" ]; then
+                aura_say "Usage: read <file>"
+            elif command -v python3 >/dev/null 2>&1 && [ -f "$FS_PY" ]; then
+                _fs read "$1" || aura_say "Cannot read: $1"
+            else
+                cat "$OS_ROOT/${1#/}" 2>/dev/null || aura_say "Cannot read: $1"
+            fi
+            ;;
+        write)
+            shift
+            if [ -z "$1" ] || [ -z "$2" ]; then
+                aura_say "Usage: write <file> <text>"
+            elif command -v python3 >/dev/null 2>&1 && [ -f "$FS_PY" ]; then
+                _file="$1"; shift
+                _fs append "$_file" "$*
+" && aura_say "Written to $_file."
+            else
+                _file="$OS_ROOT/${1#/}"; shift
+                echo "$*" >> "$_file" && aura_say "Written to $_file."
+            fi
+            ;;
+
+        # === SERVICE commands ===
+        start)
+            shift
+            if [ -z "$1" ]; then
+                aura_say "Usage: start <service>"
+            elif [ -f "$OS_ROOT/etc/init.d/$1" ]; then
+                aura_log "SERVICE start: $1"
+                sh "$OS_ROOT/etc/init.d/$1" start
+            else
+                aura_say "Unknown service: $1 (check $OS_ROOT/etc/init.d/)"
+            fi
+            ;;
+        stop)
+            shift
+            if [ -z "$1" ]; then
+                aura_say "Usage: stop <service>"
+            elif [ -f "$OS_ROOT/etc/init.d/$1" ]; then
+                aura_log "SERVICE stop: $1"
+                sh "$OS_ROOT/etc/init.d/$1" stop
+            else
+                aura_say "Unknown service: $1 (check $OS_ROOT/etc/init.d/)"
+            fi
+            ;;
+        restart)
+            shift
+            if [ -z "$1" ]; then
+                aura_say "Usage: restart <service>"
+            elif [ -f "$OS_ROOT/etc/init.d/$1" ]; then
+                aura_log "SERVICE restart: $1"
+                sh "$OS_ROOT/etc/init.d/$1" restart
+            else
+                aura_say "Unknown service: $1 (check $OS_ROOT/etc/init.d/)"
+            fi
+            ;;
+        kill)
+            shift
+            if [ -z "$1" ]; then
+                aura_say "Usage: kill <service>"
+            elif [ -f "$OS_ROOT/etc/init.d/$1" ]; then
+                aura_log "SERVICE kill: $1"
+                sh "$OS_ROOT/etc/init.d/$1" stop
+            else
+                aura_say "Unknown service: $1"
+            fi
+            ;;
+
         help)
             help_cmd ;;
         exit|quit)
+            aura_log "shell exit"
             aura_say "Goodbye."; exit 0 ;;
         "")
             ;;
         *)
-            # Unknown command: route to AI
-            response=$(llm_query "$line")
-            ctx_add "ai: $response"
-            echo "$response"
+            # === Fuzzy command matching (typo correction) ===
+            suggestion=$(cmd_fuzzy_match "$cmd")
+            if [ -n "$suggestion" ]; then
+                aura_log "TYPO: '$cmd' -> '$suggestion'"
+                aura_say "Unknown command '$cmd'. Auto-correcting to '$suggestion'..."
+                shift
+                _pending="$suggestion${*:+ $*}"
+            else
+                # Route to AI
+                response=$(llm_query "$line")
+                ctx_add "ai: $response"
+                aura_log "AI: $response"
+                echo "$response"
+            fi
             ;;
     esac
 done
