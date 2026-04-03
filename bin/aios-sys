@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# bin/aios-sys — AIOS OS shell (real shell passthrough + internal dispatcher)
+#
+# Two modes of operation
+# ──────────────────────
+# Interactive (no args):
+#   Launches REAL_SHELL with CWD set to OS_ROOT.  The user gets a full,
+#   unrestricted shell — identical to opening a terminal normally.
+#
+# Dispatcher (-- <cmd> [args]):
+#   Sources all aura modules and runs the requested registered command, then
+#   exits.  Used by ai_backend.py and the 'sys -- <cmd>' shorthand in bin/aios.
+#
+# Usage:
+#   bin/aios-sys                         # interactive OS shell
+#   bin/aios-sys -- fs.ls /              # single command
+
+AIOS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export AIOS_ROOT
+
+# shellcheck source=lib/aura-core.sh
+. "${AIOS_ROOT}/lib/aura-core.sh"
+
+# ------------------------------------------------------------------
+# Dispatcher mode:  bin/aios-sys -- <cmd> [args...]
+# ------------------------------------------------------------------
+if [[ "${1:-}" == "--" ]]; then
+    shift
+
+    # Load all aura modules so every registered command is available.
+    # shellcheck source=lib/aura-fs.sh
+    . "${AIOS_ROOT}/lib/aura-fs.sh"
+    # shellcheck source=lib/aura-proc.sh
+    . "${AIOS_ROOT}/lib/aura-proc.sh"
+    # shellcheck source=lib/aura-net.sh
+    . "${AIOS_ROOT}/lib/aura-net.sh"
+
+    cmd="${1:-}"; shift || true
+    if [[ -z "${cmd}" ]]; then
+        die "aios-sys --: missing command"
+    fi
+
+    if run_command "${cmd}" "$@"; then
+        exit 0
+    else
+        die "aios-sys: unknown command '${cmd}'"
+    fi
+fi
+
+# ------------------------------------------------------------------
+# Interactive mode: drop into the real OS shell
+# ------------------------------------------------------------------
+log "INFO" "Launching ${REAL_SHELL} in OS_ROOT=${OS_ROOT}"
+
+# Change into OS_ROOT so the user starts there, but do not confine them —
+# the real OS shell is unrestricted by design (the AI shell is the jail).
+cd "${OS_ROOT}"
+
+exec "${REAL_SHELL}"
