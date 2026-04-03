@@ -529,3 +529,16 @@
 [2026-04-03T11:46:38Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
 [2026-04-03T11:46:38Z] inttest log entry 4045
 [2026-04-03T11:46:38Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T11:51:45Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T11:51:45Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-5763.txt
+[2026-04-03T11:51:45Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-5763.txt
+[2026-04-03T11:51:45Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-5763.txt
+[2026-04-03T11:51:45Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-5763.txt
+[2026-04-03T11:51:45Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-5763.txt
+[2026-04-03T11:51:45Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T11:51:45Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T11:51:45Z] unit-test marker 5763
+[2026-04-03T11:51:46Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T11:51:46Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T11:51:46Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-03T11:54:36Z] [syscall] invoke syscall=getpid caller_pid=5867 args=

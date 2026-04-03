@@ -158,3 +158,24 @@
 [os-kernel] heartbeat 5889
 [os-kernel] heartbeat 5216
 [os-kernel] heartbeat 4734
+[2026-04-03T11:54:36Z] [perms] GRANT principal=operator cap=fs.*
+[2026-04-03T11:54:36Z] [perms] GRANT principal=operator cap=proc.*
+[2026-04-03T11:54:36Z] [perms] GRANT principal=operator cap=net.*
+[2026-04-03T11:54:36Z] [perms] GRANT principal=operator cap=log.*
+[2026-04-03T11:54:36Z] [perms] GRANT principal=operator cap=memory.*
+[2026-04-03T11:54:36Z] [perms] GRANT principal=operator cap=system.*
+[2026-04-03T11:54:36Z] [perms] GRANT principal=operator cap=ai.*
+[2026-04-03T11:54:36Z] [perms] GRANT principal=operator cap=health.*
+[2026-04-03T11:54:36Z] [perms] GRANT principal=operator cap=repair.*
+[2026-04-03T11:54:36Z] [perms] GRANT principal=aura cap=fs.read
+[2026-04-03T11:54:36Z] [perms] GRANT principal=aura cap=fs.list
+[2026-04-03T11:54:36Z] [perms] GRANT principal=aura cap=log.read
+[2026-04-03T11:54:36Z] [perms] GRANT principal=aura cap=memory.set
+[2026-04-03T11:54:36Z] [perms] GRANT principal=aura cap=memory.get
+[2026-04-03T11:54:36Z] [perms] GRANT principal=aura cap=health.check
+[2026-04-03T11:54:36Z] [perms] GRANT principal=aura cap=ai.ask
+[2026-04-03T11:54:36Z] [perms] GRANT principal=aura cap=net.ping
+[2026-04-03T11:54:36Z] [perms] GRANT principal=service cap=log.write
+[2026-04-03T11:54:36Z] [perms] GRANT principal=service cap=health.status
+[2026-04-03T11:54:36Z] [perms] GRANT principal=service cap=system.sysinfo
+[2026-04-03T11:54:36Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)

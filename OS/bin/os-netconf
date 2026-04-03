@@ -1,0 +1,443 @@
+#!/bin/sh
+# OS/bin/os-netconf — AIOS Network Configuration Manager
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# Manages network interface configuration, WiFi, Bluetooth, routing,
+# and firewall rules for the AIOS portable OS.
+#
+# Usage:
+#   os-netconf status               — full network status
+#   os-netconf interfaces           — list all interfaces
+#   os-netconf wifi status|scan|connect <ssid> [pass]|disconnect
+#   os-netconf bt   status|scan|pair <addr>|disconnect
+#   os-netconf ip   show|set <iface> <ip/prefix>|flush <iface>
+#   os-netconf route show|add <dst> <gw>|del <dst>
+#   os-netconf dns  show|set <server>
+#   os-netconf firewall status|enable|disable|rules|add <rule>|flush
+#   os-netconf nat  status|enable <iface>|disable
+#   os-netconf discover             — discover services on LAN
+#   os-netconf save [file]          — save config snapshot
+#   os-netconf load <file>          — load config snapshot
+
+set -e
+
+_SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+OS_ROOT="${OS_ROOT:-$(cd "$_SCRIPT_DIR/.." 2>/dev/null && pwd)}"
+export OS_ROOT
+
+NET_CONF_DIR="$OS_ROOT/etc/net"
+NET_LOG="$OS_ROOT/var/log/net.log"
+FIREWALL_RULES="$NET_CONF_DIR/firewall.rules"
+DISCOVER_CACHE="$OS_ROOT/var/net/discovered.json"
+
+mkdir -p "$NET_CONF_DIR" "$(dirname "$NET_LOG")" "$(dirname "$DISCOVER_CACHE")" 2>/dev/null
+
+_ts()   { date '+%Y-%m-%dT%H:%M:%SZ'; }
+_log()  { echo "[$(_ts)] [netconf] $*" >> "$NET_LOG"; }
+_out()  { echo "[netconf] $*"; }
+_err()  { echo "[netconf] ERROR: $*" >&2; }
+_head() { echo ""; echo "=== $* ==="; }
+
+# ---------------------------------------------------------------------------
+# Interface helpers
+# ---------------------------------------------------------------------------
+_have()  { command -v "$1" >/dev/null 2>&1; }
+_ip_cmd() { _have ip && echo "ip" || { _have ifconfig && echo "ifconfig"; }; }
+
+_list_ifaces() {
+    if _have ip; then
+        ip link show 2>/dev/null | awk '/^[0-9]+:/{gsub(":",""); print $2}'
+    elif _have ifconfig; then
+        ifconfig 2>/dev/null | grep -E "^[a-zA-Z]" | awk -F: '{print $1}'
+    else
+        echo "(ip/ifconfig not found)"
+    fi
+}
+
+_iface_status() {
+    _iface="$1"
+    if _have ip; then
+        ip addr show "$_iface" 2>/dev/null || echo "(unknown interface: $_iface)"
+    elif _have ifconfig; then
+        ifconfig "$_iface" 2>/dev/null || echo "(unknown interface: $_iface)"
+    fi
+}
+
+_route_show() {
+    if _have ip; then
+        ip route show 2>/dev/null
+    elif _have route; then
+        route -n 2>/dev/null
+    else
+        echo "(routing tools not found)"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# WiFi helpers
+# ---------------------------------------------------------------------------
+_wifi_status() {
+    if _have nmcli; then
+        nmcli device status 2>/dev/null | grep wifi || echo "(nmcli: no wifi devices)"
+    elif _have iwconfig; then
+        iwconfig 2>/dev/null
+    elif [ -d /sys/class/net ]; then
+        for _d in /sys/class/net/wlan* /sys/class/net/wlp*; do
+            [ -d "$_d" ] && echo "WiFi interface: $(basename "$_d")"
+        done
+    else
+        echo "WiFi: tools not found (nmcli/iwconfig required)"
+    fi
+}
+
+_wifi_scan() {
+    if _have nmcli; then
+        nmcli device wifi list 2>/dev/null || echo "(scan requires nmcli)"
+    elif _have iwlist; then
+        _wlan=$(_list_ifaces | grep -E "^(wlan|wlp)" | head -1)
+        [ -n "$_wlan" ] && iwlist "$_wlan" scan 2>/dev/null | grep -E "ESSID|Quality" \
+            || echo "(no wifi interface found)"
+    else
+        echo "WiFi scan: nmcli or iwlist required"
+    fi
+}
+
+_wifi_connect() {
+    _ssid="$1"
+    _pass="${2:-}"
+    if _have nmcli; then
+        if [ -n "$_pass" ]; then
+            nmcli device wifi connect "$_ssid" password "$_pass" 2>&1
+        else
+            nmcli device wifi connect "$_ssid" 2>&1
+        fi
+        _log "wifi connect ssid=$_ssid"
+    else
+        echo "WiFi connect: nmcli required"
+    fi
+}
+
+_wifi_disconnect() {
+    if _have nmcli; then
+        _wdev=$(nmcli device status 2>/dev/null | awk '/wifi/{print $1; exit}')
+        [ -n "$_wdev" ] && nmcli device disconnect "$_wdev" 2>&1 || echo "(no wifi device)"
+        _log "wifi disconnect"
+    else
+        echo "WiFi disconnect: nmcli required"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# Bluetooth helpers
+# ---------------------------------------------------------------------------
+_bt_status() {
+    if _have bluetoothctl; then
+        echo "power" | bluetoothctl 2>/dev/null | tail -3 || echo "Bluetooth: status unavailable"
+    elif _have hciconfig; then
+        hciconfig 2>/dev/null
+    else
+        echo "Bluetooth: tools not found (bluetoothctl/hciconfig required)"
+    fi
+}
+
+_bt_scan() {
+    if _have bluetoothctl; then
+        {
+            echo "power on"
+            echo "scan on"
+            sleep 5
+            echo "scan off"
+            echo "devices"
+            echo "quit"
+        } | bluetoothctl 2>/dev/null | grep -E "Device|NEW" || echo "(no devices found)"
+    else
+        echo "Bluetooth scan: bluetoothctl required"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# IP address helpers
+# ---------------------------------------------------------------------------
+_ip_set() {
+    _iface="$1"
+    _cidr="$2"
+    if _have ip; then
+        ip addr add "$_cidr" dev "$_iface" 2>&1 && _log "ip set iface=$_iface addr=$_cidr"
+    else
+        echo "ip command required for IP assignment"
+    fi
+}
+
+_ip_flush() {
+    _iface="$1"
+    if _have ip; then
+        ip addr flush dev "$_iface" 2>&1 && _log "ip flush iface=$_iface"
+    else
+        echo "ip command required for IP flush"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# DNS helpers
+# ---------------------------------------------------------------------------
+_dns_show() {
+    if [ -f /etc/resolv.conf ]; then
+        cat /etc/resolv.conf
+    else
+        echo "(resolv.conf not found)"
+    fi
+}
+
+_dns_set() {
+    _server="$1"
+    case "$_server" in
+        *[!0-9.]*) _err "invalid DNS server (use IPv4 dotted notation)"; return 1 ;;
+    esac
+    if [ -w /etc/resolv.conf ]; then
+        echo "nameserver $_server" > /etc/resolv.conf
+        _log "dns set server=$_server"
+        _out "DNS set to $_server"
+    else
+        _out "DNS: /etc/resolv.conf not writable (may need sudo)"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# Firewall helpers  (iptables-based)
+# ---------------------------------------------------------------------------
+_fw_status() {
+    if _have iptables; then
+        iptables -L -n --line-numbers 2>/dev/null || echo "(iptables: permission denied or not installed)"
+    else
+        echo "Firewall: iptables not found"
+    fi
+}
+
+_fw_default_rules() {
+    # Drop incoming on non-established connections, allow out, allow lo
+    _rules="
+-A INPUT -i lo -j ACCEPT
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+-A INPUT -p tcp --dport 22 -j ACCEPT
+-A INPUT -p tcp --dport 8080 -j ACCEPT
+-A INPUT -j DROP
+-A OUTPUT -j ACCEPT
+"
+    echo "$_rules" > "$FIREWALL_RULES"
+}
+
+_fw_apply() {
+    if ! _have iptables; then
+        echo "Firewall: iptables not found"; return 1
+    fi
+    if [ ! -f "$FIREWALL_RULES" ]; then
+        _fw_default_rules
+    fi
+    while IFS= read -r _rule; do
+        [ -z "$_rule" ] && continue
+        case "$_rule" in "#"*) continue ;; esac
+        iptables $_rule 2>/dev/null || true
+    done < "$FIREWALL_RULES"
+    _log "firewall rules applied"
+    _out "Firewall rules applied"
+}
+
+_fw_flush() {
+    if _have iptables; then
+        iptables -F 2>/dev/null && iptables -X 2>/dev/null
+        _log "firewall flushed"
+        _out "Firewall rules cleared"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# NAT helpers
+# ---------------------------------------------------------------------------
+_nat_enable() {
+    _out_iface="${1:-eth0}"
+    if _have iptables; then
+        echo 1 > /proc/sys/net/ipv4/ip_forward 2>/dev/null || true
+        iptables -t nat -A POSTROUTING -o "$_out_iface" -j MASQUERADE 2>/dev/null \
+            && _log "NAT enabled on $_out_iface" \
+            || _err "iptables NAT failed (may need root)"
+    else
+        _err "iptables required for NAT"
+    fi
+}
+
+_nat_status() {
+    if _have iptables; then
+        iptables -t nat -L POSTROUTING -n 2>/dev/null || echo "(iptables unavailable)"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# Service discovery (mDNS / nmap fallback)
+# ---------------------------------------------------------------------------
+_discover() {
+    _head "AIOS Service Discovery"
+    _ts_now=$(_ts)
+    if _have avahi-browse; then
+        _out "Scanning via mDNS (avahi) ..."
+        avahi-browse -a -t 2>/dev/null | head -40
+    elif _have nmap; then
+        _cidr=$(ip route 2>/dev/null | awk '/src/{print $1; exit}')
+        [ -z "$_cidr" ] && _cidr="192.168.1.0/24"
+        _out "Scanning $_cidr via nmap ..."
+        nmap -sn "$_cidr" 2>/dev/null | grep -E "Nmap|Host"
+    else
+        _out "Discovery tools not found (avahi-browse or nmap recommended)"
+        # Fallback: ARP table
+        _out "ARP table (local network):"
+        arp -a 2>/dev/null || ip neigh show 2>/dev/null || echo "(arp not available)"
+    fi
+    # Write to cache
+    printf '{"timestamp":"%s","status":"scanned"}\n' "$_ts_now" > "$DISCOVER_CACHE"
+    _log "service discovery complete"
+}
+
+# ---------------------------------------------------------------------------
+_full_status() {
+    _head "AIOS Network Status ($(_ts))"
+    echo "--- Interfaces ---"
+    _list_ifaces
+    if _have ip; then
+        ip addr show 2>/dev/null
+    elif _have ifconfig; then
+        ifconfig 2>/dev/null
+    fi
+    echo "--- Routes ---"
+    _route_show
+    echo "--- DNS ---"
+    _dns_show
+    echo "--- WiFi ---"
+    _wifi_status
+    echo "--- Bluetooth ---"
+    _bt_status
+}
+
+_save_config() {
+    _outfile="${1:-$NET_CONF_DIR/net-snapshot-$(date +%s).txt}"
+    _full_status > "$_outfile"
+    _out "saved: $_outfile"
+    _log "config snapshot saved to $_outfile"
+}
+
+# ---------------------------------------------------------------------------
+CMD="${1:-status}"; shift 2>/dev/null || true
+
+case "$CMD" in
+
+    status)
+        _full_status
+        ;;
+
+    interfaces|ifaces)
+        _list_ifaces
+        ;;
+
+    wifi)
+        _sub="${1:-status}"; shift 2>/dev/null || true
+        case "$_sub" in
+            status)      _wifi_status ;;
+            scan)        _wifi_scan ;;
+            connect)     _wifi_connect "$@" ;;
+            disconnect)  _wifi_disconnect ;;
+            *)           _err "wifi: unknown sub-command '$_sub'" ;;
+        esac
+        ;;
+
+    bt|bluetooth)
+        _sub="${1:-status}"; shift 2>/dev/null || true
+        case "$_sub" in
+            status)  _bt_status ;;
+            scan)    _bt_scan ;;
+            pair)    _err "BT pair: use bluetoothctl directly" ;;
+            *)       _err "bt: unknown sub-command '$_sub'" ;;
+        esac
+        ;;
+
+    ip)
+        _sub="${1:-show}"; shift 2>/dev/null || true
+        case "$_sub" in
+            show)   if _have ip; then ip addr show 2>/dev/null; else _iface_status eth0; fi ;;
+            set)    _ip_set "$1" "$2" ;;
+            flush)  _ip_flush "$1" ;;
+            *)      _err "ip: unknown sub-command '$_sub'" ;;
+        esac
+        ;;
+
+    route)
+        _sub="${1:-show}"; shift 2>/dev/null || true
+        case "$_sub" in
+            show)  _route_show ;;
+            add)   _have ip && ip route add "$@" 2>&1 && _log "route add $*" || echo "ip required" ;;
+            del)   _have ip && ip route del "$@" 2>&1 && _log "route del $*" || echo "ip required" ;;
+            *)     _err "route: unknown sub-command '$_sub'" ;;
+        esac
+        ;;
+
+    dns)
+        _sub="${1:-show}"; shift 2>/dev/null || true
+        case "$_sub" in
+            show)  _dns_show ;;
+            set)   _dns_set "$1" ;;
+            *)     _err "dns: unknown sub-command '$_sub'" ;;
+        esac
+        ;;
+
+    firewall|fw)
+        _sub="${1:-status}"; shift 2>/dev/null || true
+        case "$_sub" in
+            status)   _fw_status ;;
+            enable)   _fw_apply ;;
+            disable)  _fw_flush ;;
+            rules)    [ -f "$FIREWALL_RULES" ] && cat "$FIREWALL_RULES" || echo "(no rules file)" ;;
+            add)      [ -n "$1" ] && echo "$*" >> "$FIREWALL_RULES" && _out "added rule: $*" || _err "no rule given" ;;
+            flush)    _fw_flush ;;
+            *)        _err "firewall: unknown sub-command '$_sub'" ;;
+        esac
+        ;;
+
+    nat)
+        _sub="${1:-status}"; shift 2>/dev/null || true
+        case "$_sub" in
+            status)   _nat_status ;;
+            enable)   _nat_enable "${1:-eth0}" ;;
+            disable)  _have iptables && iptables -t nat -F 2>/dev/null && _log "NAT disabled" ;;
+            *)        _err "nat: unknown sub-command '$_sub'" ;;
+        esac
+        ;;
+
+    discover)
+        _discover
+        ;;
+
+    save)
+        _save_config "${1:-}"
+        ;;
+
+    load)
+        [ -n "$1" ] && [ -f "$1" ] && { _out "load not implemented (edit manually: $1)"; } \
+            || _err "load requires a valid config file path"
+        ;;
+
+    *)
+        cat >&2 << 'EOF'
+Usage: os-netconf <command> [args]
+Commands:
+  status              Full network status
+  interfaces          List interfaces
+  wifi status|scan|connect <ssid> [pass]|disconnect
+  bt   status|scan
+  ip   show|set <iface> <cidr>|flush <iface>
+  route show|add <dst> <gw>|del <dst>
+  dns  show|set <server>
+  firewall status|enable|disable|rules|add <rule>|flush
+  nat  status|enable <iface>|disable
+  discover            LAN service discovery
+  save [file]         Save config snapshot
+EOF
+        exit 1
+        ;;
+esac

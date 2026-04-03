@@ -1,0 +1,9 @@
+fs.*
+proc.*
+net.*
+log.*
+memory.*
+system.*
+ai.*
+health.*
+repair.*

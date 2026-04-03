@@ -1,0 +1,322 @@
+#!/bin/sh
+# OS/bin/os-recover — AIOS Recovery Mode
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# Boots AIOS into a safe recovery environment.
+# Recovery mode performs:
+#   1. Filesystem integrity check and repair
+#   2. Service health verification
+#   3. Identity/state file restoration from backup
+#   4. Log rotation and cleanup
+#   5. Dependency audit (checks required binaries)
+#
+# Usage:
+#   os-recover [--auto]           — interactive recovery (--auto: no prompts)
+#   os-recover check              — check system integrity (no repair)
+#   os-recover repair             — run full repair sequence non-interactively
+#   os-recover backup             — backup state to OS_ROOT/var/backup/
+#   os-recover restore [stamp]    — restore from latest (or given) backup
+#   os-recover deps               — dependency audit
+
+set -e
+
+_SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+OS_ROOT="${OS_ROOT:-$(cd "$_SCRIPT_DIR/.." 2>/dev/null && pwd)}"
+export OS_ROOT
+
+BACKUP_DIR="$OS_ROOT/var/backup"
+RECOVER_LOG="$OS_ROOT/var/log/recover.log"
+OS_LOG="$OS_ROOT/var/log/os.log"
+
+_ts()   { date '+%Y-%m-%dT%H:%M:%SZ'; }
+_log()  { _m="[$(_ts)] [recover] $*"; echo "$_m" | tee -a "$RECOVER_LOG" >> "$OS_LOG"; }
+_out()  { echo "[recover] $*"; }
+_head() { echo ""; echo "=== $* ==="; }
+AUTO=0
+
+# ---------------------------------------------------------------------------
+# Required directory layout
+# ---------------------------------------------------------------------------
+_REQUIRED_DIRS="
+var/log
+var/service
+var/events
+var/pkg
+var/resource
+var/backup
+proc
+proc/aura/context
+proc/aura/memory
+proc/aura/semantic
+proc/aura/bridge
+mirror/ios
+mirror/android
+mirror/linux
+tmp
+etc/perms.d
+"
+
+# Required files (path relative to OS_ROOT, default content)
+_REQUIRED_FILES="var/log/os.log var/log/aura.log var/log/events.log proc/os.messages"
+
+# Required external binaries
+_REQUIRED_BINS="sh python3 awk grep sed date mkdir"
+
+# ---------------------------------------------------------------------------
+_check_dirs() {
+    _missing=0
+    for _d in $_REQUIRED_DIRS; do
+        _d="${_d#"${_d%%[![:space:]]*}"}"  # trim leading whitespace
+        [ -z "$_d" ] && continue
+        if [ ! -d "$OS_ROOT/$_d" ]; then
+            _out "[MISSING DIR]  $_d"
+            _missing=$((_missing+1))
+        fi
+    done
+    [ "$_missing" -eq 0 ] && _out "all required directories present"
+    return "$_missing"
+}
+
+_repair_dirs() {
+    _repaired=0
+    for _d in $_REQUIRED_DIRS; do
+        _d="${_d#"${_d%%[![:space:]]*}"}"
+        [ -z "$_d" ] && continue
+        if [ ! -d "$OS_ROOT/$_d" ]; then
+            mkdir -p "$OS_ROOT/$_d" 2>/dev/null
+            _log "created dir: $_d"
+            _out "[REPAIRED] dir created: $_d"
+            _repaired=$((_repaired+1))
+        fi
+    done
+    for _f in $_REQUIRED_FILES; do
+        if [ ! -f "$OS_ROOT/$_f" ]; then
+            touch "$OS_ROOT/$_f"
+            _log "created file: $_f"
+            _out "[REPAIRED] file created: $_f"
+            _repaired=$((_repaired+1))
+        fi
+    done
+    _out "directories/files: repaired $_repaired item(s)"
+}
+
+_check_state() {
+    _head "State File Check"
+    _state="$OS_ROOT/proc/os.state"
+    if [ ! -f "$_state" ]; then
+        _out "[MISSING] proc/os.state"
+        return 1
+    fi
+    grep -q "boot_time" "$_state"   && _out "[OK] boot_time" || _out "[WARN] boot_time missing"
+    grep -q "os_version" "$_state"  && _out "[OK] os_version" || _out "[WARN] os_version missing"
+    grep -q "runlevel" "$_state"    && _out "[OK] runlevel" || _out "[WARN] runlevel missing"
+}
+
+_repair_state() {
+    _state="$OS_ROOT/proc/os.state"
+    if [ ! -f "$_state" ] || ! grep -q "boot_time" "$_state" 2>/dev/null; then
+        cat > "$_state" << EOF
+boot_time=$(date +%s)
+kernel_pid=0
+os_version=0.1
+runlevel=1
+last_heartbeat=$(date +%s)
+EOF
+        _log "restored proc/os.state"
+        _out "[REPAIRED] proc/os.state restored"
+    fi
+}
+
+_check_services() {
+    _head "Service Health Check"
+    _svc_dir="$OS_ROOT/var/service"
+    _dead=0
+    for _pidfile in "$_svc_dir"/*.pid; do
+        [ -f "$_pidfile" ] || continue
+        _svc=$(basename "$_pidfile" .pid)
+        _pid=$(cat "$_pidfile" 2>/dev/null)
+        if [ -n "$_pid" ] && [ -d "/proc/$_pid" ]; then
+            _out "[OK]    service: $_svc (pid=$_pid)"
+        else
+            _out "[DEAD]  service: $_svc (pid=$_pid)"
+            _dead=$((_dead+1))
+        fi
+    done
+    [ "$_dead" -eq 0 ] && _out "all services OK" || _out "$_dead dead service(s) found"
+    return "$_dead"
+}
+
+_cleanup_dead_services() {
+    _svc_dir="$OS_ROOT/var/service"
+    for _pidfile in "$_svc_dir"/*.pid; do
+        [ -f "$_pidfile" ] || continue
+        _svc=$(basename "$_pidfile" .pid)
+        _pid=$(cat "$_pidfile" 2>/dev/null)
+        if [ -n "$_pid" ] && ! [ -d "/proc/$_pid" ]; then
+            rm -f "$_pidfile"
+            _log "removed stale pidfile: $_svc"
+            _out "[CLEANED] stale pidfile: $_svc"
+        fi
+    done
+}
+
+_check_deps() {
+    _head "Dependency Audit"
+    _missing=0
+    for _bin in $_REQUIRED_BINS; do
+        if command -v "$_bin" >/dev/null 2>&1; then
+            _out "[OK]     $_bin"
+        else
+            _out "[MISSING] $_bin"
+            _missing=$((_missing+1))
+        fi
+    done
+    # Optional deps
+    for _opt in openssl curl wget adb ideviceinfo llama-cli llama; do
+        if command -v "$_opt" >/dev/null 2>&1; then
+            _out "[PRESENT] (optional) $_opt"
+        else
+            _out "[ABSENT]  (optional) $_opt"
+        fi
+    done
+    return "$_missing"
+}
+
+_backup() {
+    _stamp=$(date +%Y%m%d-%H%M%S)
+    _dest="$BACKUP_DIR/$_stamp"
+    mkdir -p "$_dest"
+    # Backup key state files
+    for _f in proc/os.state proc/os.identity proc/os.manifest OS/etc/os-release; do
+        _src="$OS_ROOT/$_f"
+        [ -f "$_src" ] && cp "$_src" "$_dest/" && _out "backed up: $_f"
+    done
+    # Backup logs (last 200 lines each)
+    for _log in var/log/os.log var/log/aura.log; do
+        _src="$OS_ROOT/$_log"
+        [ -f "$_src" ] && tail -200 "$_src" > "$_dest/$(basename "$_log").bak" \
+            && _out "backed up (tail): $_log"
+    done
+    echo "$_stamp" > "$BACKUP_DIR/latest"
+    _log "backup created: $_stamp"
+    _out "backup complete: $_dest"
+}
+
+_restore() {
+    _stamp="${1:-}"
+    if [ -z "$_stamp" ] && [ -f "$BACKUP_DIR/latest" ]; then
+        _stamp=$(cat "$BACKUP_DIR/latest")
+    fi
+    [ -z "$_stamp" ] && { _out "no backup found"; exit 1; }
+    _src="$BACKUP_DIR/$_stamp"
+    [ -d "$_src" ] || { _out "backup not found: $_stamp"; exit 1; }
+    for _f in "$_src"/*; do
+        _base=$(basename "$_f")
+        case "$_base" in
+            *.bak) continue ;;  # skip log backups
+        esac
+        cp "$_f" "$OS_ROOT/proc/$_base" 2>/dev/null && _out "restored: proc/$_base" || true
+    done
+    _log "restore from backup: $_stamp"
+    _out "restore complete from: $_stamp"
+}
+
+_rotate_logs() {
+    for _log in "$OS_ROOT/var/log"/*.log; do
+        [ -f "$_log" ] || continue
+        _lines=$(wc -l < "$_log" 2>/dev/null || echo 0)
+        if [ "$_lines" -gt 1000 ]; then
+            tail -500 "$_log" > "${_log}.tmp" && mv "${_log}.tmp" "$_log"
+            _log "rotated $(basename "$_log") from ${_lines} to 500 lines"
+            _out "[LOG-ROTATE] $(basename "$_log")"
+        fi
+    done
+}
+
+# ---------------------------------------------------------------------------
+_full_repair() {
+    _log "recovery mode started"
+    _head "AIOS Recovery Mode"
+
+    _head "1. Directory / File Check & Repair"
+    _repair_dirs
+
+    _head "2. State File Check & Repair"
+    _repair_state
+
+    _head "3. Service Cleanup"
+    _cleanup_dead_services
+
+    _head "4. Log Rotation"
+    _rotate_logs
+
+    _head "5. Dependency Audit"
+    _check_deps
+
+    _log "recovery mode complete"
+    _head "Recovery Complete"
+    _out "System ready."
+}
+
+# ---------------------------------------------------------------------------
+CMD="${1:-help}"; shift 2>/dev/null || true
+
+case "$CMD" in
+
+    --auto|-a)
+        AUTO=1
+        _full_repair
+        ;;
+
+    repair)
+        _full_repair
+        ;;
+
+    check)
+        _head "AIOS System Integrity Check"
+        _check_dirs  || true
+        _check_state || true
+        _check_services || true
+        _check_deps  || true
+        ;;
+
+    backup)
+        _backup
+        ;;
+
+    restore)
+        _restore "${1:-}"
+        ;;
+
+    deps)
+        _check_deps
+        ;;
+
+    help|--help|-h)
+        cat << 'EOF'
+AIOS Recovery Mode
+==================
+Usage: os-recover <command>
+
+Commands:
+  --auto | repair     Run full repair (non-interactive)
+  check               System integrity check (no changes)
+  backup              Backup current state to var/backup/
+  restore [stamp]     Restore from backup (default: latest)
+  deps                Dependency audit
+  help                This message
+
+Recovery performs:
+  1. Create missing directories/files
+  2. Restore corrupt state files
+  3. Clean up dead service pidfiles
+  4. Rotate oversized log files
+  5. Audit required binary dependencies
+EOF
+        ;;
+
+    *)
+        _out "unknown command: $CMD"
+        exec "$0" help
+        ;;
+esac

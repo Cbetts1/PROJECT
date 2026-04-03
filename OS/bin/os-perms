@@ -1,0 +1,173 @@
+#!/bin/sh
+# OS/bin/os-perms — AIOS Permissions Model
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# Implements a capability-based permissions model.
+# Each principal (user/service/bot) has a set of capability tokens.
+# Every protected operation passes through os-perms check before execution.
+#
+# Capability store: OS_ROOT/etc/perms.d/<principal>.caps
+#   File format: one capability per line (e.g. fs.read, net.ping, proc.kill)
+#
+# Usage:
+#   os-perms check  <principal> <capability>  — exit 0 if allowed, 1 if denied
+#   os-perms grant  <principal> <capability>  — add capability
+#   os-perms revoke <principal> <capability>  — remove capability
+#   os-perms list   <principal>               — list capabilities
+#   os-perms list-all                         — list all principals
+#   os-perms audit  [n]                       — show last n audit entries
+#   os-perms init                             — create default capability set
+
+set -e
+
+_SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+OS_ROOT="${OS_ROOT:-$(cd "$_SCRIPT_DIR/.." 2>/dev/null && pwd)}"
+export OS_ROOT
+
+PERMS_DIR="$OS_ROOT/etc/perms.d"
+AUDIT_LOG="$OS_ROOT/var/log/syscall.log"
+OS_LOG="$OS_ROOT/var/log/os.log"
+
+_ts()   { date '+%Y-%m-%dT%H:%M:%SZ'; }
+_log()  { echo "[$(_ts)] [perms] $*" | tee -a "$OS_LOG" >> "$AUDIT_LOG"; }
+_out()  { echo "[perms] $*"; }
+_err()  { echo "[perms] ERROR: $*" >&2; }
+
+mkdir -p "$PERMS_DIR" "$(dirname "$AUDIT_LOG")" 2>/dev/null
+
+# ---------------------------------------------------------------------------
+_caps_file() { echo "$PERMS_DIR/$1.caps"; }
+
+_check() {
+    _prin="$1"
+    _cap="$2"
+    _file="$(_caps_file "$_prin")"
+    if [ ! -f "$_file" ]; then
+        _log "DENY principal=$_prin cap=$_cap (no caps file)"
+        return 1
+    fi
+    if grep -qxF "$_cap" "$_file" 2>/dev/null; then
+        _log "ALLOW principal=$_prin cap=$_cap"
+        return 0
+    fi
+    # Check wildcard (e.g. "fs.*" covers "fs.read")
+    _ns="${_cap%%.*}"
+    if grep -qxF "${_ns}.*" "$_file" 2>/dev/null; then
+        _log "ALLOW principal=$_prin cap=$_cap (wildcard ${_ns}.*)"
+        return 0
+    fi
+    _log "DENY principal=$_prin cap=$_cap"
+    return 1
+}
+
+_grant() {
+    _prin="$1"
+    _cap="$2"
+    _file="$(_caps_file "$_prin")"
+    if grep -qxF "$_cap" "$_file" 2>/dev/null; then
+        _out "already granted: $_prin $_cap"; return 0
+    fi
+    echo "$_cap" >> "$_file"
+    _log "GRANT principal=$_prin cap=$_cap"
+    _out "granted: $_prin -> $_cap"
+}
+
+_revoke() {
+    _prin="$1"
+    _cap="$2"
+    _file="$(_caps_file "$_prin")"
+    [ -f "$_file" ] || { _out "no caps for $_prin"; return 0; }
+    _tmp=$(mktemp)
+    grep -vxF "$_cap" "$_file" > "$_tmp" 2>/dev/null || true
+    mv "$_tmp" "$_file"
+    _log "REVOKE principal=$_prin cap=$_cap"
+    _out "revoked: $_prin -> $_cap"
+}
+
+_list() {
+    _file="$(_caps_file "$1")"
+    if [ -f "$_file" ] && [ -s "$_file" ]; then
+        _out "capabilities for $1:"
+        while IFS= read -r _c; do
+            echo "  $_c"
+        done < "$_file"
+    else
+        _out "no capabilities for $1"
+    fi
+}
+
+_init_defaults() {
+    # operator: full access
+    for _cap in fs.* proc.* net.* log.* memory.* system.* ai.* health.* repair.*; do
+        _grant "operator" "$_cap" 2>/dev/null || true
+    done
+    # aura (AI agent): no destructive operations
+    for _cap in fs.read fs.list log.read memory.set memory.get health.check ai.ask net.ping; do
+        _grant "aura" "$_cap" 2>/dev/null || true
+    done
+    # service: limited
+    for _cap in log.write health.status system.sysinfo; do
+        _grant "service" "$_cap" 2>/dev/null || true
+    done
+    _out "default capability sets initialised"
+}
+
+# ---------------------------------------------------------------------------
+CMD="${1:-list-all}"; shift 2>/dev/null || true
+
+case "$CMD" in
+
+    check)
+        [ $# -ge 2 ] || { _err "check requires <principal> <capability>"; exit 1; }
+        _check "$1" "$2"
+        ;;
+
+    grant)
+        [ $# -ge 2 ] || { _err "grant requires <principal> <capability>"; exit 1; }
+        _grant "$1" "$2"
+        ;;
+
+    revoke)
+        [ $# -ge 2 ] || { _err "revoke requires <principal> <capability>"; exit 1; }
+        _revoke "$1" "$2"
+        ;;
+
+    list)
+        [ $# -ge 1 ] || { _err "list requires <principal>"; exit 1; }
+        _list "$1"
+        ;;
+
+    list-all)
+        _found=0
+        for _f in "$PERMS_DIR"/*.caps; do
+            [ -f "$_f" ] || continue
+            _prin=$(basename "$_f" .caps)
+            _out "--- $_prin ---"
+            while IFS= read -r _c; do echo "  $_c"; done < "$_f"
+            _found=1
+        done
+        [ "$_found" -eq 0 ] && _out "no principals configured (run: os-perms init)"
+        ;;
+
+    audit)
+        _n="${1:-20}"
+        if [ -f "$AUDIT_LOG" ]; then
+            tail -n "$_n" "$AUDIT_LOG" | grep '\[perms\]'
+        else
+            _out "audit log empty"
+        fi
+        ;;
+
+    init)
+        _init_defaults
+        ;;
+
+    *)
+        cat >&2 << 'EOF'
+Usage: os-perms <command> [args]
+Commands: check <principal> <cap> | grant <p> <c> | revoke <p> <c>
+          list <principal> | list-all | audit [n] | init
+EOF
+        exit 1
+        ;;
+esac
