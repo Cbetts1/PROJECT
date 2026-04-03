@@ -517,3 +517,123 @@
 [2026-04-03T10:47:10Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
 [2026-04-03T10:47:10Z] inttest log entry 4036
 [2026-04-03T10:47:10Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:50:43Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T10:50:43Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-5680.txt
+[2026-04-03T10:50:43Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-5680.txt
+[2026-04-03T10:50:43Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-5680.txt
+[2026-04-03T10:50:43Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-5680.txt
+[2026-04-03T10:50:43Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-5680.txt
+[2026-04-03T10:50:43Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:50:43Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:50:43Z] unit-test marker 5680
+[2026-04-03T10:50:43Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:50:43Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:50:43Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-03T10:50:43Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T10:50:43Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-03T10:50:43Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/does-not-exist-5680.txt
+[2026-04-03T10:50:43Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/nested/subdir-5680/test.txt
+[2026-04-03T10:50:43Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/nested/subdir-5680/test.txt
+[2026-04-03T10:50:43Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/append-new-5680.txt
+[2026-04-03T10:50:43Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/append-new-5680.txt
+[2026-04-03T10:52:31Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T10:52:31Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-6844.txt
+[2026-04-03T10:52:31Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-6844.txt
+[2026-04-03T10:52:31Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-6844.txt
+[2026-04-03T10:52:31Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-6844.txt
+[2026-04-03T10:52:31Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-6844.txt
+[2026-04-03T10:52:31Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:52:31Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:52:31Z] unit-test marker 6844
+[2026-04-03T10:52:31Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:52:31Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:52:31Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-03T10:52:31Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T10:52:31Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-03T10:52:31Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/does-not-exist-6844.txt
+[2026-04-03T10:52:31Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/nested/subdir-6844/test.txt
+[2026-04-03T10:52:31Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/nested/subdir-6844/test.txt
+[2026-04-03T10:52:32Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/append-new-6844.txt
+[2026-04-03T10:52:32Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/append-new-6844.txt
+[2026-04-03T10:52:38Z] [shell] shell started (mode=operator)
+[2026-04-03T10:52:38Z] [shell] CMD: help
+[2026-04-03T10:52:38Z] [shell] shell started (mode=operator)
+[2026-04-03T10:52:38Z] [shell] CMD: sysinfo
+[2026-04-03T10:52:38Z] [shell] shell started (mode=operator)
+[2026-04-03T10:52:38Z] [shell] CMD: uptime
+[2026-04-03T10:52:38Z] [shell] shell started (mode=operator)
+[2026-04-03T10:52:38Z] [shell] CMD: disk
+[2026-04-03T10:52:38Z] [shell] shell started (mode=operator)
+[2026-04-03T10:52:38Z] [shell] CMD: ls
+[2026-04-03T10:52:38Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS
+[2026-04-03T10:52:38Z] [shell] shell started (mode=operator)
+[2026-04-03T10:52:38Z] [shell] CMD: mem.set test.key.7971 integration_value
+[2026-04-03T10:52:38Z] [shell] CMD: mem.get test.key.7971
+[2026-04-03T10:52:38Z] [shell] shell started (mode=operator)
+[2026-04-03T10:52:38Z] [shell] CMD: sem.set sem.test.7971 hello semantic world
+[2026-04-03T10:52:38Z] [shell] CMD: sem.search hello
+[2026-04-03T10:52:38Z] [shell] shell started (mode=operator)
+[2026-04-03T10:52:38Z] [shell] CMD: sysinf
+[2026-04-03T10:52:38Z] [shell] TYPO: 'sysinf' -> 'sysinfo'
+[2026-04-03T10:52:38Z] [shell] CMD: sysinfo
+[2026-04-03T10:52:38Z] [shell] shell started (mode=operator)
+[2026-04-03T10:52:38Z] [shell] CMD: ask hello
+[2026-04-03T10:52:38Z] [shell] AI: Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?
+[2026-04-03T10:52:38Z] [shell] shell started (mode=operator)
+[2026-04-03T10:52:38Z] [shell] CMD: mode system
+[2026-04-03T10:52:38Z] [shell] CMD: mode operator
+[2026-04-03T10:52:38Z] [shell] shell started (mode=operator)
+[2026-04-03T10:52:38Z] [shell] CMD: write integration-test-file.txt hello_integration
+[2026-04-03T10:52:38Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/integration-test-file.txt
+[2026-04-03T10:52:38Z] [shell] CMD: read integration-test-file.txt
+[2026-04-03T10:52:38Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/integration-test-file.txt
+[2026-04-03T10:52:39Z] [shell] shell started (mode=operator)
+[2026-04-03T10:52:39Z] [shell] CMD: services
+[2026-04-03T10:52:39Z] [real-shell] real-shell started
+[2026-04-03T10:52:39Z] [real-shell] CMD: help
+[2026-04-03T10:52:39Z] [real-shell] EOF exit
+[2026-04-03T10:52:39Z] [real-shell] real-shell started
+[2026-04-03T10:52:39Z] [real-shell] CMD: sysinfo
+[2026-04-03T10:52:39Z] [real-shell] EOF exit
+[2026-04-03T10:52:39Z] [real-shell] real-shell started
+[2026-04-03T10:52:39Z] [real-shell] CMD: netinfo
+[2026-04-03T10:52:39Z] [real-shell] EOF exit
+[2026-04-03T10:52:39Z] [real-shell] real-shell started
+[2026-04-03T10:52:39Z] [real-shell] CMD: diskinfo
+[2026-04-03T10:52:39Z] [real-shell] EOF exit
+[2026-04-03T10:52:39Z] [real-shell] real-shell started
+[2026-04-03T10:52:39Z] [real-shell] CMD: logread aura
+[2026-04-03T10:52:39Z] [real-shell] EOF exit
+[2026-04-03T10:52:39Z] [real-shell] real-shell started
+[2026-04-03T10:52:39Z] [real-shell] CMD: echo test_passthrough_7971
+[2026-04-03T10:52:39Z] [real-shell] EXEC: echo test_passthrough_7971
+[2026-04-03T10:52:39Z] [real-shell] EOF exit
+[2026-04-03T10:52:39Z] [real-shell] real-shell started
+[2026-04-03T10:52:39Z] [real-shell] CMD: sysinf
+[2026-04-03T10:52:39Z] [real-shell] TYPO: 'sysinf' -> 'sysinfo'
+[2026-04-03T10:52:39Z] [real-shell] CMD: sysinfo
+[2026-04-03T10:52:39Z] [real-shell] EOF exit
+[2026-04-03T10:52:39Z] [kernel] kernel started pid=8664
+[2026-04-03T10:52:39Z] [kernel] heartbeat 1 pid=8664
+[2026-04-03T10:52:42Z] [kernel] kernel stopped pid=8664
+[2026-04-03T10:52:44Z] [agents] agent loaded: heartbeat
+[2026-04-03T10:52:44Z] [agents] agent loaded: listener
+[2026-04-03T10:52:44Z] [agents] agent loaded: autosys
+[2026-04-03T10:52:44Z] [agents] agent loaded: bridge
+[2026-04-03T10:52:44Z] [agents] agent daemon launched pid=8757
+[2026-04-03T10:52:44Z] [agents] agent daemon started pid=8757
+[2026-04-03T10:52:48Z] [agents] agent daemon stopped pid=8757
+[2026-04-03T10:52:48Z] [tasks] task scheduler launched pid=9501
+[2026-04-03T10:52:48Z] [tasks] task scheduler started pid=9501
+[2026-04-03T10:52:48Z] [tasks] task ran: healthcheck
+[2026-04-03T10:52:48Z] [tasks] task ran: autosave
+[2026-04-03T10:52:48Z] [tasks] task ran: bridge-monitor
+[2026-04-03T10:52:48Z] [tasks] task ran: logwatch
+[2026-04-03T10:52:53Z] [tasks] task ran: logwatch
+[2026-04-03T10:52:53Z] [tasks] task ran: logwatch
+[2026-04-03T10:52:56Z] [tasks] task scheduler stopped pid=9501
+[2026-04-03T10:52:56Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/inttest-py-7971.txt
+[2026-04-03T10:52:56Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/inttest-py-7971.txt
+[2026-04-03T10:52:56Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T10:52:56Z] inttest log entry 7971
+[2026-04-03T10:52:56Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
