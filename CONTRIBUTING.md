@@ -1,143 +1,203 @@
-# Contributing to AIOS-Lite
+# Contributing to AIOS-Lite / AIOSCPU
 
-Thank you for your interest in contributing to **AIOS-Lite**. This guide explains how to participate in the project respectfully and effectively.
+> © 2026 Christopher Betts | AIOSCPU Official | AI-generated, fully legal
+
+Thank you for your interest in contributing! This document explains how to
+participate in the project.
 
 ---
 
 ## Table of Contents
 
-- [Before You Start](#before-you-start)
-- [Code Standards](#code-standards)
-- [Submitting Pull Requests](#submitting-pull-requests)
-- [Reporting Issues](#reporting-issues)
-- [Feature Requests](#feature-requests)
-- [Safe and Respectful Collaboration](#safe-and-respectful-collaboration)
+1. [Code of Conduct](#1-code-of-conduct)
+2. [How to Report a Bug](#2-how-to-report-a-bug)
+3. [How to Request a Feature](#3-how-to-request-a-feature)
+4. [Development Environment](#4-development-environment)
+5. [Branching Strategy](#5-branching-strategy)
+6. [Commit Message Format](#6-commit-message-format)
+7. [Pull Request Process](#7-pull-request-process)
+8. [Coding Standards](#8-coding-standards)
+9. [Testing Requirements](#9-testing-requirements)
+10. [Documentation Requirements](#10-documentation-requirements)
+11. [License Agreement](#11-license-agreement)
 
 ---
 
-## Before You Start
+## 1. Code of Conduct
 
-1. **Read the documentation.** Familiarise yourself with the [README](README.md), [docs/MANUAL.md](docs/MANUAL.md), and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before making changes.
-2. **Open an issue first.** For any non-trivial change (new feature, architectural change, refactor), open a GitHub Issue to discuss your proposal before writing code. This avoids duplicated effort and keeps the project coherent.
-3. **Fork the repository.** Work in your own fork. Do not push directly to `main`.
-4. **Keep changes focused.** One pull request should address one concern. Avoid bundling unrelated changes.
+All contributors must follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+Violations may result in removal from the project.
 
 ---
 
-## Code Standards
+## 2. How to Report a Bug
+
+1. Search [existing issues](https://github.com/Cbetts1/PROJECT/issues) first.
+2. If the bug is new, open an issue using the **Bug Report** template.
+3. Include:
+   - OS / environment (Termux, Debian, macOS)
+   - AIOS version (`cat OS/etc/os-release`)
+   - Steps to reproduce
+   - Expected behaviour vs. actual behaviour
+   - Relevant log output from `OS/var/log/os.log`
+
+---
+
+## 3. How to Request a Feature
+
+1. Open an issue using the **Feature Request** template.
+2. Describe the problem the feature solves.
+3. Propose an implementation approach if you have one.
+4. Wait for maintainer review before starting significant work.
+
+---
+
+## 4. Development Environment
+
+### Prerequisites
+
+```sh
+# Minimal (core OS)
+POSIX sh, awk, grep, sed, cksum, python3
+
+# Full development
+python3 >= 3.9
+bash >= 5.0
+shellcheck        # shell script linting
+pytest            # Python tests
+```
+
+### Clone and bootstrap
+
+```sh
+git clone https://github.com/Cbetts1/PROJECT.git
+cd PROJECT
+export AIOS_HOME=$(pwd)
+export OS_ROOT=$(pwd)/OS
+```
+
+### Run tests
+
+```sh
+# Unit tests (shell + Python)
+AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS bash tests/unit-tests.sh
+
+# Integration tests
+AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS bash tests/integration-tests.sh
+
+# Python modules only
+python3 tests/test_python_modules.py
+```
+
+---
+
+## 5. Branching Strategy
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Stable release branch |
+| `develop` | Integration branch |
+| `feature/<name>` | New features |
+| `fix/<name>` | Bug fixes |
+| `docs/<name>` | Documentation only |
+| `hotfix/<name>` | Critical production fixes |
+
+Always branch from `develop` for features and fixes.
+
+---
+
+## 6. Commit Message Format
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>(<scope>): <short description>
+
+[optional body]
+
+[optional footer]
+```
+
+**Types:** `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+
+**Examples:**
+
+```
+feat(ai-core): add RepairBot restart handler
+fix(os-sched): remove stale pid entries on startup
+docs(kernel): expand syscall table with spawn examples
+```
+
+---
+
+## 7. Pull Request Process
+
+1. Fork the repository and create your branch from `develop`.
+2. Ensure all existing tests pass.
+3. Add new tests for any new functionality.
+4. Update relevant documentation.
+5. Run `shellcheck` on all modified shell scripts.
+6. Open a pull request against `develop`.
+7. Fill in the PR template completely.
+8. A maintainer will review within 7 days.
+9. Address review comments; the PR will be merged when approved.
+
+---
+
+## 8. Coding Standards
 
 ### Shell Scripts
 
-- Use POSIX sh syntax unless a specific bash feature is explicitly required and clearly documented.
-- Use `shellcheck` to lint all shell scripts before submitting. Zero warnings is the target.
-- Indent with 4 spaces. No tabs.
-- Quote all variable expansions (`"$VAR"`, not `$VAR`) unless word-splitting is intentional.
-- Use `set -euo pipefail` at the top of all non-trivial scripts.
-- Keep lines under 100 characters where practical.
-- Comment non-obvious logic. Match the existing comment style (inline `#` or block comment headers).
+- Use `#!/bin/sh` (POSIX sh) unless Bash-specific features are required.
+- Use `#!/usr/bin/env bash` for Bash scripts.
+- Pass `shellcheck` with no warnings (`shellcheck -S warning`).
+- All paths through the OS boundary must use `OS/lib/filesystem.py` or
+  the `os-syscall` interface — never raw `cat`/`echo` outside OS_ROOT.
+- Functions must have descriptive names using `snake_case`.
+- Variables are `UPPER_CASE` for globals, `lower_case` for locals.
+- Quote all variable expansions: `"$VAR"`.
 
 ### Python
 
-- Targets Python 3.8+. Use only the standard library plus explicitly declared dependencies.
-- Follow [PEP 8](https://pep8.org/) style. Run `flake8` before submitting.
-- Use type hints for all function signatures.
-- Docstrings are required for all public functions and classes (Google-style preferred).
-- Do not add new `pip` dependencies without prior discussion in an issue.
+- Follow [PEP 8](https://peps.python.org/pep-0008/).
+- Use type hints where practical.
+- Maximum line length: 100 characters.
+- Use `python3` — no Python 2 compatibility required.
+- All public functions must have docstrings.
 
-### Configuration Files
+### Markdown
 
-- Use existing key naming conventions in `config/aios.conf` and `etc/aios.conf`.
-- Do not commit sensitive values (tokens, passwords, personal paths).
-
-### Documentation
-
-- Write in clear, professional British or American English.
-- Update the relevant documentation file when behaviour changes.
-- Use Markdown tables and code blocks consistently with the existing docs style.
+- Follow [CommonMark](https://commonmark.org/) spec.
+- All documentation must include the AIOSCPU copyright watermark.
+- Keep lines under 100 characters.
 
 ---
 
-## Submitting Pull Requests
+## 9. Testing Requirements
 
-1. **Branch from `main`** using a descriptive branch name:
-   ```
-   feature/ios-bridge-improvements
-   fix/heartbeat-sigterm-handling
-   docs/update-install-guide
-   ```
-
-2. **Write meaningful commit messages.** Use the imperative mood:
-   - `Add retry logic to SSH bridge module`
-   - `Fix typo correction false positives in aura-typo.sh`
-   - `Update AI_MODEL_SETUP.md with Q4_K_M benchmark results`
-
-3. **Run the test suite before opening a PR:**
-   ```sh
-   AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS bash tests/unit-tests.sh
-   AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS bash tests/integration-tests.sh
-   python3 tests/test_python_modules.py
-   ```
-   All tests must pass.
-
-4. **Fill in the PR template completely.** Describe what you changed, why, and how to test it.
-
-5. **Expect review feedback.** Respond to review comments promptly and courteously. Maintain a constructive tone.
-
-6. **Do not merge your own PRs.** Wait for maintainer approval.
-
-### PR Checklist
-
-- [ ] Tests pass locally
-- [ ] Shell scripts pass `shellcheck` with no warnings
-- [ ] Python code passes `flake8`
-- [ ] Documentation updated where applicable
-- [ ] No secrets or personal data committed
-- [ ] PR description clearly explains the change and how to verify it
+- All new shell commands must have a corresponding test in
+  `tests/unit-tests.sh`.
+- All new Python modules must have tests in `tests/test_python_modules.py`.
+- Integration behaviour must be covered in `tests/integration-tests.sh`.
+- Tests must be idempotent — no side effects on the host OS.
 
 ---
 
-## Reporting Issues
+## 10. Documentation Requirements
 
-Use [GitHub Issues](https://github.com/Cbetts1/PROJECT/issues) to report bugs.
-
-**When filing a bug report, include:**
-
-- AIOS-Lite version (check `config/aios.conf` → `AIOS_VERSION`)
-- Operating system and shell environment (e.g., Termux on Android 14, Ubuntu 22.04 bash 5.1)
-- Steps to reproduce the problem (exact commands)
-- Expected behaviour
-- Actual behaviour / error output (use code blocks)
-- Relevant log excerpts from `OS/var/log/`
-
-**Security vulnerabilities** must **not** be reported in public issues. Please contact the maintainer directly via the repository contact information.
+- Every new command must be documented in `docs/API-REFERENCE.md`.
+- New OS concepts must be referenced in the relevant spec document under
+  `docs/`.
+- Update `CHANGELOG.md` for every user-facing change.
 
 ---
 
-## Feature Requests
+## 11. License Agreement
 
-Open a GitHub Issue with the label `enhancement`. Describe:
-
-- The use case or problem you are solving
-- Your proposed solution or interface
-- Any alternatives you considered
-
-Feature requests are evaluated against the project's core goals: portability, AI integration, cross-OS bridging, and minimal dependencies.
+By submitting a pull request, you agree that your contribution will be
+licensed under the [MIT License](LICENSE) and you confirm that you have the
+right to submit it under that license.
 
 ---
 
-## Safe and Respectful Collaboration
-
-All contributors are expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
-
-In practical terms:
-
-- Be constructive, patient, and professional in all communications.
-- Assume good faith in others' contributions.
-- Disagreements about technical direction should be resolved through reasoned discussion, not personal criticism.
-- Contributions of all sizes are welcome — a corrected typo is as legitimate as a new subsystem.
-- The maintainer reserves the right to decline contributions that conflict with the project's goals, quality standards, or values.
-
----
-
-*AIOS-Lite — Built by Christopher Betts*
-*© 2026 Christopher Betts. All rights reserved.*
+*Questions? Open a discussion or contact the maintainer via the repository.*
