@@ -1,17 +1,29 @@
-# AIOS-Lite — AI-Augmented Portable Operating System
+# AIOS-Lite — Your AI OS. Any Device. Any Shell.
 
-**AIOS-Lite** is a lightweight, AI-powered operating system built entirely in POSIX shell script. It runs on any Unix-like environment (Termux/Android, Linux, macOS) and can **bridge to and mirror** other operating systems — plug it into an iPhone, Android phone, or remote Linux server, and your OS gains access to those systems through a unified interface.
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0--Aurora-blue.svg)](CHANGELOG.md)
+[![Tests](https://img.shields.io/badge/tests-144%20passing-brightgreen.svg)](tests/)
 
----
-
-## Vision
+**AIOS-Lite** is a portable, AI-native operating system built entirely in POSIX shell and Python 3.
+It runs on any Unix-like environment (Android/Termux, Linux, macOS) — no root, no installation required.
+Drop in a LLaMA model and your shell starts thinking.  Connect a device and your OS mirrors it.
 
 > *"Plug your OS into any device and your system mirrors it — giving you the power of your AI OS on top of any platform."*
 
-- **Portable**: Runs from a USB drive, Android phone (Termux), Raspberry Pi, or any shell
-- **AI-Powered**: Hybrid memory (context + symbolic + semantic) + optional LLaMA LLM
-- **Cross-OS Bridge**: Connect to iOS, Android, Linux, macOS, or remote SSH hosts
-- **Mirror Filesystem**: Access other devices' files through your own namespace at `$OS_ROOT/mirror/`
+---
+
+## Why AIOS-Lite?
+
+| | |
+|---|---|
+| 🧠 **On-device AI** | LLaMA inference runs on your hardware — no cloud, no subscription, no telemetry |
+| 🐚 **Shell-portable** | Clone and boot in under a minute on Android (Termux), Linux, or macOS |
+| 🔗 **Cross-OS bridge** | Mirror iOS, Android, and Linux filesystems into a unified namespace |
+| 🛡️ **Capability security** | Fine-grained permissions per principal; every syscall is audit-logged |
+| 🔁 **Self-healing** | Five-stage automated recovery mode detects and repairs itself |
+| 🌐 **REST + WebSocket API** | Built-in HTTP server with TLS 1.2, token auth, and Server-Sent Events |
+| 💾 **3-layer AI memory** | Context window + symbolic key-value + semantic embeddings + hybrid recall |
+| 📦 **Reproducible builds** | Portable shell mode (zero build) or full AIOSCPU disk image from source |
 
 ---
 
@@ -207,6 +219,42 @@ When a `.gguf` model is present in `llama_model/` and `llama-cli` is installed, 
 
 ---
 
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture and directory structure |
+| [docs/KERNEL-DESIGN.md](docs/KERNEL-DESIGN.md) | Pseudo-kernel design, boot sequence, syscall table |
+| [docs/CAPABILITIES.md](docs/CAPABILITIES.md) | Full capability matrix (status / component / tested) |
+| [docs/API-REFERENCE.md](docs/API-REFERENCE.md) | Complete API reference (syscall, kernel, REST, AI) |
+| [docs/AURA-API.md](docs/AURA-API.md) | AURA agent API reference |
+| [docs/SECURITY.md](docs/SECURITY.md) | Security architecture and hardening guide |
+| [docs/INSTALL.md](docs/INSTALL.md) | Installation guide (AIOSCPU image) |
+| [docs/REPRODUCIBLE-BUILD.md](docs/REPRODUCIBLE-BUILD.md) | Reproducible build instructions |
+| [docs/AI_MODEL_SETUP.md](docs/AI_MODEL_SETUP.md) | LLaMA model setup guide |
+| [CHANGELOG.md](CHANGELOG.md) | Full release history |
+| [ROADMAP.md](ROADMAP.md) | Short-term and long-term goals |
+| [SECURITY.md](SECURITY.md) | Vulnerability reporting policy |
+| [LAUNCH.md](LAUNCH.md) | Public launch materials, press release, branding |
+
+---
+
+## Contributing
+
+Contributions are welcome!  See [MAINTAINERS.md](MAINTAINERS.md) for the
+contribution process.
+
+Run the test suite before submitting:
+```sh
+AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS bash tests/unit-tests.sh
+AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS bash tests/integration-tests.sh
+```
+
+---
+
 ## License
 
-MIT — Built by Chris
+MIT — © 2026 Christopher Betts.  See [LICENSE](LICENSE) for the full text.
+
+Third-party dependency licenses: [licenses/THIRD_PARTY_LICENSES.md](licenses/THIRD_PARTY_LICENSES.md)
+
