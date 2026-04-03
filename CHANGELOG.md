@@ -11,6 +11,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- `.github/workflows/ci.yml` — automated CI pipeline (GitHub Actions) with four
+  jobs: `shellcheck` (error-level enforcement on all shell scripts), `unit-tests`
+  (17 shell + 40 Python), `integration-tests` (87 cases), and `pytest-coverage`
+  (pytest with `pytest-cov` producing an XML coverage report artifact)
+- `.gitignore` extended to exclude runtime-generated test artifacts
+  (`OS/proc/aura/memory/`, `OS/proc/aura/semantic/`, `OS/var/backup/`,
+  `coverage.xml`, `.coverage`, `htmlcov/`)
+
+### Added
 - Complete documentation suite: CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md,
   ROADMAP.md, INSTALL.md, USAGE.md
 - OS-level specification documents: BOOT-SEQUENCE.md, SYSCALL-LIST.md,

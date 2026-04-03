@@ -22,3 +22,13 @@ OS/var/boot.time
 OS/proc/os.messages
 OS/proc/aura/bridge/status
 OS/proc/aura.memory.bak
+OS/proc/aura/memory/*.mem
+OS/proc/aura/semantic/*.sem
+OS/proc/aura/context/
+OS/proc/os.state
+# Backup snapshots created at runtime
+OS/var/backup/
+# pytest / coverage artifacts
+coverage.xml
+.coverage
+htmlcov/

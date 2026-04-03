@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # shellcheck — enforce no shell script errors
+  # ---------------------------------------------------------------------------
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Run shellcheck (error-level)
+        run: |
+          shellcheck --severity=error \
+            tests/unit-tests.sh \
+            tests/integration-tests.sh \
+            lib/*.sh \
+            bin/aios \
+            bin/aios-sys \
+            bin/aios-heartbeat
+
+  # ---------------------------------------------------------------------------
+  # unit-tests — shell + Python AI core (tests/unit-tests.sh)
+  # ---------------------------------------------------------------------------
+  unit-tests:
+    name: unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run unit tests
+        run: AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS bash tests/unit-tests.sh
+
+  # ---------------------------------------------------------------------------
+  # integration-tests — full OS integration suite
+  # ---------------------------------------------------------------------------
+  integration-tests:
+    name: integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run integration tests
+        run: AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS bash tests/integration-tests.sh
+
+  # ---------------------------------------------------------------------------
+  # pytest-coverage — pytest enforcement + XML coverage report
+  # ---------------------------------------------------------------------------
+  pytest-coverage:
+    name: pytest + coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pytest and coverage
+        run: pip install pytest pytest-cov
+
+      - name: Run pytest with coverage
+        run: |
+          AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS \
+          PYTHONPATH=$(pwd)/ai/core \
+          pytest tests/test_python_modules.py \
+            --cov=ai/core \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            -v
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
