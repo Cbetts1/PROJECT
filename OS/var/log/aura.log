@@ -1,0 +1,345 @@
+[2026-04-03T09:07:06Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T09:07:06Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4053.txt
+[2026-04-03T09:07:06Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4053.txt
+[2026-04-03T09:07:06Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4053.txt
+[2026-04-03T09:07:06Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4053.txt
+[2026-04-03T09:07:06Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4053.txt
+[2026-04-03T09:07:06Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:07:07Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:07:07Z] unit-test marker 4053
+[2026-04-03T09:07:07Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:07:07Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:07:07Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-03T09:07:53Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T09:07:53Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4157.txt
+[2026-04-03T09:07:54Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4157.txt
+[2026-04-03T09:07:54Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4157.txt
+[2026-04-03T09:07:54Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4157.txt
+[2026-04-03T09:07:54Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4157.txt
+[2026-04-03T09:07:54Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:07:54Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:07:54Z] unit-test marker 4157
+[2026-04-03T09:07:54Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:07:54Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:07:54Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-03T09:17:35Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T09:17:35Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4487.txt
+[2026-04-03T09:17:35Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4487.txt
+[2026-04-03T09:17:35Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4487.txt
+[2026-04-03T09:17:35Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4487.txt
+[2026-04-03T09:17:35Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4487.txt
+[2026-04-03T09:17:35Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:17:35Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:17:35Z] unit-test marker 4487
+[2026-04-03T09:17:35Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:17:35Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:17:35Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-03T09:17:40Z] [shell] shell started (mode=operator)
+[2026-04-03T09:17:40Z] [shell] CMD: help
+[2026-04-03T09:17:40Z] [shell] shell started (mode=operator)
+[2026-04-03T09:17:40Z] [shell] CMD: sysinfo
+[2026-04-03T09:17:40Z] [shell] shell started (mode=operator)
+[2026-04-03T09:17:40Z] [shell] CMD: uptime
+[2026-04-03T09:17:40Z] [shell] shell started (mode=operator)
+[2026-04-03T09:17:40Z] [shell] CMD: disk
+[2026-04-03T09:17:40Z] [shell] shell started (mode=operator)
+[2026-04-03T09:17:40Z] [shell] CMD: ls
+[2026-04-03T09:17:40Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS
+[2026-04-03T09:17:40Z] [shell] shell started (mode=operator)
+[2026-04-03T09:17:40Z] [shell] CMD: mem.set test.key.4541 integration_value
+[2026-04-03T09:17:40Z] [shell] CMD: mem.get test.key.4541
+[2026-04-03T09:17:40Z] [shell] CMD: exit
+[2026-04-03T09:17:40Z] [shell] shell exit
+[2026-04-03T09:17:40Z] [shell] shell started (mode=operator)
+[2026-04-03T09:17:40Z] [shell] CMD: sem.set sem.test.4541 hello semantic world
+[2026-04-03T09:17:40Z] [shell] CMD: sem.search hello
+[2026-04-03T09:17:40Z] [shell] shell started (mode=operator)
+[2026-04-03T09:17:40Z] [shell] CMD: sysinf
+[2026-04-03T09:17:40Z] [shell] TYPO: 'sysinf' -> 'sysinfo'
+[2026-04-03T09:17:40Z] [shell] CMD: sysinfo
+[2026-04-03T09:17:40Z] [shell] shell started (mode=operator)
+[2026-04-03T09:17:40Z] [shell] CMD: ask hello
+[2026-04-03T09:17:40Z] [shell] AI: Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?
+[2026-04-03T09:17:40Z] [shell] shell started (mode=operator)
+[2026-04-03T09:17:40Z] [shell] CMD: mode system
+[2026-04-03T09:17:40Z] [shell] CMD: mode operator
+[2026-04-03T09:17:40Z] [shell] shell started (mode=operator)
+[2026-04-03T09:17:40Z] [shell] CMD: write integration-test-file.txt hello_integration
+[2026-04-03T09:17:40Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/integration-test-file.txt
+[2026-04-03T09:17:40Z] [shell] CMD: read integration-test-file.txt
+[2026-04-03T09:17:40Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/integration-test-file.txt
+[2026-04-03T09:17:40Z] [shell] shell started (mode=operator)
+[2026-04-03T09:17:40Z] [shell] CMD: services
+[2026-04-03T09:17:41Z] [real-shell] real-shell started
+[2026-04-03T09:17:41Z] [real-shell] CMD: help
+[2026-04-03T09:17:41Z] [real-shell] EOF exit
+[2026-04-03T09:17:41Z] [real-shell] real-shell started
+[2026-04-03T09:17:41Z] [real-shell] CMD: sysinfo
+[2026-04-03T09:17:41Z] [real-shell] EOF exit
+[2026-04-03T09:17:41Z] [real-shell] real-shell started
+[2026-04-03T09:17:41Z] [real-shell] CMD: netinfo
+[2026-04-03T09:17:41Z] [real-shell] EOF exit
+[2026-04-03T09:17:41Z] [real-shell] real-shell started
+[2026-04-03T09:17:41Z] [real-shell] CMD: diskinfo
+[2026-04-03T09:17:41Z] [real-shell] EOF exit
+[2026-04-03T09:17:41Z] [real-shell] real-shell started
+[2026-04-03T09:17:41Z] [real-shell] CMD: logread aura
+[2026-04-03T09:17:41Z] [real-shell] EOF exit
+[2026-04-03T09:17:41Z] [real-shell] real-shell started
+[2026-04-03T09:17:41Z] [real-shell] CMD: echo test_passthrough_4541
+[2026-04-03T09:17:41Z] [real-shell] EXEC: echo test_passthrough_4541
+[2026-04-03T09:17:41Z] [real-shell] EOF exit
+[2026-04-03T09:17:41Z] [real-shell] real-shell started
+[2026-04-03T09:17:41Z] [real-shell] CMD: sysinf
+[2026-04-03T09:17:41Z] [real-shell] TYPO: 'sysinf' -> 'sysinfo'
+[2026-04-03T09:17:41Z] [real-shell] CMD: sysinfo
+[2026-04-03T09:17:41Z] [real-shell] EOF exit
+[2026-04-03T09:17:41Z] [kernel] kernel started pid=5216
+[2026-04-03T09:17:41Z] [kernel] heartbeat 1 pid=5216
+[2026-04-03T09:17:44Z] [kernel] kernel stopped pid=5216
+[2026-04-03T09:17:46Z] [kernel] heartbeat 2 pid=5216
+[2026-04-03T09:17:51Z] [kernel] heartbeat 3 pid=5216
+[2026-04-03T09:17:56Z] [kernel] heartbeat 4 pid=5216
+[2026-04-03T09:17:58Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/inttest-py-4541.txt
+[2026-04-03T09:17:58Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/inttest-py-4541.txt
+[2026-04-03T09:17:58Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:17:58Z] inttest log entry 4541
+[2026-04-03T09:17:58Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:18:01Z] [kernel] heartbeat 5 pid=5216
+[2026-04-03T09:18:06Z] [kernel] heartbeat 6 pid=5216
+[2026-04-03T09:18:09Z] [shell] shell started (mode=operator)
+[2026-04-03T09:18:09Z] [shell] CMD: mem.set test.key.debug hello
+[2026-04-03T09:18:09Z] [shell] CMD: mem.get test.key.debug
+[2026-04-03T09:18:09Z] [shell] CMD: exit
+[2026-04-03T09:18:09Z] [shell] shell exit
+[2026-04-03T09:18:11Z] [kernel] heartbeat 7 pid=5216
+[2026-04-03T09:18:16Z] [kernel] heartbeat 8 pid=5216
+[2026-04-03T09:18:21Z] [kernel] heartbeat 9 pid=5216
+[2026-04-03T09:18:26Z] [kernel] heartbeat 10 pid=5216
+[2026-04-03T09:18:31Z] [kernel] heartbeat 11 pid=5216
+[2026-04-03T09:18:36Z] [kernel] task ran: autosave
+[2026-04-03T09:18:36Z] [kernel] task ran: bridge-monitor
+[2026-04-03T09:18:36Z] [kernel] task ran: healthcheck
+[2026-04-03T09:18:36Z] [kernel] task ran: logwatch
+[2026-04-03T09:18:36Z] [kernel] heartbeat 12 pid=5216
+[2026-04-03T09:18:41Z] [kernel] heartbeat 13 pid=5216
+[2026-04-03T09:18:46Z] [kernel] heartbeat 14 pid=5216
+[2026-04-03T09:18:48Z] [shell] shell started (mode=operator)
+[2026-04-03T09:18:48Z] [shell] CMD: mem.set testkey123 helloworld
+[2026-04-03T09:18:48Z] [shell] CMD: mem.get testkey123
+[2026-04-03T09:18:48Z] [shell] CMD: exit
+[2026-04-03T09:18:48Z] [shell] shell exit
+[2026-04-03T09:18:51Z] [kernel] heartbeat 15 pid=5216
+[2026-04-03T09:18:56Z] [kernel] heartbeat 16 pid=5216
+[2026-04-03T09:19:01Z] [kernel] heartbeat 17 pid=5216
+[2026-04-03T09:19:06Z] [kernel] heartbeat 18 pid=5216
+[2026-04-03T09:19:11Z] [kernel] heartbeat 19 pid=5216
+[2026-04-03T09:19:16Z] [kernel] heartbeat 20 pid=5216
+[2026-04-03T09:19:21Z] [kernel] heartbeat 21 pid=5216
+[2026-04-03T09:19:26Z] [kernel] heartbeat 22 pid=5216
+[2026-04-03T09:19:31Z] [kernel] heartbeat 23 pid=5216
+[2026-04-03T09:19:36Z] [kernel] task ran: autosave
+[2026-04-03T09:19:36Z] [kernel] task ran: bridge-monitor
+[2026-04-03T09:19:36Z] [kernel] task ran: healthcheck
+[2026-04-03T09:19:36Z] [kernel] task ran: logwatch
+[2026-04-03T09:19:36Z] [kernel] heartbeat 24 pid=5216
+[2026-04-03T09:19:41Z] [kernel] heartbeat 25 pid=5216
+[2026-04-03T09:19:46Z] [kernel] heartbeat 26 pid=5216
+[2026-04-03T09:19:51Z] [kernel] heartbeat 27 pid=5216
+[2026-04-03T09:19:56Z] [kernel] heartbeat 28 pid=5216
+[2026-04-03T09:20:01Z] [kernel] heartbeat 29 pid=5216
+[2026-04-03T09:20:06Z] [kernel] heartbeat 30 pid=5216
+[2026-04-03T09:20:11Z] [kernel] kernel started pid=5889
+[2026-04-03T09:20:11Z] [kernel] heartbeat 1 pid=5889
+[2026-04-03T09:20:11Z] [kernel] heartbeat 31 pid=5216
+[2026-04-03T09:20:13Z] [kernel] kernel stopped pid=5889
+[2026-04-03T09:20:16Z] [kernel] heartbeat 2 pid=5889
+[2026-04-03T09:20:16Z] [kernel] heartbeat 32 pid=5216
+[2026-04-03T09:20:21Z] [kernel] heartbeat 3 pid=5889
+[2026-04-03T09:20:21Z] [kernel] heartbeat 33 pid=5216
+[2026-04-03T09:20:26Z] [kernel] heartbeat 34 pid=5216
+[2026-04-03T09:20:26Z] [kernel] heartbeat 4 pid=5889
+[2026-04-03T09:20:31Z] [kernel] heartbeat 5 pid=5889
+[2026-04-03T09:20:31Z] [kernel] heartbeat 35 pid=5216
+[2026-04-03T09:20:36Z] [kernel] task ran: autosave
+[2026-04-03T09:20:36Z] [kernel] heartbeat 6 pid=5889
+[2026-04-03T09:20:36Z] [kernel] task ran: bridge-monitor
+[2026-04-03T09:20:36Z] [kernel] task ran: healthcheck
+[2026-04-03T09:20:36Z] [kernel] task ran: logwatch
+[2026-04-03T09:20:36Z] [kernel] heartbeat 36 pid=5216
+[2026-04-03T09:20:41Z] [kernel] heartbeat 7 pid=5889
+[2026-04-03T09:20:41Z] [kernel] heartbeat 37 pid=5216
+[2026-04-03T09:20:46Z] [kernel] heartbeat 8 pid=5889
+[2026-04-03T09:20:46Z] [kernel] heartbeat 38 pid=5216
+[2026-04-03T09:20:51Z] [kernel] heartbeat 9 pid=5889
+[2026-04-03T09:20:51Z] [kernel] heartbeat 39 pid=5216
+[2026-04-03T09:20:56Z] [kernel] heartbeat 10 pid=5889
+[2026-04-03T09:20:56Z] [kernel] heartbeat 40 pid=5216
+[2026-04-03T09:21:01Z] [kernel] heartbeat 11 pid=5889
+[2026-04-03T09:21:01Z] [kernel] heartbeat 41 pid=5216
+[2026-04-03T09:21:06Z] [kernel] task ran: autosave
+[2026-04-03T09:21:06Z] [kernel] task ran: bridge-monitor
+[2026-04-03T09:21:06Z] [kernel] task ran: healthcheck
+[2026-04-03T09:21:06Z] [kernel] heartbeat 42 pid=5216
+[2026-04-03T09:21:06Z] [kernel] task ran: logwatch
+[2026-04-03T09:21:06Z] [kernel] heartbeat 12 pid=5889
+[2026-04-03T09:21:11Z] [kernel] heartbeat 43 pid=5216
+[2026-04-03T09:21:11Z] [kernel] heartbeat 13 pid=5889
+[2026-04-03T09:21:16Z] [kernel] heartbeat 44 pid=5216
+[2026-04-03T09:21:16Z] [kernel] heartbeat 14 pid=5889
+[2026-04-03T09:21:21Z] [kernel] heartbeat 45 pid=5216
+[2026-04-03T09:21:21Z] [kernel] heartbeat 15 pid=5889
+[2026-04-03T09:21:26Z] [kernel] heartbeat 46 pid=5216
+[2026-04-03T09:21:26Z] [kernel] heartbeat 16 pid=5889
+[2026-04-03T09:21:31Z] [kernel] heartbeat 17 pid=5889
+[2026-04-03T09:21:31Z] [kernel] heartbeat 47 pid=5216
+[2026-04-03T09:21:36Z] [kernel] task ran: autosave
+[2026-04-03T09:21:36Z] [kernel] heartbeat 18 pid=5889
+[2026-04-03T09:21:36Z] [kernel] task ran: bridge-monitor
+[2026-04-03T09:21:36Z] [kernel] task ran: healthcheck
+[2026-04-03T09:21:36Z] [kernel] task ran: logwatch
+[2026-04-03T09:21:36Z] [kernel] heartbeat 48 pid=5216
+[2026-04-03T09:21:41Z] [kernel] heartbeat 19 pid=5889
+[2026-04-03T09:21:41Z] [kernel] heartbeat 49 pid=5216
+[2026-04-03T09:21:46Z] [kernel] heartbeat 20 pid=5889
+[2026-04-03T09:21:46Z] [kernel] heartbeat 50 pid=5216
+[2026-04-03T09:21:51Z] [kernel] heartbeat 21 pid=5889
+[2026-04-03T09:21:51Z] [kernel] heartbeat 51 pid=5216
+[2026-04-03T09:21:56Z] [kernel] heartbeat 22 pid=5889
+[2026-04-03T09:21:56Z] [kernel] heartbeat 52 pid=5216
+[2026-04-03T09:22:01Z] [kernel] heartbeat 23 pid=5889
+[2026-04-03T09:22:01Z] [kernel] heartbeat 53 pid=5216
+[2026-04-03T09:22:06Z] [kernel] task ran: autosave
+[2026-04-03T09:22:06Z] [kernel] task ran: bridge-monitor
+[2026-04-03T09:22:06Z] [kernel] task ran: healthcheck
+[2026-04-03T09:22:06Z] [kernel] task ran: logwatch
+[2026-04-03T09:22:06Z] [kernel] heartbeat 54 pid=5216
+[2026-04-03T09:22:06Z] [kernel] heartbeat 24 pid=5889
+[2026-04-03T09:22:11Z] [kernel] heartbeat 55 pid=5216
+[2026-04-03T09:22:11Z] [kernel] heartbeat 25 pid=5889
+[2026-04-03T09:22:13Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-03T09:22:13Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-6536.txt
+[2026-04-03T09:22:13Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-6536.txt
+[2026-04-03T09:22:13Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-6536.txt
+[2026-04-03T09:22:13Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-6536.txt
+[2026-04-03T09:22:13Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-6536.txt
+[2026-04-03T09:22:13Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:22:13Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:22:13Z] unit-test marker 6536
+[2026-04-03T09:22:13Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:22:13Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:22:13Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-03T09:22:16Z] [kernel] heartbeat 56 pid=5216
+[2026-04-03T09:22:16Z] [kernel] heartbeat 26 pid=5889
+[2026-04-03T09:22:18Z] [shell] shell started (mode=operator)
+[2026-04-03T09:22:18Z] [shell] CMD: help
+[2026-04-03T09:22:18Z] [shell] shell started (mode=operator)
+[2026-04-03T09:22:18Z] [shell] CMD: sysinfo
+[2026-04-03T09:22:18Z] [shell] shell started (mode=operator)
+[2026-04-03T09:22:18Z] [shell] CMD: uptime
+[2026-04-03T09:22:18Z] [shell] shell started (mode=operator)
+[2026-04-03T09:22:18Z] [shell] CMD: disk
+[2026-04-03T09:22:18Z] [shell] shell started (mode=operator)
+[2026-04-03T09:22:18Z] [shell] CMD: ls
+[2026-04-03T09:22:18Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS
+[2026-04-03T09:22:18Z] [shell] shell started (mode=operator)
+[2026-04-03T09:22:18Z] [shell] CMD: mem.set test.key.6606 integration_value
+[2026-04-03T09:22:18Z] [shell] CMD: mem.get test.key.6606
+[2026-04-03T09:22:18Z] [shell] shell started (mode=operator)
+[2026-04-03T09:22:18Z] [shell] CMD: sem.set sem.test.6606 hello semantic world
+[2026-04-03T09:22:18Z] [shell] CMD: sem.search hello
+[2026-04-03T09:22:18Z] [shell] shell started (mode=operator)
+[2026-04-03T09:22:18Z] [shell] CMD: sysinf
+[2026-04-03T09:22:18Z] [shell] TYPO: 'sysinf' -> 'sysinfo'
+[2026-04-03T09:22:18Z] [shell] CMD: sysinfo
+[2026-04-03T09:22:18Z] [shell] shell started (mode=operator)
+[2026-04-03T09:22:18Z] [shell] CMD: ask hello
+[2026-04-03T09:22:18Z] [shell] AI: Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?
+[2026-04-03T09:22:18Z] [shell] shell started (mode=operator)
+[2026-04-03T09:22:18Z] [shell] CMD: mode system
+[2026-04-03T09:22:18Z] [shell] CMD: mode operator
+[2026-04-03T09:22:18Z] [shell] shell started (mode=operator)
+[2026-04-03T09:22:18Z] [shell] CMD: write integration-test-file.txt hello_integration
+[2026-04-03T09:22:18Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/integration-test-file.txt
+[2026-04-03T09:22:18Z] [shell] CMD: read integration-test-file.txt
+[2026-04-03T09:22:18Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/integration-test-file.txt
+[2026-04-03T09:22:18Z] [shell] shell started (mode=operator)
+[2026-04-03T09:22:18Z] [shell] CMD: services
+[2026-04-03T09:22:18Z] [real-shell] real-shell started
+[2026-04-03T09:22:18Z] [real-shell] CMD: help
+[2026-04-03T09:22:18Z] [real-shell] EOF exit
+[2026-04-03T09:22:18Z] [real-shell] real-shell started
+[2026-04-03T09:22:18Z] [real-shell] CMD: sysinfo
+[2026-04-03T09:22:18Z] [real-shell] EOF exit
+[2026-04-03T09:22:19Z] [real-shell] real-shell started
+[2026-04-03T09:22:19Z] [real-shell] CMD: netinfo
+[2026-04-03T09:22:19Z] [real-shell] EOF exit
+[2026-04-03T09:22:19Z] [real-shell] real-shell started
+[2026-04-03T09:22:19Z] [real-shell] CMD: diskinfo
+[2026-04-03T09:22:19Z] [real-shell] EOF exit
+[2026-04-03T09:22:19Z] [real-shell] real-shell started
+[2026-04-03T09:22:19Z] [real-shell] CMD: logread aura
+[2026-04-03T09:22:19Z] [real-shell] EOF exit
+[2026-04-03T09:22:19Z] [real-shell] real-shell started
+[2026-04-03T09:22:19Z] [real-shell] CMD: echo test_passthrough_6606
+[2026-04-03T09:22:19Z] [real-shell] EXEC: echo test_passthrough_6606
+[2026-04-03T09:22:19Z] [real-shell] EOF exit
+[2026-04-03T09:22:19Z] [real-shell] real-shell started
+[2026-04-03T09:22:19Z] [real-shell] CMD: sysinf
+[2026-04-03T09:22:19Z] [real-shell] TYPO: 'sysinf' -> 'sysinfo'
+[2026-04-03T09:22:19Z] [real-shell] CMD: sysinfo
+[2026-04-03T09:22:19Z] [real-shell] EOF exit
+[2026-04-03T09:22:19Z] [kernel] kernel started pid=7286
+[2026-04-03T09:22:19Z] [kernel] heartbeat 1 pid=7286
+[2026-04-03T09:22:21Z] [kernel] heartbeat 57 pid=5216
+[2026-04-03T09:22:21Z] [kernel] heartbeat 27 pid=5889
+[2026-04-03T09:22:22Z] [kernel] kernel stopped pid=7286
+[2026-04-03T09:22:24Z] [agents] agent loaded: heartbeat
+[2026-04-03T09:22:24Z] [agents] agent loaded: listener
+[2026-04-03T09:22:24Z] [agents] agent loaded: autosys
+[2026-04-03T09:22:24Z] [agents] agent loaded: bridge
+[2026-04-03T09:22:24Z] [agents] agent daemon launched pid=7398
+[2026-04-03T09:22:24Z] [agents] agent daemon started pid=7398
+[2026-04-03T09:22:26Z] [kernel] heartbeat 58 pid=5216
+[2026-04-03T09:22:26Z] [kernel] heartbeat 28 pid=5889
+[2026-04-03T09:22:28Z] [agents] agent daemon stopped pid=7398
+[2026-04-03T09:22:28Z] [tasks] task scheduler launched pid=13253
+[2026-04-03T09:22:28Z] [tasks] task scheduler started pid=13253
+[2026-04-03T09:22:28Z] [tasks] task ran: healthcheck
+[2026-04-03T09:22:28Z] [tasks] task ran: autosave
+[2026-04-03T09:22:28Z] [tasks] task ran: bridge-monitor
+[2026-04-03T09:22:28Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:28Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:28Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:28Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:28Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:28Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:28Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:32Z] [kernel] heartbeat 59 pid=5216
+[2026-04-03T09:22:32Z] [kernel] heartbeat 29 pid=5889
+[2026-04-03T09:22:33Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:33Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:33Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:33Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:33Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:33Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:33Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:33Z] [tasks] task ran: logwatch
+[2026-04-03T09:22:36Z] [tasks] task scheduler stopped pid=13253
+[2026-04-03T09:22:36Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/inttest-py-6606.txt
+[2026-04-03T09:22:36Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/inttest-py-6606.txt
+[2026-04-03T09:22:36Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:22:36Z] inttest log entry 6606
+[2026-04-03T09:22:36Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-03T09:22:37Z] [kernel] task ran: autosave
+[2026-04-03T09:22:37Z] [kernel] heartbeat 30 pid=5889
+[2026-04-03T09:22:37Z] [kernel] task ran: bridge-monitor
+[2026-04-03T09:22:37Z] [kernel] task ran: healthcheck
+[2026-04-03T09:22:37Z] [kernel] task ran: logwatch
+[2026-04-03T09:22:37Z] [kernel] heartbeat 60 pid=5216
+[2026-04-03T09:22:42Z] [kernel] heartbeat 31 pid=5889
+[2026-04-03T09:22:42Z] [kernel] heartbeat 61 pid=5216
+[2026-04-03T09:22:47Z] [kernel] heartbeat 32 pid=5889
+[2026-04-03T09:22:47Z] [kernel] heartbeat 62 pid=5216
+[2026-04-03T09:22:52Z] [kernel] heartbeat 33 pid=5889
+[2026-04-03T09:22:52Z] [kernel] heartbeat 63 pid=5216
