@@ -1,212 +1,280 @@
-# AIOS-Lite — AI-Augmented Portable Operating System
+# AIOS-Lite
 
-**AIOS-Lite** is a lightweight, AI-powered operating system built entirely in POSIX shell script. It runs on any Unix-like environment (Termux/Android, Linux, macOS) and can **bridge to and mirror** other operating systems — plug it into an iPhone, Android phone, or remote Linux server, and your OS gains access to those systems through a unified interface.
+**AI-Augmented Portable Operating System**
+
+```
+    _   ___ ___  ___ ___ ___  _   _
+   /_\ |_ _/ _ \/ __/ __| _ \| | | |
+  / _ \ | || (_) \__ \__ \  _/ |_| |
+ /_/ \_\___\___/|___/___/_|  \___/
+         ___  ___
+        / _ \/ __|
+       | (_) \__ \
+        \___/|___/
+```
+
+> *"Plug your OS into any device — and your AI comes with it."*
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Platform: Termux · Linux · macOS](https://img.shields.io/badge/platform-Termux%20%7C%20Linux%20%7C%20macOS-lightgrey)](docs/INSTALL.md)
+[![AI: LLaMA / llama.cpp](https://img.shields.io/badge/AI-LLaMA%20%2F%20llama.cpp-orange)](docs/AI_MODEL_SETUP.md)
 
 ---
 
-## Vision
+## Overview
 
-> *"Plug your OS into any device and your system mirrors it — giving you the power of your AI OS on top of any platform."*
+**AIOS-Lite** is a complete, self-contained AI operating system written in POSIX shell and Python. It runs on top of any Unix-like environment — your Android phone (Termux), a Raspberry Pi, a Linux desktop, or a macOS machine — without modifying the host OS.
 
-- **Portable**: Runs from a USB drive, Android phone (Termux), Raspberry Pi, or any shell
-- **AI-Powered**: Hybrid memory (context + symbolic + semantic) + optional LLaMA LLM
-- **Cross-OS Bridge**: Connect to iOS, Android, Linux, macOS, or remote SSH hosts
-- **Mirror Filesystem**: Access other devices' files through your own namespace at `$OS_ROOT/mirror/`
+AIOS-Lite provides:
+- A **pseudo-kernel** with scheduler, resource manager, permissions, and service registry
+- **AURA** — an AI cognitive layer with hybrid memory and optional LLaMA LLM
+- A **cross-OS bridge** that mirrors iOS, Android, Linux, and remote SSH hosts
+- A fully interactive **AI shell** with natural language commands
+- A **plugin API** for extending the OS at runtime
 
 ---
 
-## Directory Structure
+## Features
+
+| Feature | Description |
+|---|---|
+| 🧠 **AI Shell** | Natural language OS control via AURA + LLaMA |
+| 🌉 **Cross-OS Bridge** | Connect to iOS, Android, Linux, macOS, SSH hosts |
+| 🪞 **Filesystem Mirror** | Browse any connected device under `$OS_ROOT/mirror/` |
+| 💾 **Hybrid Memory** | Context window + symbolic key-value + semantic embeddings |
+| 🔒 **Permissions Model** | Capability-based access control per service |
+| 📋 **Service Registry** | Start/stop/monitor services with health checks |
+| ⏱ **Scheduler** | Cooperative round-robin scheduler with priority tiers |
+| 📦 **Plugin System** | Drop shell scripts into `OS/lib/aura-mods/` to extend the OS |
+| 📡 **HTTP API** | Built-in `os-httpd` for local REST-style access |
+| 🔧 **Self-Repair** | `os-recover` detects and repairs broken subsystems |
+
+---
+
+## Architecture Summary
 
 ```
-OS/
-├── sbin/init              # Boot init (auto-detects OS_ROOT)
-├── bin/                   # Commands
-│   ├── os-shell           # Main interactive AI shell
-│   ├── os-bridge          # Cross-OS bridge control
-│   ├── os-mirror          # Device filesystem mirroring
-│   ├── os-ai              # Standalone AI chat interface
-│   ├── os-kernelctl       # Kernel daemon control
-│   ├── os-info            # System information
-│   ├── os-state           # OS state dump
-│   ├── os-service-status  # Service health overview
-│   ├── os-event           # Fire system events
-│   ├── os-msg             # Send messages to bus
-│   └── os-log             # Write to system log
-├── lib/
-│   ├── aura-llm/          # LLM integration (llama.cpp wrapper + fallback)
-│   ├── aura-bridge/       # Cross-OS bridge modules
-│   │   ├── detect.mod     # Host OS + device detection
-│   │   ├── ios.mod        # Apple iOS bridge (libimobiledevice)
-│   │   ├── android.mod    # Android bridge (ADB)
-│   │   ├── linux.mod      # Linux/macOS/SSH bridge
-│   │   └── mirror.mod     # Unified mirror orchestration
-│   ├── aura-memory/       # Symbolic key-value memory
-│   ├── aura-semantic/     # Semantic embedding memory
-│   ├── aura-hybrid/       # Hybrid recall engine
-│   ├── aura-policy/       # Event-driven policy engine
-│   ├── aura-agents/       # Background agents
-│   ├── aura-tasks/        # Scheduled tasks
-│   └── aura-mods/         # Loadable modules (core, bus, sysinfo)
-├── etc/
-│   ├── init.d/            # Service scripts (banner, devices, os-kernel, aura-bridge)
-│   ├── rc2.d/             # Runlevel 2 service symlinks
-│   ├── aura/              # Aura config (modules, agents, tasks, policy, memory indexes)
-│   └── os-release         # OS identity
-├── proc/                  # Runtime state (kernel, memory, bridge status)
-├── mirror/                # Mounted device filesystems
-│   ├── ios/               # iOS device (via ifuse)
-│   ├── android/           # Android device (via ADB)
-│   ├── linux/             # Host or remote Linux
-│   └── custom/            # Custom mounts
-├── var/
-│   ├── log/               # System logs (auto-rotated at 1000 lines)
-│   ├── events/            # Event files
-│   └── service/           # PID and health files
-└── llama_model/           # Place your .gguf LLaMA model here
+╔══════════════════════════════════════════════════════════════╗
+║                    USER / AI SHELL LAYER                    ║
+║          os-shell  ·  os-ai  ·  bin/aios  ·  bin/aios-sys   ║
+╠══════════════════════════════════════════════════════════════╣
+║                      AURA COGNITIVE LAYER                   ║
+║   IntentEngine → Router → Bots/Handlers → LLM (llama.cpp)   ║
+╠══════════════════════════════════════════════════════════════╣
+║                    OS SERVICES LAYER                        ║
+║  logging · events · message-bus · service-health · state    ║
+╠══════════════════════════════════════════════════════════════╣
+║                  PSEUDO-KERNEL (sbin/init)                  ║
+║   scheduler · resource-mgr · permissions · service-registry ║
+╠══════════════════════════════════════════════════════════════╣
+║                    BRIDGE / MIRROR LAYER                    ║
+║          iOS bridge · Android bridge · SSH bridge           ║
+╠══════════════════════════════════════════════════════════════╣
+║                      HOST POSIX KERNEL                      ║
+║          Linux / Android (Termux) / macOS / Darwin          ║
+╚══════════════════════════════════════════════════════════════╝
 ```
+
+Full architecture documentation: [`docs/OS-ARCHITECTURE.md`](docs/OS-ARCHITECTURE.md)
+
+---
+
+## Install
+
+### Android / Termux (Primary Target)
+
+```sh
+# 1. Install dependencies
+pkg update && pkg upgrade
+pkg install git python openssh android-tools libimobiledevice
+
+# 2. Clone the repository
+git clone https://github.com/Cbetts1/PROJECT.git
+cd PROJECT
+
+# 3. Boot AIOS-Lite
+cd OS
+export OS_ROOT="$(pwd)"
+export AIOS_HOME="$(dirname $(pwd))"
+export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+sh sbin/init
+```
+
+### Debian / Ubuntu / Linux
+
+```sh
+sudo apt-get install -y git python3 openssh-client \
+    android-tools-adb libimobiledevice-utils ifuse sshfs
+
+git clone https://github.com/Cbetts1/PROJECT.git
+cd PROJECT/OS
+export OS_ROOT="$(pwd)"
+sh sbin/init
+```
+
+### macOS
+
+```sh
+brew install git python3 libimobiledevice android-platform-tools
+
+git clone https://github.com/Cbetts1/PROJECT.git
+cd PROJECT/OS
+export OS_ROOT="$(pwd)"
+sh sbin/init
+```
+
+Detailed install guide: [`docs/INSTALL.md`](docs/INSTALL.md)
 
 ---
 
 ## Quick Start
 
-### 1. Boot the OS
-
 ```sh
-# From any Unix shell:
-cd /path/to/OS
-export OS_ROOT="$(pwd)"
-export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
-sh sbin/init
-```
-
-### 2. Launch the AI Shell
-
-```sh
+# Launch the interactive AI shell
 os-shell
+
+# Ask the AI a question
+ask what is my system status
+
+# Store something in memory
+mem.set myname "Christopher"
+
+# Connect to an Android device (USB debugging on)
+bridge.detect
+mirror.mount android
+mirror.ls android
+
+# Mirror a remote server
+os-mirror mount ssh user@192.168.1.100
+
+# Check all services
+services
+
+# Run self-repair
+os-recover
 ```
 
-### 3. Enable AI (Optional — LLaMA model)
+---
 
-```sh
-mkdir -p "$OS_ROOT/llama_model"
-# Place a GGUF model file here, e.g.:
-# cp ~/models/llama-3-8b.Q4_K_M.gguf "$OS_ROOT/llama_model/"
-# Install llama.cpp: https://github.com/ggerganov/llama.cpp
+## Usage Examples
+
+### AI Conversation
+
+```
+aios> ask what services are running
+AURA: I can see 7 services running. aura-bridge is healthy, aura-llm is
+      active with a 7B model loaded. os-kernel reports no errors.
+
+aios> mem.set project "AI OS documentation"
+AURA: Stored. You can recall this with: recall project
+
+aios> recall project
+AURA: [symbolic] project = "AI OS documentation"
 ```
 
-### 4. Connect to Another Device
+### Bridge and Mirror
 
 ```sh
-# Detect what's connected
+# Detect all connected devices
 os-bridge detect
 
-# Mirror an iPhone (requires libimobiledevice + ifuse)
+# Mount iOS filesystem
 os-bridge ios pair
 os-mirror mount ios
 ls $OS_ROOT/mirror/ios/
 
-# Mirror an Android device (requires ADB + USB debugging)
-os-bridge android devices
+# Android via ADB
 os-mirror mount android
 cat $OS_ROOT/mirror/android/_sdcard.listing
 
-# Mirror a remote Linux/macOS via SSH
-os-mirror mount ssh myuser@192.168.1.100
-ls $OS_ROOT/mirror/linux/ssh_192.168.1.100/
+# Remote Linux via SSH
+os-mirror mount ssh admin@10.0.0.5
+ls $OS_ROOT/mirror/linux/ssh_10.0.0.5/
+```
+
+### Service Management
+
+```sh
+os-service list              # List all services
+os-service start aura-bridge # Start bridge service
+os-service-health            # Health dashboard
+```
+
+```sh
+# Auto-detect any connected device
+bridge.detect
+
+## Directory Structure
+
+```
+PROJECT/
+├── OS/                     # The operating system root ($OS_ROOT)
+│   ├── sbin/init           # Boot init script
+│   ├── bin/                # OS commands (os-shell, os-bridge, os-ai, ...)
+│   ├── lib/                # AURA modules (bridge, llm, memory, policy, ...)
+│   ├── etc/                # Config (init.d/, rc2.d/, perms.d/, aura/)
+│   ├── proc/               # Runtime state
+│   ├── mirror/             # Mounted device filesystems
+│   └── var/                # Logs, events, service PID/health files
+├── ai/core/                # Python AI Core (IntentEngine, Router, Bots, LLM)
+├── bin/                    # Dual-shell launchers (aios, aios-sys, aios-heartbeat)
+├── lib/                    # AURA shell libraries (aura-core.sh, aura-net.sh, ...)
+├── config/                 # Runtime configuration (aios.conf, llama-settings.conf)
+├── build/                  # Build scripts for AIOSCPU disk image
+├── aura/                   # AURA agent definition and memory schema
+├── docs/                   # All documentation
+├── tests/                  # Unit and integration tests
+└── licenses/               # Third-party license notices
 ```
 
 ---
 
-## Shell Commands
+## Roadmap
 
-| Command | Description |
+See [`ROADMAP.md`](ROADMAP.md) for the full roadmap.
+
+**Upcoming milestones:**
+- v0.3 — Persistent SQLite memory backend, improved intent classification
+- v0.4 — Web UI dashboard, REST API hardening, plugin marketplace
+- v0.5 — Multi-user sessions, encrypted memory store
+- v1.0 — Stable release with full AIOSCPU disk image
+
+See [`docs/AI_MODEL_SETUP.md`](docs/AI_MODEL_SETUP.md) for full LLM configuration details.
+
+---
+
+## Changelog
+
+See [`CHANGELOG.md`](CHANGELOG.md).
+
+---
+
+## Documentation
+
+| Document | Description |
 |---|---|
-| `ask <text>` | Ask the AI |
-| `bridge.detect` | Detect connected devices |
-| `mirror.mount <type>` | Mount device: ios/android/linux/auto |
-| `mirror.ls <type>` | Browse mirrored files |
-| `recall <text>` | Hybrid memory recall |
-| `mem.set <k> <v>` | Store symbolic memory |
-| `sem.set <k> <v>` | Store semantic memory |
-| `mode <m>` | Shell mode: operator/system/talk |
-| `status` | Full OS state |
-| `services` | Service health |
-| `help` | Full command list |
-
----
-
-## Cross-OS Bridge Architecture
-
-```
-┌─────────────────────────────────────────┐
-│           AIOS-Lite Shell               │
-│   (Your Portable AI OS)                 │
-└─────────────────┬───────────────────────┘
-                  │ bridge layer
-     ┌────────────┼────────────┐
-     ▼            ▼            ▼
-  iOS Bridge  Android Bridge  Linux Bridge
-  (libimob)   (ADB)           (native/SSH/SSHFS)
-     │            │            │
-     ▼            ▼            ▼
-  iPhone      Android       Linux/macOS/
-  iPad        Device        Remote Server
-     │            │            │
-     └────────────┴────────────┘
-                  │
-            mirror/ios/
-            mirror/android/
-            mirror/linux/
-```
-
----
-
-## Prerequisites
-
-| Feature | Requirement |
-|---|---|
-| Core OS | POSIX sh, awk, grep, sed, cksum |
-| iOS Bridge | `libimobiledevice` (`ideviceinfo`, `idevicepair`), `ifuse` |
-| Android Bridge | `adb` (Android Debug Bridge) |
-| Remote Linux | `ssh`, `sshfs` (optional) |
-| Full AI (LLM) | `llama-cli` or `llama.cpp`, any `.gguf` model |
-
-### Install on Termux (Android)
-```sh
-pkg update
-pkg install libimobiledevice ifuse android-tools openssh sshfs
-```
-
-### Install on Debian/Ubuntu
-```sh
-apt install libimobiledevice-utils ifuse adb openssh-client sshfs
-```
-
----
-
-## AI Memory System
-
-AIOS-Lite has three layers of memory:
-
-| Layer | Storage | Use case |
-|---|---|---|
-| **Context Window** | Rolling 50-line file | Recent conversation + commands |
-| **Symbolic Memory** | Key-value index | Named facts (`mem.set name "Chris"`) |
-| **Semantic Memory** | Embedding index | Similarity search (`sem.search "phone info"`) |
-
-All three combine in **hybrid recall**:
-```sh
-recall "what phone did I connect"
-```
-
----
-
-## LLM Integration
-
-When a `.gguf` model is present in `llama_model/` and `llama-cli` is installed, the AI shell uses it for natural language responses. Without a model, it uses a rule-based fallback that handles common queries about the OS, bridge, and memory.
+| [`docs/OS-ARCHITECTURE.md`](docs/OS-ARCHITECTURE.md) | Full OS architecture reference |
+| [`docs/MANUAL.md`](docs/MANUAL.md) | Instruction manual |
+| [`docs/INSTALL.md`](docs/INSTALL.md) | Detailed install guide |
+| [`docs/REPRODUCIBLE-BUILD.md`](docs/REPRODUCIBLE-BUILD.md) | Reproducible build system |
+| [`docs/API-REFERENCE.md`](docs/API-REFERENCE.md) | API reference |
+| [`docs/AURA-API.md`](docs/AURA-API.md) | AURA cognitive API |
+| [`docs/LEGAL.md`](docs/LEGAL.md) | Legal, compliance, and license package |
+| [`ROADMAP.md`](ROADMAP.md) | Project roadmap |
+| [`CHANGELOG.md`](CHANGELOG.md) | Version history |
 
 ---
 
 ## License
 
-MIT — Built by Chris
+MIT — see [`LICENSE`](LICENSE)
+
+---
+
+## Legal
+
+© 2026 Christopher Betts. All rights reserved.
+
+*Created and developed by Christopher Betts. All code was generated or refined using AI tools under the creator's direction.*
+
+This project contains AI-generated code. See [`docs/LEGAL.md`](docs/LEGAL.md) for full legal notices, privacy information, terms of use, and AI-generated code disclosure.
