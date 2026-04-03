@@ -28,7 +28,7 @@ Everything listed below is **complete and shipped**:
 
 ---
 
-## Short-Term — v1.1.0 "Aurora Patch" (2026-Q2)
+## Short-Term — v1.1.0 "Beacon" (2026-Q2)
 
 | # | Goal | Notes |
 |---|------|-------|
@@ -58,7 +58,7 @@ Everything listed below is **complete and shipped**:
 
 ---
 
-## Long-Term — v2.0.0 "Beacon Pro" (2026-Q4 / 2027)
+## Long-Term — v2.0.0 "Meridian" (2026-Q4 / 2027)
 
 | # | Goal | Notes |
 |---|------|-------|
