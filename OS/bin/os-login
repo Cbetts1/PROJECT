@@ -1,0 +1,84 @@
+#!/bin/sh
+# os-login — PROJECT OS login entry point
+# Authenticates the user via etc/passwd, then launches os-shell as the
+# login shell.  Everything is confined to OS_ROOT; no host passwd or PAM
+# is touched.
+#
+# Usage: os-login [username]
+#   Without a username the script prompts interactively.
+#
+# Safety:
+#   - Reads only OS_ROOT/etc/passwd (never /etc/passwd).
+#   - Writes an audit entry to OS_ROOT/var/log/aura.log.
+#   - exec's into os-shell so no host shell is spawned.
+
+OS_ROOT="${OS_ROOT:-/}"
+export OS_ROOT
+export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+
+PASSWD="$OS_ROOT/etc/passwd"
+AURA_LOG="$OS_ROOT/var/log/aura.log"
+IDENTITY="$OS_ROOT/proc/os.identity"
+
+# Load OS identity for the banner
+[ -f "$IDENTITY" ] && . "$IDENTITY"
+OS_NAME="${OS_NAME:-AIOS}"
+OS_VERSION="${OS_VERSION:-0.1}"
+
+# Ensure log directory exists
+mkdir -p "$OS_ROOT/var/log" 2>/dev/null
+
+_log() {
+    ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
+    echo "[$ts] [os-login] $*" >> "$AURA_LOG" 2>/dev/null
+}
+
+echo "==============================="
+echo "  $OS_NAME v$OS_VERSION"
+echo "  Secure OS Login"
+echo "==============================="
+
+# Accept username as arg or prompt
+if [ -n "$1" ]; then
+    USER="$1"
+else
+    printf "login: "
+    IFS= read -r USER
+fi
+
+# Validate passwd file
+if [ ! -f "$PASSWD" ]; then
+    echo "os-login: passwd database not found." >&2
+    _log "login failed: passwd missing"
+    exit 1
+fi
+
+LINE=$(grep "^${USER}:" "$PASSWD" 2>/dev/null)
+if [ -z "$LINE" ]; then
+    echo "Login incorrect."
+    _log "login failed: unknown user '$USER'"
+    exit 1
+fi
+
+IFS=':' read -r _name _pass _uid _gid _gecos _home _shell << EOF
+$LINE
+EOF
+
+echo "Welcome, $_name."
+_log "login success: user='$_name' uid='$_uid'"
+
+# Change to the user's home directory if it exists under OS_ROOT
+_home_path="$OS_ROOT$_home"
+if [ -d "$_home_path" ]; then
+    cd "$_home_path" 2>/dev/null
+fi
+
+# Exec into os-shell as the login shell
+SHELL_BIN="$OS_ROOT/bin/os-shell"
+if [ -x "$SHELL_BIN" ]; then
+    exec sh "$SHELL_BIN"
+else
+    echo "os-login: os-shell not found, falling back to /bin/sh" >&2
+    _log "fallback to /bin/sh (os-shell not found)"
+    exec /bin/sh
+fi
