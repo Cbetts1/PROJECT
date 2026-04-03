@@ -201,6 +201,60 @@ rm -rf "$_STATE_DIR" "$_AURA_LOG_FILE" "$_EVENTS_LOG"
 [ "$_created_os_state" = true ] && rm -f "$_STUB_OS_STATE"
 
 # ---------------------------------------------------------------------------
+# proc/os directory integrity (debug patch regression tests)
+# ---------------------------------------------------------------------------
+echo
+echo "=== proc/os kernel surface tests ==="
+
+PROC_OS_DIR="$OS_ROOT/proc/os"
+
+# proc/os must be a directory, never a plain file
+if [ -d "$PROC_OS_DIR" ]; then
+    pass "proc/os: is a directory (not a file)"
+else
+    fail "proc/os: should be a directory"
+fi
+
+# Every required section file must exist inside the directory
+for _section in state services ai bridge health logs; do
+    if [ -f "$PROC_OS_DIR/$_section" ]; then
+        pass "proc/os/$_section: section file exists"
+    else
+        fail "proc/os/$_section: section file missing"
+    fi
+done
+
+# proc/os/state must declare OS_NAME
+if grep -q "OS_NAME" "$PROC_OS_DIR/state" 2>/dev/null; then
+    pass "proc/os/state: declares OS_NAME"
+else
+    fail "proc/os/state: should declare OS_NAME"
+fi
+
+# os-kernel init.d start must preserve proc/os as a directory
+OS_ROOT="$OS_ROOT" sh "$OS_ROOT/etc/init.d/os-kernel" start >/dev/null 2>&1
+sleep 1
+if [ -d "$OS_ROOT/proc/os" ]; then
+    pass "os-kernel start: proc/os remains a directory after start"
+else
+    fail "os-kernel start: proc/os should remain a directory after start"
+fi
+# Cleanup: stop the kernel
+OS_ROOT="$OS_ROOT" sh "$OS_ROOT/etc/init.d/os-kernel" stop >/dev/null 2>&1
+
+# os-kernelctl proc must list section files (not error out)
+_proc_list=$(OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-kernelctl" proc 2>/dev/null)
+echo "$_proc_list" | grep -q "state" \
+    && pass "os-kernelctl proc: lists state section" \
+    || fail "os-kernelctl proc: should list state section"
+
+# os-kernelctl query state must return OS_NAME
+_query_out=$(OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-kernelctl" query state 2>/dev/null)
+echo "$_query_out" | grep -q "OS_NAME" \
+    && pass "os-kernelctl query state: returns OS_NAME" \
+    || fail "os-kernelctl query state: should return OS_NAME"
+
+# ---------------------------------------------------------------------------
 # Python AI core unit tests (test_python_modules.py)
 # ---------------------------------------------------------------------------
 echo

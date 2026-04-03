@@ -293,6 +293,39 @@ echo "$out" | grep -qi "kernel\|personality\|name\|version" \
     && pass "os-kernelctl: info shows personality" \
     || fail "os-kernelctl: info should show kernel personality"
 
+# proc/os directory integrity — regression tests for debug patch
+[ -d "$OS_ROOT/proc/os" ] \
+    && pass "os-kernelctl: proc/os is a directory" \
+    || fail "os-kernelctl: proc/os should be a directory (not a file)"
+
+for _sec in state services ai bridge health logs; do
+    [ -f "$OS_ROOT/proc/os/$_sec" ] \
+        && pass "os-kernelctl: proc/os/$_sec section exists" \
+        || fail "os-kernelctl: proc/os/$_sec section should exist"
+done
+
+out=$(OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-kernelctl" proc 2>/dev/null)
+echo "$out" | grep -q "state" \
+    && pass "os-kernelctl proc: lists state section" \
+    || fail "os-kernelctl proc: should list state section"
+
+out=$(OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-kernelctl" query state 2>/dev/null)
+echo "$out" | grep -q "OS_NAME" \
+    && pass "os-kernelctl query state: contains OS_NAME" \
+    || fail "os-kernelctl query state: should contain OS_NAME"
+
+# os-kernel start must create proc/os as directory (not file)
+OS_ROOT="$OS_ROOT" sh "$OS_ROOT/etc/init.d/os-kernel" start >/dev/null 2>&1
+sleep 1
+[ -d "$OS_ROOT/proc/os" ] \
+    && pass "os-kernel start: proc/os is a directory after start" \
+    || fail "os-kernel start: proc/os should be a directory after start"
+[ -f "$OS_ROOT/proc/os/state" ] \
+    && pass "os-kernel start: proc/os/state exists after start" \
+    || fail "os-kernel start: proc/os/state should exist after start"
+OS_ROOT="$OS_ROOT" sh "$OS_ROOT/etc/init.d/os-kernel" stop >/dev/null 2>&1
+sleep 1
+
 # ---------------------------------------------------------------------------
 # os-event + os-msg
 # ---------------------------------------------------------------------------

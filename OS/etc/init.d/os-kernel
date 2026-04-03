@@ -6,7 +6,8 @@ export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
 
 STATE="$OS_ROOT/var/service"
 PIDFILE="$STATE/os-kernel.pid"
-PROCFILE="$OS_ROOT/proc/os"
+PROCDIR="$OS_ROOT/proc/os"
+PROCFILE="$PROCDIR/state"
 STATEFILE="$OS_ROOT/proc/os.state"
 LOG="$OS_ROOT/var/log/os.log"
 AURA_LOG="$OS_ROOT/var/log/aura.log"
@@ -63,12 +64,63 @@ start() {
         rm -f "$PIDFILE"
     fi
 
-    # Write kernel personality
-    [ -f "$PROCFILE" ] || [ -d "$PROCFILE" ] && rm -rf "$PROCFILE"
+    # Ensure proc/os is a directory (not a file from a previous broken start)
+    if [ -f "$PROCDIR" ]; then
+        rm -f "$PROCDIR"
+    fi
+    mkdir -p "$PROCDIR"
+
+    # Write/refresh kernel personality to proc/os/state
     cat > "$PROCFILE" << EOP
 OS_NAME="AIOS-Lite"
 OS_VERSION="0.1"
 OS_VENDOR="Chris"
+EOP
+
+    # Seed static section files on first boot only
+    [ -f "$PROCDIR/services" ] || cat > "$PROCDIR/services" << 'EOP'
+# Service registry — updated by os-service at runtime
+# Format: <service_name>=<status>
+banner=stopped
+os-kernel=stopped
+aura-bridge=stopped
+aura-agents=stopped
+aura-tasks=stopped
+devices=stopped
+EOP
+
+    [ -f "$PROCDIR/ai" ] || cat > "$PROCDIR/ai" << 'EOP'
+# AI subsystem state — updated by os-ai at runtime
+ai_status=offline
+llm_backend=none
+model_loaded=false
+last_query=0
+EOP
+
+    [ -f "$PROCDIR/bridge" ] || cat > "$PROCDIR/bridge" << 'EOP'
+# Bridge subsystem state — updated by os-bridge at runtime
+bridge_status=offline
+ios=disconnected
+android=disconnected
+linux=disconnected
+EOP
+
+    [ -f "$PROCDIR/health" ] || cat > "$PROCDIR/health" << 'EOP'
+# Health metrics — updated by os-selftest and os-kernel at runtime
+cpu_ok=ok
+mem_ok=ok
+disk_ok=ok
+thermal_ok=ok
+last_check=0
+EOP
+
+    [ -f "$PROCDIR/logs" ] || cat > "$PROCDIR/logs" << 'EOP'
+# Log manifest — paths relative to OS_ROOT
+os_log=var/log/os.log
+aura_log=var/log/aura.log
+events_log=var/log/events.log
+syscall_log=var/log/syscall.log
+recover_log=var/log/recover.log
 EOP
 
     # Start kernel daemon in background, capture its PID
