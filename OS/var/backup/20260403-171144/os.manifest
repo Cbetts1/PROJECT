@@ -1,0 +1,15 @@
+subsystems=(
+  logging
+  events
+  message_bus
+  service_health
+  kernel_health
+  os_state
+  os_identity
+  aura_memory
+  aura_semantic
+  aura_hybrid
+  aura_policy
+  aura_llm
+  aura_bridge
+)

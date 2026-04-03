@@ -1,6 +1,0 @@
-# Log manifest — paths relative to OS_ROOT
-os_log=var/log/os.log
-aura_log=var/log/aura.log
-events_log=var/log/events.log
-syscall_log=var/log/syscall.log
-recover_log=var/log/recover.log

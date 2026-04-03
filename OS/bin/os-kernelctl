@@ -6,6 +6,8 @@ OS_ROOT="${OS_ROOT:-/}"
 STATE="$OS_ROOT/var/service"
 PIDFILE="$STATE/os-kernel.pid"
 PROCDIR="$OS_ROOT/proc/os"
+PROCFILE="$PROCDIR/state"
+STATEFILE="$OS_ROOT/proc/os.state"
 INITD="$OS_ROOT/etc/init.d/os-kernel"
 LOG="$OS_ROOT/var/log/os.log"
 
@@ -169,8 +171,44 @@ case "$cmd" in
     fi
     ;;
 
+  uptime)
+    _kernel_uptime
+    ;;
+
+  metrics)
+    _kernel_metrics
+    ;;
+
+  proc)
+    _kernel_proc_dump "${1:-text}"
+    ;;
+
+  log)
+    n="${1:-40}"
+    echo "=== Kernel Log (last $n lines) ==="
+    tail -n "$n" "$LOG" 2>/dev/null || echo "(log not found: $LOG)"
+    echo "=================================="
+    ;;
+
+  set)
+    key="$1"; val="$2"
+    if [ -z "$key" ] || [ -z "$val" ]; then
+        echo "Usage: os-kernelctl set <key> <value>"
+        exit 1
+    fi
+    if [ -f "$PROCFILE" ]; then
+        grep -v "^${key}=" "$PROCFILE" > "$PROCFILE.tmp" 2>/dev/null
+        printf '%s="%s"\n' "$key" "$val" >> "$PROCFILE.tmp"
+        mv "$PROCFILE.tmp" "$PROCFILE"
+        echo "[os-kernelctl] Set $key=$val"
+    else
+        printf '%s="%s"\n' "$key" "$val" > "$PROCFILE"
+        echo "[os-kernelctl] Created $PROCFILE and set $key=$val"
+    fi
+    ;;
+
   *)
-    echo "Usage: os-kernelctl {status|restart|reload|info|list|query <section>}"
+    echo "Usage: os-kernelctl {status|restart|reload|info|list|query <section>|uptime|metrics|proc [json]|log [n]|set <key> <val>}"
     echo "Sections: state  services  ai  bridge  health  logs"
     ;;
 esac

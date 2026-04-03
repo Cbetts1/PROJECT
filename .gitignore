@@ -22,3 +22,10 @@ OS/var/boot.time
 OS/proc/os.messages
 OS/proc/aura/bridge/status
 OS/proc/aura.memory.bak
+# Runtime-generated semantic/memory test entries
+OS/proc/aura/semantic/sem_test_*.sem
+OS/proc/aura/semantic/test_sem_*.sem
+OS/proc/aura/memory/test_key_*.mem
+OS/proc/aura/memory/testkey123.mem
+OS/etc/aura/semantic.index.tmp
+OS/etc/aura/memory.index.tmp
