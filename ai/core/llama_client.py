@@ -98,7 +98,7 @@ def stream_llama(model_path: str, ctx: int, threads: int, prompt: str) -> Iterat
         for line in proc.stdout:
             yield line
         proc.wait()
-        if proc.returncode not in (0, None):
+        if proc.returncode != 0:
             yield f"\n[LLAMA] Inference ended (exit {proc.returncode})\n"
     except FileNotFoundError:
         yield f"[LLAMA] Binary not found: {llama_bin}\n"

@@ -38,7 +38,7 @@ while [[ $# -gt 0 ]]; do
         --self-test)   SELF_TEST=1; shift ;;
         --os-root)     OS_ROOT="$2"; shift 2 ;;
         --help|-h)
-            sed -n '3,16p' "$0"
+            sed -n '3,20p' "$0"
             exit 0
             ;;
         *) echo "Unknown option: $1"; exit 1 ;;
