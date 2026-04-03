@@ -1,0 +1,180 @@
+#!/bin/sh
+# etc/init.d/aura-tasks — AURA Task Scheduler
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# Runs AURA tasks on schedule as defined in etc/aura/tasks.list.
+# Supported schedule types:
+#   every:<seconds>          — run every N seconds
+#   on:event:<pattern>       — run when a matching event fires
+#   on:message:<pattern>     — run when a matching message appears
+
+OS_ROOT="${OS_ROOT:-/}"
+export PATH="$PATH:$OS_ROOT/bin:$OS_ROOT/sbin"
+
+TASKS_LIST="$OS_ROOT/etc/aura/tasks.list"
+TASKDIR="$OS_ROOT/lib/aura-tasks"
+STATE="$OS_ROOT/var/service"
+AURA_LOG="$OS_ROOT/var/log/aura.log"
+MSGFILE="$OS_ROOT/proc/os.messages"
+EVENTLOG="$OS_ROOT/var/log/events.log"
+HEALTH="$STATE/aura-tasks.health"
+
+mkdir -p "$STATE" "$OS_ROOT/var/log"
+
+aura_log() { ts=$(date '+%Y-%m-%dT%H:%M:%SZ'); echo "[$ts] [tasks] $*" >> "$AURA_LOG"; }
+write_health() { echo "status=$1
+time=$(date +%s)
+tasks=$2" > "$HEALTH"; }
+
+# Load modules needed by tasks
+_load_mod() { [ -f "$1" ] && . "$1" 2>/dev/null; }
+_load_mod "$OS_ROOT/lib/aura-memory/engine.mod"
+_load_mod "$OS_ROOT/lib/aura-semantic/embed.mod"
+_load_mod "$OS_ROOT/lib/aura-semantic/engine.mod"
+_load_mod "$OS_ROOT/lib/aura-bridge/detect.mod"
+
+TASKS_PARSED="$STATE/tasks_parsed.list"
+
+parse_tasks() {
+    : > "$TASKS_PARSED"
+    [ -f "$TASKS_LIST" ] || return
+    while IFS= read -r line; do
+        case "$line" in ''|\#*) continue ;; esac
+        tname=$(printf '%s' "$line" | awk '{print $1}')
+        sched=$(printf '%s' "$line" | awk '{print $2}')
+        case "$sched" in
+            every:*)     echo "$tname|every|${sched#every:}" >> "$TASKS_PARSED" ;;
+            on:event:*)  echo "$tname|event|${sched#on:event:}" >> "$TASKS_PARSED" ;;
+            on:message:*)echo "$tname|message|${sched#on:message:}" >> "$TASKS_PARSED" ;;
+            *) aura_log "unknown schedule '$sched' for task '$tname'" ;;
+        esac
+    done < "$TASKS_LIST"
+}
+
+run_task() {
+    tname="$1"
+    tfile="$TASKDIR/${tname}.task"
+    if [ -f "$tfile" ]; then
+        ( . "$tfile"; task_run ) 2>>"$AURA_LOG"
+        aura_log "task ran: $tname"
+    else
+        aura_log "task file not found: $tname"
+    fi
+}
+
+start() {
+    PIDFILE="$STATE/aura-tasks.pid"
+    if [ -f "$PIDFILE" ] && [ -d "/proc/$(cat "$PIDFILE" 2>/dev/null)" ]; then
+        echo "[aura-tasks] Already running (pid=$(cat "$PIDFILE"))"
+        return 0
+    fi
+
+    parse_tasks
+    loaded=$(awk -F'|' '{print $1}' "$TASKS_PARSED" 2>/dev/null | tr '\n' ' ')
+
+    (
+        # Wait for parent to write PID file
+        _i=0
+        while [ ! -s "$PIDFILE" ] && [ "$_i" -lt 20 ]; do
+            sleep 0.1 2>/dev/null || true; _i=$((_i+1))
+        done
+        _mypid=$(cat "$PIDFILE" 2>/dev/null)
+        aura_log "task scheduler started pid=$_mypid"
+        write_health "running" "${loaded% }"
+        touch "$MSGFILE" "$EVENTLOG" 2>/dev/null
+
+        LASTRUN_DIR="$STATE/task_lastrun"
+        mkdir -p "$LASTRUN_DIR"
+        MSG_CURSOR="$STATE/tasks_msg.cursor"
+        EVT_CURSOR="$STATE/tasks_evt.cursor"
+        [ -f "$MSG_CURSOR" ] || echo "0" > "$MSG_CURSOR"
+        [ -f "$EVT_CURSOR" ] || echo "0" > "$EVT_CURSOR"
+
+        while true; do
+            now=$(date +%s)
+
+            # Time-based tasks
+            while IFS='|' read -r tname stype sval; do
+                [ "$stype" = "every" ] || continue
+                lr_file="$LASTRUN_DIR/${tname}.last"
+                last_run=$(cat "$lr_file" 2>/dev/null || echo 0)
+                elapsed=$((now - last_run))
+                if [ "$elapsed" -ge "${sval:-60}" ]; then
+                    run_task "$tname"
+                    echo "$now" > "$lr_file"
+                fi
+            done < "$TASKS_PARSED"
+
+            # Event-triggered tasks
+            evt_cur=$(cat "$EVT_CURSOR")
+            total_evts=$(wc -l < "$EVENTLOG" 2>/dev/null | awk '{print $1}')
+            total_evts=${total_evts:-0}
+            if [ "$total_evts" -gt "$evt_cur" ]; then
+                _start=$((evt_cur+1))
+                awk -v start="$_start" 'NR>=start' "$EVENTLOG" 2>/dev/null > "${STATE}/tasks_evt_batch.tmp"
+                while IFS= read -r evtline; do
+                    payload=$(printf '%s' "$evtline" | sed 's/^\[[^]]*\] //')
+                    while IFS='|' read -r tname stype sval; do
+                        [ "$stype" = "event" ] || continue
+                        echo "$payload" | grep -q "$sval" && run_task "$tname"
+                    done < "$TASKS_PARSED"
+                done < "${STATE}/tasks_evt_batch.tmp"
+                rm -f "${STATE}/tasks_evt_batch.tmp"
+                echo "$total_evts" > "$EVT_CURSOR"
+            fi
+
+            # Message-triggered tasks
+            msg_cur=$(cat "$MSG_CURSOR")
+            total_msgs=$(wc -l < "$MSGFILE" 2>/dev/null | awk '{print $1}')
+            total_msgs=${total_msgs:-0}
+            if [ "$total_msgs" -gt "$msg_cur" ]; then
+                _start=$((msg_cur+1))
+                awk -v start="$_start" 'NR>=start' "$MSGFILE" 2>/dev/null > "${STATE}/tasks_msg_batch.tmp"
+                while IFS= read -r msgline; do
+                    payload=$(printf '%s' "$msgline" | sed 's/^\[[^]]*\] //')
+                    while IFS='|' read -r tname stype sval; do
+                        [ "$stype" = "message" ] || continue
+                        echo "$payload" | grep -q "$sval" && run_task "$tname"
+                    done < "$TASKS_PARSED"
+                done < "${STATE}/tasks_msg_batch.tmp"
+                rm -f "${STATE}/tasks_msg_batch.tmp"
+                echo "$total_msgs" > "$MSG_CURSOR"
+            fi
+
+            sleep 5
+        done
+    ) &
+    _bgpid=$!
+    echo "$_bgpid" > "$PIDFILE"
+    echo "[aura-tasks] Started (pid=$_bgpid)"
+    aura_log "task scheduler launched pid=$_bgpid"
+}
+
+stop() {
+    PIDFILE="$STATE/aura-tasks.pid"
+    if [ -f "$PIDFILE" ]; then
+        pid=$(cat "$PIDFILE")
+        kill "$pid" 2>/dev/null
+        rm -f "$PIDFILE"
+        write_health "stopped" ""
+        aura_log "task scheduler stopped pid=$pid"
+        echo "[aura-tasks] Stopped."
+    else
+        echo "[aura-tasks] Not running."
+    fi
+}
+
+case "${1:-}" in
+    start)   start ;;
+    stop)    stop ;;
+    restart) stop; sleep 1; start ;;
+    status)
+        PIDFILE="$STATE/aura-tasks.pid"
+        if [ -f "$PIDFILE" ] && [ -d "/proc/$(cat "$PIDFILE" 2>/dev/null)" ]; then
+            echo "aura-tasks: running (pid=$(cat "$PIDFILE"))"
+        else
+            echo "aura-tasks: stopped"
+        fi
+        ;;
+    *) echo "Usage: aura-tasks {start|stop|restart|status}" ;;
+esac

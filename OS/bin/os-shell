@@ -2,7 +2,7 @@
 # © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
 
 OS_ROOT="${OS_ROOT:-/}"
-export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+export PATH="$PATH:$OS_ROOT/bin:$OS_ROOT/sbin"
 
 IDENTITY="$OS_ROOT/proc/os.identity"
 STATEFILE="$OS_ROOT/proc/os.state"

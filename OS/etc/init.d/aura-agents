@@ -1,0 +1,155 @@
+#!/bin/sh
+# etc/init.d/aura-agents — AURA Agent Runtime
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# Starts all enabled AURA agents listed in etc/aura/agents.list.
+# Each agent runs in a background sub-shell that polls for events/messages.
+
+OS_ROOT="${OS_ROOT:-/}"
+export PATH="$PATH:$OS_ROOT/bin:$OS_ROOT/sbin"
+
+AGENTS_LIST="$OS_ROOT/etc/aura/agents.list"
+AGENTDIR="$OS_ROOT/lib/aura-agents"
+STATE="$OS_ROOT/var/service"
+AURA_LOG="$OS_ROOT/var/log/aura.log"
+MSGFILE="$OS_ROOT/proc/os.messages"
+EVENTLOG="$OS_ROOT/var/log/events.log"
+HEALTH="$STATE/aura-agents.health"
+
+mkdir -p "$STATE" "$OS_ROOT/var/log" "$OS_ROOT/proc"
+
+aura_log() { ts=$(date '+%Y-%m-%dT%H:%M:%SZ'); echo "[$ts] [agents] $*" >> "$AURA_LOG"; }
+write_health() { echo "status=$1
+time=$(date +%s)
+agents=$2" > "$HEALTH"; }
+
+# Load AURA mod files needed by agents
+_load_mod() { [ -f "$1" ] && . "$1" 2>/dev/null; }
+_load_mod "$OS_ROOT/lib/aura-memory/engine.mod"
+_load_mod "$OS_ROOT/lib/aura-semantic/embed.mod"
+_load_mod "$OS_ROOT/lib/aura-semantic/engine.mod"
+_load_mod "$OS_ROOT/lib/aura-hybrid/engine.mod"
+_load_mod "$OS_ROOT/lib/aura-bridge/detect.mod"
+_load_mod "$OS_ROOT/lib/aura-policy/engine.mod"
+_load_mod "$OS_ROOT/lib/aura-policy/actions.mod"
+
+# Run one iteration of all loaded agents (POSIX sh compatible)
+run_agents_once() {
+    msg_cursor="${STATE}/agents_msg.cursor"
+    evt_cursor="${STATE}/agents_evt.cursor"
+
+    # Message-bus dispatch
+    [ -f "$msg_cursor" ] || echo "0" > "$msg_cursor"
+    msg_cursor_val=$(cat "$msg_cursor")
+    total_msgs=$(wc -l < "$MSGFILE" 2>/dev/null | awk '{print $1}')
+    total_msgs=${total_msgs:-0}
+
+    if [ "$total_msgs" -gt "$msg_cursor_val" ]; then
+        _start=$((msg_cursor_val+1))
+        awk -v start="$_start" 'NR>=start' "$MSGFILE" 2>/dev/null > "${STATE}/agents_msgs_batch.tmp"
+        while IFS= read -r msgline; do
+            payload=$(printf '%s' "$msgline" | sed 's/^\[[^]]*\] //')
+            type agent_message >/dev/null 2>&1    && agent_message "$payload"
+            echo "$payload" | grep -qi "bridge"  && type agent_bridge_event >/dev/null 2>&1 && agent_bridge_event "$payload"
+            type policy_dispatch >/dev/null 2>&1 && policy_dispatch "message" "$payload"
+        done < "${STATE}/agents_msgs_batch.tmp"
+        rm -f "${STATE}/agents_msgs_batch.tmp"
+        echo "$total_msgs" > "$msg_cursor"
+    fi
+
+    # Event-log dispatch
+    [ -f "$evt_cursor" ] || echo "0" > "$evt_cursor"
+    evt_cursor_val=$(cat "$evt_cursor")
+    total_evts=$(wc -l < "$EVENTLOG" 2>/dev/null | awk '{print $1}')
+    total_evts=${total_evts:-0}
+
+    if [ "$total_evts" -gt "$evt_cursor_val" ]; then
+        _start=$((evt_cursor_val+1))
+        awk -v start="$_start" 'NR>=start' "$EVENTLOG" 2>/dev/null > "${STATE}/agents_evts_batch.tmp"
+        while IFS= read -r evtline; do
+            payload=$(printf '%s' "$evtline" | sed 's/^\[[^]]*\] //')
+            type agent_event >/dev/null 2>&1 && agent_event "$payload"
+            echo "$payload" | grep -q "kernel: heartbeat" && type agent_heartbeat >/dev/null 2>&1 && agent_heartbeat
+            echo "$payload" | grep -qi "bridge:connect"    && type agent_bridge_connect >/dev/null 2>&1 && agent_bridge_connect "$payload"
+            echo "$payload" | grep -qi "bridge:disconnect" && type agent_bridge_disconnect >/dev/null 2>&1 && agent_bridge_disconnect "$payload"
+            type policy_dispatch >/dev/null 2>&1 && policy_dispatch "event" "$payload"
+        done < "${STATE}/agents_evts_batch.tmp"
+        rm -f "${STATE}/agents_evts_batch.tmp"
+        echo "$total_evts" > "$evt_cursor"
+    fi
+}
+
+start() {
+    PIDFILE="$STATE/aura-agents.pid"
+    if [ -f "$PIDFILE" ] && [ -d "/proc/$(cat "$PIDFILE" 2>/dev/null)" ]; then
+        echo "[aura-agents] Already running (pid=$(cat "$PIDFILE"))"
+        return 0
+    fi
+
+    # Load agent files into the daemon subshell
+    loaded=""
+    if [ -f "$AGENTS_LIST" ]; then
+        while IFS= read -r agent; do
+            case "$agent" in ''|\#*) continue ;; esac
+            afile="$AGENTDIR/${agent}.agent"
+            if [ -f "$afile" ]; then
+                . "$afile"
+                loaded="$loaded $agent"
+                aura_log "agent loaded: $agent"
+            else
+                aura_log "agent not found: $agent"
+            fi
+        done < "$AGENTS_LIST"
+    fi
+
+    # Start background polling daemon
+    (
+        # Wait for PID file to be written by parent before logging
+        _i=0
+        while [ ! -s "$PIDFILE" ] && [ "$_i" -lt 20 ]; do
+            sleep 0.1 2>/dev/null || true; _i=$((_i+1))
+        done
+        _mypid=$(cat "$PIDFILE" 2>/dev/null)
+        aura_log "agent daemon started pid=$_mypid"
+        write_health "running" "${loaded# }"
+        touch "$MSGFILE" "$EVENTLOG" 2>/dev/null
+
+        while true; do
+            run_agents_once
+            sleep 2
+        done
+    ) &
+    _bgpid=$!
+    echo "$_bgpid" > "$PIDFILE"
+    echo "[aura-agents] Started (pid=$_bgpid)"
+    aura_log "agent daemon launched pid=$_bgpid"
+}
+
+stop() {
+    PIDFILE="$STATE/aura-agents.pid"
+    if [ -f "$PIDFILE" ]; then
+        pid=$(cat "$PIDFILE")
+        kill "$pid" 2>/dev/null
+        rm -f "$PIDFILE"
+        write_health "stopped" ""
+        aura_log "agent daemon stopped pid=$pid"
+        echo "[aura-agents] Stopped."
+    else
+        echo "[aura-agents] Not running."
+    fi
+}
+
+case "${1:-}" in
+    start)   start ;;
+    stop)    stop ;;
+    restart) stop; sleep 1; start ;;
+    status)
+        PIDFILE="$STATE/aura-agents.pid"
+        if [ -f "$PIDFILE" ] && [ -d "/proc/$(cat "$PIDFILE" 2>/dev/null)" ]; then
+            echo "aura-agents: running (pid=$(cat "$PIDFILE"))"
+        else
+            echo "aura-agents: stopped"
+        fi
+        ;;
+    *) echo "Usage: aura-agents {start|stop|restart|status}" ;;
+esac

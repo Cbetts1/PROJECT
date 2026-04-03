@@ -1,1 +1,4 @@
 # key | file | embedding
+sem.test.4541 | sem_test_4541.sem | 990,416,507,567,501
+sem.test.6606 | sem_test_6606.sem | 990,416,507,567,501
+inttest.sem | inttest_sem.sem | 47,363,0,44,886
