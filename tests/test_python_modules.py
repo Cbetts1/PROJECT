@@ -369,12 +369,11 @@ class TestLlamaClient(unittest.TestCase):
         self.assertIn("not found", result.lower())
 
     def test_run_llama_does_not_raise(self):
-        # Must return a string, not raise an exception
-        try:
-            result = self.run_llama("/nonexistent/model.gguf", 512, 1, "hello")
-            self.assertIsInstance(result, str)
-        except Exception as exc:  # noqa: BLE001
-            self.fail(f"run_llama raised unexpectedly: {exc}")
+        # Must return a string, not raise an exception.
+        # run_llama handles subprocess.CalledProcessError and FileNotFoundError
+        # internally and returns an error message string in both cases.
+        result = self.run_llama("/nonexistent/model.gguf", 512, 1, "hello")
+        self.assertIsInstance(result, str)
 
 
 # ===========================================================================

@@ -427,7 +427,7 @@ rm -rf "$_FS_OS_ROOT"
 echo
 echo "=== Python unit tests (test_python_modules.py) ==="
 
-python3 "$REPO_ROOT/tests/test_python_modules.py" 2>/dev/null
+python3 "$REPO_ROOT/tests/test_python_modules.py"
 _py_exit=$?
 [ "$_py_exit" -eq 0 ] \
     && pass "python tests: all Python unit tests passed" \
