@@ -1,4 +1,7 @@
 #!/bin/sh
+# os-kernel — AIOS-Lite kernel daemon
+# Provides heartbeat, service monitoring, policy dispatch, agent dispatch,
+# and scheduled task execution.
 # © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
 
 OS_ROOT="${OS_ROOT:-/}"
@@ -12,8 +15,19 @@ LOG="$OS_ROOT/var/log/os.log"
 AURA_LOG="$OS_ROOT/var/log/aura.log"
 HEALTH="$STATE/os-kernel.health"
 TASKDIR="$OS_ROOT/lib/aura-tasks"
+AGENTDIR="$OS_ROOT/lib/aura-agents"
+POLICYDIR="$OS_ROOT/lib/aura-policy"
+TASKLIST="$OS_ROOT/etc/aura/tasks.list"
+AGENTLIST="$OS_ROOT/etc/aura/agents.list"
+
+# Heartbeat interval in seconds
+HB_INTERVAL=5
 
 mkdir -p "$STATE" "$OS_ROOT/proc" "$OS_ROOT/var/log"
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 write_health() {
     echo "status=$1
@@ -21,13 +35,55 @@ time=$(date +%s)
 pid=${2:-}" > "$HEALTH"
 }
 
-# Write a timestamped line to the AURA audit log
 aura_log() {
     ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
     echo "[$ts] [kernel] $*" >> "$AURA_LOG"
 }
 
-# Monitor all service PID files; emit events for dead services
+# ---------------------------------------------------------------------------
+# Policy dispatch — routes events through the policy engine
+# ---------------------------------------------------------------------------
+_policy_loaded=0
+ensure_policy() {
+    if [ "$_policy_loaded" = "0" ] && [ -f "$POLICYDIR/engine.mod" ]; then
+        . "$POLICYDIR/engine.mod"
+        . "$POLICYDIR/actions.mod" 2>/dev/null
+        _policy_loaded=1
+    fi
+}
+
+policy_fire() {
+    hook="$1"; payload="$2"
+    ensure_policy
+    [ "$_policy_loaded" = "1" ] && policy_dispatch "$hook" "$payload" 2>/dev/null
+}
+
+# ---------------------------------------------------------------------------
+# Agent dispatch — calls registered agent functions by event type
+# ---------------------------------------------------------------------------
+_agents_loaded=0
+load_agents() {
+    if [ "$_agents_loaded" = "0" ] && [ -f "$AGENTLIST" ]; then
+        while IFS= read -r aname; do
+            case "$aname" in ""|\#*) continue ;; esac
+            afile="$AGENTDIR/${aname}.agent"
+            [ -f "$afile" ] && . "$afile" 2>/dev/null
+        done < "$AGENTLIST"
+        _agents_loaded=1
+    fi
+}
+
+agent_fire() {
+    event_type="$1"; shift
+    load_agents
+    # Dispatch to any agent function named agent_<event_type>
+    fn="agent_${event_type}"
+    command -v "$fn" >/dev/null 2>&1 && "$fn" "$@" 2>/dev/null
+}
+
+# ---------------------------------------------------------------------------
+# Service monitoring — detect and log dead services
+# ---------------------------------------------------------------------------
 monitor_services() {
     for pidfile in "$STATE"/*.pid; do
         [ -f "$pidfile" ] || continue
@@ -37,22 +93,89 @@ monitor_services() {
         if [ -n "$pid" ] && ! [ -d "/proc/$pid" ]; then
             aura_log "service dead: $svcname (pid=$pid)"
             os-event "service: dead svc=$svcname pid=$pid" 2>/dev/null
-            # Remove stale pid file so next start is clean
+            policy_fire "event" "service:dead svc=$svcname"
             rm -f "$pidfile"
         fi
     done
 }
 
-# Run all registered AURA tasks once
-run_tasks() {
-    for task_file in "$TASKDIR"/*.task; do
-        [ -f "$task_file" ] || continue
-        tname=$(basename "$task_file" .task)
-        ( . "$task_file"; task_run ) 2>/dev/null
-        aura_log "task ran: $tname"
-    done
+# ---------------------------------------------------------------------------
+# Task scheduler — respects schedule entries in etc/aura/tasks.list
+# Format: <task_name> <schedule>
+#   schedule: every:<seconds>  |  on:event:<pattern>  |  on:message:<pattern>
+#
+# The kernel tracks per-task countdown timers using files in var/service/tasks/
+# ---------------------------------------------------------------------------
+TASK_TIMER_DIR="$STATE/tasks"
+
+run_scheduled_tasks() {
+    now=$(date +%s)
+    mkdir -p "$TASK_TIMER_DIR"
+
+    [ -f "$TASKLIST" ] || return
+
+    while IFS= read -r tline; do
+        case "$tline" in ""|\#*) continue ;; esac
+
+        tname=$(echo "$tline" | awk '{print $1}')
+        sched=$(echo "$tline" | awk '{print $2}')
+        tfile="$TASKDIR/${tname}.task"
+        [ -f "$tfile" ] || continue
+
+        case "$sched" in
+            every:*)
+                interval="${sched#every:}"
+                timer_file="$TASK_TIMER_DIR/${tname}.timer"
+                last_run=0
+                [ -f "$timer_file" ] && last_run=$(cat "$timer_file" 2>/dev/null)
+                elapsed=$((now - last_run))
+                if [ "$elapsed" -ge "$interval" ]; then
+                    ( . "$tfile"; task_run "$tname" ) 2>/dev/null
+                    echo "$now" > "$timer_file"
+                    aura_log "task ran (every:${interval}s): $tname"
+                fi
+                ;;
+            # on:event: and on:message: tasks are triggered by event_trigger_tasks
+            on:event:*|on:message:*)
+                ;;
+        esac
+    done < "$TASKLIST"
 }
 
+# Run event-triggered tasks matching a pattern
+event_trigger_tasks() {
+    event_payload="$1"
+    [ -f "$TASKLIST" ] || return
+
+    while IFS= read -r tline; do
+        case "$tline" in ""|\#*) continue ;; esac
+        tname=$(echo "$tline" | awk '{print $1}')
+        sched=$(echo "$tline" | awk '{print $2}')
+        tfile="$TASKDIR/${tname}.task"
+        [ -f "$tfile" ] || continue
+
+        case "$sched" in
+            on:event:*)
+                pattern="${sched#on:event:}"
+                if echo "$event_payload" | grep -q "$pattern" 2>/dev/null; then
+                    ( . "$tfile"; task_run "$event_payload" ) 2>/dev/null
+                    aura_log "task ran (on:event:${pattern}): $tname"
+                fi
+                ;;
+            on:message:*)
+                pattern="${sched#on:message:}"
+                if echo "$event_payload" | grep -q "$pattern" 2>/dev/null; then
+                    ( . "$tfile"; task_run "$event_payload" ) 2>/dev/null
+                    aura_log "task ran (on:message:${pattern}): $tname"
+                fi
+                ;;
+        esac
+    done < "$TASKLIST"
+}
+
+# ---------------------------------------------------------------------------
+# start / stop
+# ---------------------------------------------------------------------------
 start() {
     if [ -f "$PIDFILE" ]; then
         pid=$(cat "$PIDFILE")
@@ -63,15 +186,14 @@ start() {
         rm -f "$PIDFILE"
     fi
 
-    # Write kernel personality
-    [ -f "$PROCFILE" ] || [ -d "$PROCFILE" ] && rm -rf "$PROCFILE"
+    # Write kernel personality (flat key="value" file)
     cat > "$PROCFILE" << EOP
 OS_NAME="AIOS-Lite"
 OS_VERSION="0.1"
 OS_VENDOR="Chris"
 EOP
 
-    # Start kernel daemon in background, capture its PID
+    # Fork background kernel daemon
     (
         echo $$ > "$PIDFILE"
         echo "boot_time=$(date +%s)
@@ -83,22 +205,24 @@ last_heartbeat=$(date +%s)" > "$STATEFILE"
         aura_log "kernel started pid=$$"
         os-event "kernel: started pid=$$" 2>/dev/null
         os-msg   "kernel: started pid=$$" 2>/dev/null
+        policy_fire "event" "kernel:started"
+        agent_fire  "heartbeat" "kernel started pid=$$"
 
-        _hb_count=0
         while true; do
             echo "[os-kernel] heartbeat $$" >> "$LOG"
             os-event "kernel: heartbeat pid=$$" 2>/dev/null
 
-            # AURA: periodic service monitoring (every heartbeat)
+            # Policy + agent dispatch for heartbeat event
+            policy_fire "heartbeat" "pid=$$"
+            agent_fire  "heartbeat" "pid=$$"
+
+            # Monitor services (every heartbeat)
             monitor_services
 
-            # AURA: run tasks every 12th heartbeat (~60 s)
-            _hb_count=$((_hb_count + 1))
-            if [ $((_hb_count % 12)) -eq 0 ]; then
-                run_tasks
-            fi
+            # Run scheduled tasks based on their configured intervals
+            run_scheduled_tasks
 
-            # Update state: keep boot_time, refresh heartbeat timestamp
+            # Refresh state file
             boot_t=$(awk -F= '/^boot_time=/ {print $2}' "$STATEFILE" 2>/dev/null)
             echo "boot_time=${boot_t:-$(date +%s)}
 kernel_pid=$$
@@ -106,9 +230,9 @@ os_version=0.1
 runlevel=3
 last_heartbeat=$(date +%s)" > "$STATEFILE"
             write_health "running" "$$"
-            aura_log "heartbeat $_hb_count pid=$$"
+            aura_log "heartbeat pid=$$"
 
-            sleep 5
+            sleep "$HB_INTERVAL"
         done
     ) &
     echo "[os-kernel] Started (pid=$!)"
@@ -123,6 +247,7 @@ stop() {
         aura_log "kernel stopped pid=$pid"
         os-event "kernel: stopped pid=$pid" 2>/dev/null
         os-msg   "kernel: stopped pid=$pid" 2>/dev/null
+        policy_fire "event" "kernel:stopped"
         echo "[os-kernel] Stopped."
     else
         echo "[os-kernel] Not running."

@@ -258,6 +258,112 @@ def _run_helper(cmd: str) -> str:
         return f"ERROR: {exc}"
 
 
+# ---------------------------------------------------------------------------
+# LLM / model backend
+# ---------------------------------------------------------------------------
+
+def ask_model(prompt: str) -> str:
+    """Send a natural-language prompt to the configured model backend.
+
+    The backend is selected from ``model_backend`` in the config:
+
+    - ``null`` / not set  → rule-based fallback (no LLM)
+    - ``"subprocess"``    → invoke ``model_cmd`` as a subprocess
+    - HTTP URL (starts with ``http``) → POST to Ollama-compatible API
+    - Filesystem path (starts with ``/``) → invoke as subprocess executable
+
+    Args:
+        prompt: Natural-language prompt string.
+
+    Returns:
+        Model response text, or a fallback message.
+    """
+    backend = CONFIG.get("model_backend")
+
+    # --- No backend configured → rule-based fallback ---
+    if not backend:
+        return _model_fallback(prompt)
+
+    timeout = CONFIG.get("cmd_timeout", 60)
+
+    # --- HTTP backend (Ollama-compatible REST API) ---
+    if isinstance(backend, str) and backend.startswith("http"):
+        try:
+            import urllib.request as _req
+            import json as _json
+
+            model_name = CONFIG.get("model_name", "llama3")
+            payload = _json.dumps({
+                "model": model_name,
+                "prompt": prompt,
+                "stream": False,
+            }).encode()
+            req = _req.Request(
+                backend,
+                data=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            with _req.urlopen(req, timeout=timeout) as resp:
+                data = _json.loads(resp.read().decode())
+            return data.get("response", "").strip() or _model_fallback(prompt)
+        except Exception as exc:  # noqa: BLE001
+            _log(f"model_backend HTTP error: {exc}")
+            return _model_fallback(prompt)
+
+    # --- Subprocess backend ---
+    cmd_path = CONFIG.get("model_cmd", backend)
+    try:
+        result = subprocess.run(
+            [cmd_path, prompt],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+        return _model_fallback(prompt)
+    except FileNotFoundError:
+        _log(f"model_backend subprocess not found: {cmd_path}")
+        return _model_fallback(prompt)
+    except subprocess.TimeoutExpired:
+        _log(f"model_backend subprocess timed out after {timeout}s")
+        return _model_fallback(prompt)
+    except Exception as exc:  # noqa: BLE001
+        _log(f"model_backend subprocess error: {exc}")
+        return _model_fallback(prompt)
+
+
+def _model_fallback(prompt: str) -> str:
+    """Minimal rule-based fallback when no LLM backend is available.
+
+    Args:
+        prompt: User prompt.
+
+    Returns:
+        Canned response string.
+    """
+    p = prompt.lower()
+    if any(w in p for w in ("hello", "hi", "hey")):
+        return "Hello! I am AURA, your AI agent. Type 'help' for available commands."
+    if any(w in p for w in ("help", "commands", "what can you do")):
+        return (
+            "Available commands: ping, sysinfo, netinfo, remember, recall, "
+            "recall-all, run, ask, help, quit.  "
+            "Configure model_backend in aura-config.json for full LLM support."
+        )
+    if any(w in p for w in ("status", "health")):
+        return "AURA is operational. SQLite memory is active."
+    if any(w in p for w in ("version", "who are you")):
+        agent_name = CONFIG.get("agent_name", "AURA")
+        version = CONFIG.get("version", "1.0")
+        return f"{agent_name} v{version} — AI Agent for AIOSCPU by Chris."
+    return (
+        "I don't have a specific answer for that. "
+        "Configure 'model_backend' in aura-config.json to enable full LLM responses. "
+        "Type 'help' for command list."
+    )
+
+
 def secure_run(cmd: str) -> str:
     """Execute a shell command through the aioscpu-secure-run wrapper.
 
@@ -380,7 +486,15 @@ def handle_command(line: str) -> str:
             return "ERROR: Usage: run <command>"
         return secure_run(rest)
 
+    elif verb == "ask":
+        if not rest:
+            return "ERROR: Usage: ask <question or prompt>"
+        _log(f"ask: {rest!r}")
+        return ask_model(rest)
+
     elif verb == "help":
+        backend = CONFIG.get("model_backend")
+        backend_status = f"configured ({backend})" if backend else "not configured (rule-based fallback)"
         return (
             "AURA commands:\n"
             "  ping                          Liveness check\n"
@@ -390,6 +504,7 @@ def handle_command(line: str) -> str:
             "  recall <scope> <key>          Retrieve a memory entry\n"
             "  recall-all <scope>            List all entries in a scope\n"
             "  run <cmd>                     Execute via secure-run wrapper\n"
+            f"  ask <prompt>                  Ask the AI model [{backend_status}]\n"
             "  help                          Show this help\n"
             "  quit                          Exit AURA"
         )
@@ -398,7 +513,9 @@ def handle_command(line: str) -> str:
         return "QUIT"
 
     else:
-        return f"UNKNOWN COMMAND: {verb!r}  (type 'help' for available commands)"
+        # Route unrecognised commands to the AI model backend
+        _log(f"routing unknown command to model: {line!r}")
+        return ask_model(line)
 
 
 # ---------------------------------------------------------------------------

@@ -76,11 +76,13 @@ aura_log() {
 . "$BRIDGEDIR/android.mod"
 . "$BRIDGEDIR/linux.mod"
 . "$BRIDGEDIR/mirror.mod"
+. "$MODDIR/core.mod"
+. "$MODDIR/bus.mod"
 . "$MODDIR/sysinfo.mod"
 
 # === Fuzzy Command Matching (awk Levenshtein) ===
 # All known commands — used for typo suggestion / intent correction.
-KNOWN_CMDS="ask recall recall.best ctx.show ctx.add sem.set sem.get sem.search sem.delete sem.list mem.set mem.get mem.search mem.delete mem.tag mem.list bridge bridge.detect bridge.ios bridge.android mirror mirror.mount mirror.unmount mirror.ls msg event mode status services ps info help exit quit sysinfo uptime disk ls cd read write start stop restart kill"
+KNOWN_CMDS="ask recall recall.best ctx.show ctx.add sem.set sem.get sem.search sem.delete sem.list mem.set mem.get mem.search mem.delete mem.tag mem.list bridge bridge.detect bridge.ios bridge.android mirror mirror.mount mirror.unmount mirror.ls bus.pub bus.sub bus.last bus.count msg event mode status services ps info help exit quit sysinfo uptime disk ls cd read write start stop restart kill"
 
 cmd_fuzzy_match() {
     input="$1"
@@ -175,6 +177,13 @@ Symbolic Memory:
   mem.tag <k> <tags>   Tag a memory entry
   mem.list             List all entries
 
+Message Bus:
+  bus.pub <ch> <msg>   Publish message to channel
+  bus.sub [ch]         Read new messages from channel
+  bus.last [n]         Show last n bus messages (default 10)
+  bus.count            Count total bus messages
+  msg <text>           Send to messages channel + log
+
 Cross-OS Bridge & Mirror:
   bridge               Show bridge status
   bridge.detect        Detect connected devices
@@ -189,7 +198,6 @@ System:
   sysinfo              OS name, version, kernel, uptime
   uptime               Time since boot
   disk                 Disk usage under OS root
-  msg <text>           Send message to message bus
   event <text>         Fire system event
   status               Show full OS state
   services             Show service status
@@ -287,9 +295,25 @@ while true; do
             shift; mirror_unmount "${1:-all}" ;;
         mirror.ls)
             shift; mirror_ls "$@" ;;
+
+        # === MESSAGE BUS commands ===
+        bus.pub)
+            shift; channel="$1"; shift
+            [ -z "$channel" ] && { aura_say "Usage: bus.pub <channel> <message>"; continue; }
+            bus_publish "$channel" "$*"
+            aura_say "Published to [$channel]." ;;
+        bus.sub)
+            shift; channel="${1:-default}"
+            bus_subscribe "$channel" ;;
+        bus.last)
+            shift; bus_last "${1:-10}" ;;
+        bus.count)
+            bus_count ;;
+
         msg)
             shift
             os-msg "$*"
+            bus_publish "messages" "$*" 2>/dev/null
             aura_say "Message sent." ;;
         event)
             shift

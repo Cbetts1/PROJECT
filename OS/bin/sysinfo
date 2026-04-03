@@ -1,37 +1,46 @@
 #!/bin/sh
+# sysinfo — Print system identity and runtime state
 
 OS_ROOT="${OS_ROOT:-/}"
 PROC_OS="$OS_ROOT/proc/os"
+IDENTITY="$OS_ROOT/proc/os.identity"
+STATEFILE="$OS_ROOT/proc/os.state"
 
 echo "=== System Information ==="
 
-if [ -f "$PROC_OS/name" ]; then
-    echo "OS Name:      $(cat $PROC_OS/name)"
+# Load flat-file identity (proc/os written by os-kernel start)
+if [ -f "$PROC_OS" ]; then
+    # Source key=value pairs from the flat proc/os file
+    OS_NAME=""; OS_VERSION=""; OS_VENDOR=""
+    eval "$(grep -E '^[A-Z_]+=".+"' "$PROC_OS" 2>/dev/null || true)"
+fi
+# Fallback to authoritative identity file
+if [ -f "$IDENTITY" ]; then
+    _id_name=$(awk -F'"' '/^OS_NAME/ {print $2}' "$IDENTITY")
+    _id_ver=$(awk -F'"' '/^OS_VERSION/ {print $2}' "$IDENTITY")
+    _id_vend=$(awk -F'"' '/^OS_VENDOR/ {print $2}' "$IDENTITY")
+    _id_arch=$(awk -F'"' '/^OS_ARCH/ {print $2}' "$IDENTITY")
+    _id_cap=$(awk -F'"' '/^OS_CAPABILITY/ {print $2}' "$IDENTITY")
 fi
 
-if [ -f "$PROC_OS/version" ]; then
-    echo "OS Version:   $(cat $PROC_OS/version)"
+echo "OS Name:      ${OS_NAME:-${_id_name:-AIOS-Lite}}"
+echo "OS Version:   ${OS_VERSION:-${_id_ver:-0.1}}"
+echo "OS Vendor:    ${OS_VENDOR:-${_id_vend:-Chris}}"
+echo "OS Arch:      ${_id_arch:-mobile-unix}"
+echo "Capability:   ${_id_cap:-bridge,mirror,llm,memory}"
+
+# Runtime state
+if [ -f "$STATEFILE" ]; then
+    kpid=$(awk -F= '/^kernel_pid=/ {print $2}' "$STATEFILE")
+    boot_t=$(awk -F= '/^boot_time=/ {print $2}' "$STATEFILE")
+    runlvl=$(awk -F= '/^runlevel=/ {print $2}' "$STATEFILE")
+    now=$(date +%s)
+    up=$((now - ${boot_t:-now}))
+    echo "Kernel PID:   ${kpid:-unknown}"
+    echo "Runlevel:     ${runlvl:-unknown}"
+    echo "Uptime:       ${up}s"
 fi
 
-if [ -f "$PROC_OS/mode" ]; then
-    echo "Boot Mode:    $(cat $PROC_OS/mode)"
-fi
-
-if [ -f "$PROC_OS/boot_time" ]; then
-    echo "Boot Time:    $(cat $PROC_OS/boot_time)"
-fi
-
-if [ -f "$PROC_OS/kernel" ]; then
-    echo "Kernel:       $(cat $PROC_OS/kernel)"
-fi
-
-if [ -f "$PROC_OS/pid" ]; then
-    echo "Kernel PID:   $(cat $PROC_OS/pid)"
-fi
-
-if [ -f "$PROC_OS/services" ]; then
-    echo "Services:"
-    sed 's/^/  - /' "$PROC_OS/services"
-fi
-
+echo "Host Kernel:  $(uname -r 2>/dev/null || echo unknown)"
+echo "Host Arch:    $(uname -m 2>/dev/null || echo unknown)"
 echo "==========================="

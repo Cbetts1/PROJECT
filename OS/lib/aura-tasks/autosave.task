@@ -1,7 +1,26 @@
 task_name="autosave"
-task_help="Autosave Aura memory."
+task_help="Autosave Aura memory indexes and context window to backup files."
 
 task_run() {
-    cp "$OS_ROOT/proc/aura.memory" "$OS_ROOT/proc/aura.memory.bak" 2>/dev/null
-    echo "[task:autosave] Memory autosaved."
+    ts=$(date +%s)
+    # Backup symbolic memory index
+    if [ -f "$OS_ROOT/etc/aura/memory.index" ]; then
+        cp "$OS_ROOT/etc/aura/memory.index" \
+           "$OS_ROOT/etc/aura/memory.index.bak" 2>/dev/null
+    fi
+    # Backup semantic memory index
+    if [ -f "$OS_ROOT/etc/aura/semantic.index" ]; then
+        cp "$OS_ROOT/etc/aura/semantic.index" \
+           "$OS_ROOT/etc/aura/semantic.index.bak" 2>/dev/null
+    fi
+    # Backup context window
+    if [ -f "$OS_ROOT/proc/aura/context/window" ]; then
+        cp "$OS_ROOT/proc/aura/context/window" \
+           "$OS_ROOT/proc/aura/context/window.bak" 2>/dev/null
+    fi
+    # Legacy: also back up the flat memory file if it exists
+    [ -f "$OS_ROOT/proc/aura.memory" ] && \
+        cp "$OS_ROOT/proc/aura.memory" \
+           "$OS_ROOT/proc/aura.memory.bak" 2>/dev/null
+    echo "[task:autosave] Memory autosaved (ts=$ts)."
 }
