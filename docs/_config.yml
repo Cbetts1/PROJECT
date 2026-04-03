@@ -1,0 +1,22 @@
+# GitHub Pages configuration for AIOS-Lite marketing site
+# Served from the /docs folder on the main branch.
+
+title: "AIOS-Lite — Your AI OS. Any Device. Any Shell."
+description: >
+  AIOS-Lite is an AI-augmented portable operating system that runs on Android,
+  Linux, macOS and Raspberry Pi. Powered by AURA and LLaMA. Open source, MIT licensed.
+url: "https://cbetts1.github.io"
+baseurl: "/PROJECT"
+author: "Christopher Betts"
+
+# Exclude source docs from the Jekyll build (they are served as raw HTML/MD)
+exclude:
+  - "web/"
+
+# Pass HTML files through without modification
+include:
+  - "index.html"
+  - "legal.html"
+
+# Disable Jekyll processing on the HTML files (they are self-contained)
+plugins: []

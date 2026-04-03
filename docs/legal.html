@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Legal &amp; Compliance — AIOS-Lite</title>
+  <meta name="description" content="Full legal and compliance package for AIOS-Lite: copyright, AI disclosure, MIT license, terms of use, privacy notice, disclaimer." />
+  <meta name="author" content="Christopher Betts" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green:  #00FF41; --bg:    #0D1117; --bg2:  #161B22; --bg3: #21262D;
+      --cyan:   #79C0FF; --purple:#BC8CFF; --amber:#E3B341; --red: #F85149;
+      --text:   #E6EDF3; --muted: #8B949E; --border:#30363D;
+      --font:   'JetBrains Mono','Fira Code','Source Code Pro',Consolas,monospace;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--font); font-size:14px; line-height:1.8; }
+    a { color:var(--cyan); }
+    a:hover { color:var(--green); }
+    .container { max-width:900px; margin:0 auto; padding:0 24px; }
+    nav {
+      background:rgba(13,17,23,0.95); border-bottom:1px solid var(--border);
+      padding:14px 0;
+    }
+    .nav-inner { display:flex; align-items:center; justify-content:space-between; }
+    .nav-brand { color:var(--green); font-weight:bold; font-size:1rem; letter-spacing:1px; }
+    .nav-links { display:flex; gap:20px; }
+    .nav-links a { color:var(--muted); font-size:0.85rem; text-decoration:none; }
+    .nav-links a:hover { color:var(--text); }
+    header { padding:60px 0 40px; border-bottom:1px solid var(--border); }
+    header h1 { font-size:clamp(1.4rem,3vw,2rem); color:var(--text); margin-bottom:8px; }
+    header p  { color:var(--muted); font-size:0.9rem; }
+    .toc {
+      background:var(--bg2); border:1px solid var(--border);
+      border-radius:6px; padding:24px; margin:40px 0;
+    }
+    .toc h2 { font-size:0.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+    .toc ol  { padding-left:20px; }
+    .toc li  { margin-bottom:4px; font-size:0.9rem; }
+    .legal-section { padding:40px 0; border-bottom:1px solid var(--border); }
+    .legal-section h2 {
+      font-size:1.15rem; color:var(--cyan); margin-bottom:16px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .legal-section h2 .sec-num {
+      background:var(--bg3); color:var(--muted);
+      padding:2px 8px; border-radius:4px; font-size:0.75rem;
+    }
+    .legal-section h3 { font-size:0.95rem; color:var(--text); margin:20px 0 8px; }
+    .legal-section p  { color:var(--muted); margin-bottom:12px; font-size:0.88rem; }
+    .legal-section ul, .legal-section ol { padding-left:20px; color:var(--muted); font-size:0.88rem; margin-bottom:12px; }
+    .legal-section li { margin-bottom:4px; }
+    .code-block {
+      background:#010409; border:1px solid var(--border);
+      border-radius:6px; padding:20px; font-size:0.82rem;
+      white-space:pre-wrap; color:var(--muted); margin:16px 0;
+    }
+    .highlight { background:rgba(0,255,65,0.07); border-left:3px solid var(--green); padding:12px 16px; border-radius:0 6px 6px 0; margin:16px 0; }
+    .highlight p { margin-bottom:0; }
+    footer {
+      background:var(--bg2); border-top:1px solid var(--border);
+      padding:32px 0; text-align:center;
+      font-size:0.78rem; color:var(--muted);
+    }
+    footer a { color:var(--muted); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-brand">AIOS-Lite</a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="index.html#features">Features</a>
+        <a href="index.html#roadmap">Roadmap</a>
+        <a href="https://github.com/Cbetts1/PROJECT">GitHub</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <header>
+    <h1>Legal &amp; Compliance Package</h1>
+    <p>© 2026 Christopher Betts | AIOSCPU Official | Effective date: 2026-01-01</p>
+  </header>
+
+  <!-- Table of contents -->
+  <div class="toc">
+    <h2>Table of Contents</h2>
+    <ol>
+      <li><a href="#copyright">Copyright Notice</a></li>
+      <li><a href="#authorship">Authorship Statement</a></li>
+      <li id="ai-disclosure"><a href="#ai-disclosure-section">AI-Generated Code Disclosure</a></li>
+      <li><a href="#license">MIT License</a></li>
+      <li id="terms"><a href="#terms-section">Terms of Use</a></li>
+      <li id="privacy"><a href="#privacy-section">Privacy Notice</a></li>
+      <li id="disclaimer"><a href="#disclaimer-section">Disclaimer</a></li>
+      <li><a href="#marketing">Marketing &amp; Advertising Disclosures</a></li>
+      <li><a href="#third-party">Third-Party Notices</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. Copyright -->
+  <div class="legal-section" id="copyright">
+    <h2><span class="sec-num">§1</span> Copyright Notice</h2>
+    <p>
+      Copyright © 2026 Christopher Betts. All rights reserved.
+    </p>
+    <p>
+      The names <strong>AIOS-Lite</strong>, <strong>AURA</strong>, and <strong>AIOSCPU</strong>,
+      and all associated logos, branding materials, and documentation in this repository are the
+      intellectual property of Christopher Betts.
+    </p>
+    <p>
+      The source code in this repository is licensed under the MIT License (see §4). All
+      documentation, branding, and non-code assets are copyright © 2026 Christopher Betts
+      and may not be reproduced without attribution.
+    </p>
+  </div>
+
+  <!-- 2. Authorship -->
+  <div class="legal-section" id="authorship">
+    <h2><span class="sec-num">§2</span> Authorship Statement</h2>
+    <div class="highlight">
+      <p><em>Created and developed by Christopher Betts. All code was generated or refined
+      using AI tools under the creator's direction.</em></p>
+    </div>
+    <p>
+      Christopher Betts is the sole originator, designer, and maintainer of the AIOS-Lite
+      project. The creative direction, system architecture, design decisions, and overall vision
+      are the intellectual work of Christopher Betts. AI tools were used as instruments of
+      implementation under his direct supervision and editorial control.
+    </p>
+  </div>
+
+  <!-- 3. AI Disclosure -->
+  <div class="legal-section" id="ai-disclosure-section">
+    <h2><span class="sec-num">§3</span> AI-Generated Code Disclosure</h2>
+    <p>This project contains code generated or refined using artificial intelligence tools,
+    including large language models. The following disclosures apply:</p>
+    <ul>
+      <li><strong>Human oversight:</strong> All AI-generated code was reviewed, edited, tested,
+        and accepted by Christopher Betts. No code was committed without human review.</li>
+      <li><strong>Responsibility:</strong> Christopher Betts accepts full responsibility for the
+        contents of this repository, including any AI-generated portions, as though each line
+        were written entirely by hand.</li>
+      <li><strong>No implied warranty from AI tools:</strong> The use of AI tools does not
+        transfer any warranty, indemnity, or intellectual property from the AI tool provider
+        to this project.</li>
+      <li><strong>Originality:</strong> To the best of the creator's knowledge, the AI-generated
+        code does not reproduce any copyrighted work in substantial or recognisable form.</li>
+      <li><strong>AI tool providers:</strong> Tools used may include services by Anthropic,
+        OpenAI, or similar providers. This does not imply affiliation with or endorsement by
+        those providers.</li>
+    </ul>
+  </div>
+
+  <!-- 4. MIT License -->
+  <div class="legal-section" id="license">
+    <h2><span class="sec-num">§4</span> MIT License</h2>
+    <div class="code-block">MIT License
+
+Copyright (c) 2026 Christopher Betts
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</div>
+  </div>
+
+  <!-- 5. Terms of Use -->
+  <div class="legal-section" id="terms-section">
+    <h2><span class="sec-num">§5</span> Terms of Use</h2>
+    <p><strong>Effective date: 2026-01-01</strong></p>
+    <p>By cloning, installing, running, or distributing AIOS-Lite (the "Software"), you
+    ("User") agree to the following terms.</p>
+
+    <h3>5.1 Permitted Uses</h3>
+    <ul>
+      <li>Running the Software for personal, educational, research, or commercial purposes,
+        subject to the MIT License.</li>
+      <li>Modifying the Software and distributing modifications, provided the MIT License
+        copyright notice is retained.</li>
+      <li>Integrating the Software into other projects, provided attribution is given to
+        Christopher Betts.</li>
+    </ul>
+
+    <h3>5.2 Prohibited Uses</h3>
+    <p>Users may not:</p>
+    <ul>
+      <li>Use the Software to gain unauthorised access to computer systems, networks, or data.</li>
+      <li>Use the Software to collect, harvest, or store personal data of other individuals
+        without their knowledge and consent.</li>
+      <li>Remove, obscure, or alter the copyright notice, authorship statement, or AI-generated
+        code disclosure.</li>
+      <li>Represent the Software as their own original work without attribution to
+        Christopher Betts.</li>
+      <li>Use the Software in any manner that violates applicable laws or regulations.</li>
+    </ul>
+
+    <h3>5.3 AI and Automation Capabilities</h3>
+    <p>AIOS-Lite includes an AI agent (AURA) and automation capabilities. Users are solely
+    responsible for how they configure and use these features.</p>
+
+    <h3>5.4 No Support Obligation</h3>
+    <p>The Software is provided on an "as is" basis. Christopher Betts has no obligation to
+    provide support, maintenance, updates, or bug fixes, though contributions and issues are
+    welcome via GitHub.</p>
+
+    <h3>5.5 Governing Law</h3>
+    <p>These terms are governed by the laws of England and Wales.</p>
+  </div>
+
+  <!-- 6. Privacy -->
+  <div class="legal-section" id="privacy-section">
+    <h2><span class="sec-num">§6</span> Privacy Notice</h2>
+    <p><strong>Effective date: 2026-01-01</strong></p>
+
+    <h3>6.1 Data Collected by AIOS-Lite</h3>
+    <p>AIOS-Lite is a <strong>locally running system</strong>. By default:</p>
+    <ul>
+      <li><strong>No data is transmitted to any external server</strong> by the Software itself.</li>
+      <li>All memory, logs, and state are stored locally inside <code>$OS_ROOT/</code>.</li>
+      <li>The AURA memory database is stored at <code>$OS_ROOT/var/lib/aura/aura-memory.db</code>.</li>
+    </ul>
+
+    <h3>6.2 LLM / AI Model</h3>
+    <p>The default configuration uses a <strong>local llama.cpp model</strong> with no network
+    connectivity. If a remote AI backend is configured, queries are subject to that
+    third-party's privacy policy.</p>
+
+    <h3>6.3 Bridge and Mirror Features</h3>
+    <p>When using bridge features (iOS, Android, SSH), AIOS-Lite may read filesystem data
+    from connected devices only in response to explicit User commands. Data is cached locally
+    and never transmitted externally.</p>
+
+    <h3>6.4 No Tracking or Analytics</h3>
+    <p>AIOS-Lite contains no telemetry, analytics, crash reporting, or usage tracking.</p>
+
+    <h3>6.5 This Website</h3>
+    <p>This website is hosted on GitHub Pages. GitHub may collect request logs and IP addresses
+    subject to <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's Privacy Statement</a>. This website sets no cookies and uses
+    no analytics beyond what GitHub Pages provides.</p>
+
+    <h3>6.6 Contact</h3>
+    <p>To report a privacy concern:
+    <a href="https://github.com/Cbetts1/PROJECT/issues">https://github.com/Cbetts1/PROJECT/issues</a></p>
+  </div>
+
+  <!-- 7. Disclaimer -->
+  <div class="legal-section" id="disclaimer-section">
+    <h2><span class="sec-num">§7</span> Disclaimer</h2>
+
+    <h3>7.1 No Warranty</h3>
+    <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+    INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+    PURPOSE, TITLE, AND NON-INFRINGEMENT.</p>
+
+    <h3>7.2 Limitation of Liability</h3>
+    <p>IN NO EVENT SHALL CHRISTOPHER BETTS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES ARISING FROM THE USE OF THIS
+    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</p>
+
+    <h3>7.3 AI Outputs</h3>
+    <p>AI-generated responses may be inaccurate, incomplete, or misleading. Users must not
+    rely on AI outputs for safety-critical decisions, medical, legal, or financial advice.</p>
+
+    <h3>7.4 Experimental Software</h3>
+    <p>AIOS-Lite is an experimental project. It has not been certified, audited, or approved
+    for use in production, safety-critical, or regulated environments.</p>
+  </div>
+
+  <!-- 8. Marketing disclosures -->
+  <div class="legal-section" id="marketing">
+    <h2><span class="sec-num">§8</span> Marketing &amp; Advertising Disclosures</h2>
+
+    <h3>8.1 Feature Availability</h3>
+    <p>Features described on this website as "Coming Soon", "Planned", or assigned to a
+    future version (e.g., v0.3, v0.4, v1.0) are not yet available. They represent the
+    project's development intentions and are subject to change without notice.</p>
+
+    <h3>8.2 No Purchase Required</h3>
+    <p>AIOS-Lite is free and open-source software. No payment, subscription, or account
+    creation is required to download, install, or use the software. All future releases
+    described on this website will be made available at no cost under the MIT License unless
+    explicitly stated otherwise.</p>
+
+    <h3>8.3 "Early Access" and Notifications</h3>
+    <p>References to "early access" or "be first to know" on this website refer to watching
+    or starring the
+    <a href="https://github.com/Cbetts1/PROJECT">GitHub repository</a> to receive free
+    GitHub notifications when new releases are published. No commercial pre-order, deposit,
+    or purchase is involved.</p>
+
+    <h3>8.4 No Affiliation with Third Parties</h3>
+    <p>AIOS-Lite is not affiliated with, endorsed by, or sponsored by Anthropic, OpenAI,
+    Google, Apple, Samsung, or any other company whose products may be mentioned in this
+    documentation or website.</p>
+
+    <h3>8.5 Accuracy of Claims</h3>
+    <p>All performance claims, compatibility statements, and feature descriptions on this
+    website are made in good faith and reflect the best available information at the time of
+    writing. The creator makes no guarantees that described features will be delivered on
+    any specific timeline.</p>
+  </div>
+
+  <!-- 9. Third-party notices -->
+  <div class="legal-section" id="third-party">
+    <h2><span class="sec-num">§9</span> Third-Party Notices</h2>
+    <p>AIOS-Lite does not embed third-party source code in this repository. Third-party
+    open-source components used as host dependencies are listed in
+    <a href="https://github.com/Cbetts1/PROJECT/blob/main/licenses/THIRD_PARTY_LICENSES.md">
+    licenses/THIRD_PARTY_LICENSES.md</a>.</p>
+    <p>This website is hosted on GitHub Pages and served under GitHub's standard Terms of
+    Service.</p>
+  </div>
+
+</div><!-- /.container -->
+
+<footer>
+  <p>© 2026 Christopher Betts | AIOSCPU Official</p>
+  <p style="margin-top:6px;">
+    <a href="index.html">Home</a> ·
+    <a href="https://github.com/Cbetts1/PROJECT">GitHub</a> ·
+    <a href="https://github.com/Cbetts1/PROJECT/blob/main/LICENSE">MIT License</a>
+  </p>
+</footer>
+
+</body>
+</html>
