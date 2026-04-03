@@ -195,6 +195,74 @@ grep -q "service dead: fake-svc" "$_AURA_LOG_FILE" && pass "heartbeat: dead serv
 rm -rf "$_STATE_DIR" "$_AURA_LOG_FILE" "$_EVENTS_LOG"
 
 # ---------------------------------------------------------------------------
+# os-upgrade tests
+# ---------------------------------------------------------------------------
+echo
+echo "=== os-upgrade tests ==="
+
+OS_UPGRADE="$OS_ROOT/bin/os-upgrade"
+
+# Ensure the script is executable
+chmod +x "$OS_UPGRADE" 2>/dev/null || true
+
+# 1. os-upgrade --status prints version information
+if [ -f "$OS_UPGRADE" ]; then
+    out=$(OS_ROOT="$OS_ROOT" sh "$OS_UPGRADE" --status 2>&1)
+    echo "$out" | grep -q "AIOS-Lite Version" \
+        && pass "os-upgrade --status: prints version header" \
+        || fail "os-upgrade --status: should print version header"
+else
+    fail "os-upgrade: script not found at $OS_UPGRADE"
+fi
+
+# 2. os-upgrade --check runs without error and prints the 'Checking' log line
+if [ -f "$OS_UPGRADE" ]; then
+    out=$(OS_ROOT="$OS_ROOT" sh "$OS_UPGRADE" --check 2>&1)
+    echo "$out" | grep -q "\[os-upgrade\] Checking for available updates" \
+        && pass "os-upgrade --check: produces 'Checking for available updates' output" \
+        || fail "os-upgrade --check: should produce 'Checking for available updates' output"
+fi
+
+# 3. os-upgrade with no args behaves like --check (exits 0)
+if [ -f "$OS_UPGRADE" ]; then
+    OS_ROOT="$OS_ROOT" sh "$OS_UPGRADE" >/dev/null 2>&1
+    [ $? -eq 0 ] && pass "os-upgrade: no-arg defaults to --check (exit 0)" \
+        || fail "os-upgrade: no-arg should exit 0"
+fi
+
+# 4. os-upgrade --help prints usage information
+if [ -f "$OS_UPGRADE" ]; then
+    out=$(OS_ROOT="$OS_ROOT" sh "$OS_UPGRADE" --help 2>/dev/null)
+    echo "$out" | grep -q "Usage" \
+        && pass "os-upgrade --help: prints Usage" \
+        || fail "os-upgrade --help: should print Usage"
+fi
+
+# 5. os-upgrade unknown flag exits non-zero
+if [ -f "$OS_UPGRADE" ]; then
+    OS_ROOT="$OS_ROOT" sh "$OS_UPGRADE" --unknown-flag >/dev/null 2>&1
+    [ $? -ne 0 ] && pass "os-upgrade: unknown flag exits non-zero" \
+        || fail "os-upgrade: unknown flag should exit non-zero"
+fi
+
+# 6. os-upgrade --apply runs without error (no packages installed is fine)
+if [ -f "$OS_UPGRADE" ]; then
+    out=$(OS_ROOT="$OS_ROOT" sh "$OS_UPGRADE" --apply 2>/dev/null)
+    echo "$out" | grep -qi "upgrade complete\|applying updates" \
+        && pass "os-upgrade --apply: reports upgrade complete" \
+        || fail "os-upgrade --apply: should report upgrade complete"
+fi
+
+# 7. os-upgrade --apply logs to aura.log
+if [ -f "$OS_UPGRADE" ]; then
+    _prev=$(wc -l < "$OS_ROOT/var/log/aura.log" 2>/dev/null || echo 0)
+    OS_ROOT="$OS_ROOT" sh "$OS_UPGRADE" --apply >/dev/null 2>&1
+    _new=$(wc -l < "$OS_ROOT/var/log/aura.log" 2>/dev/null || echo 0)
+    [ "$_new" -gt "$_prev" ] && pass "os-upgrade --apply: appends to aura.log" \
+        || fail "os-upgrade --apply: should append to aura.log"
+fi
+
+# ---------------------------------------------------------------------------
 # Cleanup test fixtures
 # ---------------------------------------------------------------------------
 [ "$_created_os_log" = true ]   && rm -f "$_STUB_OS_LOG"

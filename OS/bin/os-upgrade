@@ -1,0 +1,203 @@
+#!/bin/sh
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# os-upgrade — AIOS-Lite system upgrade tool
+#
+# Usage:
+#   os-upgrade [--check]    Check for available updates (default)
+#   os-upgrade --apply      Apply all available updates
+#   os-upgrade --status     Show current AIOS-Lite version info
+#   os-upgrade --help       Show this help
+
+OS_ROOT="${OS_ROOT:-/}"
+AURA_LOG="${OS_ROOT}/var/log/aura.log"
+RELEASE_FILE="${OS_ROOT}/etc/os-release"
+PKG_DB="${OS_ROOT}/var/pkg"
+PKG_DIR="${OS_ROOT}/usr/pkg"
+
+TIMESTAMP=$(date '+%Y-%m-%dT%H:%M:%SZ')
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+_log() {
+    echo "[os-upgrade] $*"
+    echo "[${TIMESTAMP}] [os-upgrade] $*" >> "${AURA_LOG}" 2>/dev/null || true
+}
+
+_die() {
+    echo "[os-upgrade] ERROR: $*" >&2
+    exit 1
+}
+
+# Print OS version from etc/os-release
+_show_version() {
+    echo "=== AIOS-Lite Version ==="
+    if [ -f "${RELEASE_FILE}" ]; then
+        cat "${RELEASE_FILE}"
+    else
+        echo "(release file not found: ${RELEASE_FILE})"
+    fi
+    echo ""
+}
+
+# Detect the git repository root (OS_ROOT is typically <repo>/OS)
+_repo_root() {
+    parent=$(dirname "${OS_ROOT}")
+    if [ -d "${parent}/.git" ]; then
+        echo "${parent}"
+        return
+    fi
+    cwd=$(pwd)
+    if [ -d "${cwd}/.git" ]; then
+        echo "${cwd}"
+        return
+    fi
+    echo ""
+}
+
+# ---------------------------------------------------------------------------
+# --check: report available updates without making changes
+# ---------------------------------------------------------------------------
+_check() {
+    _show_version
+    _log "Checking for available updates..."
+
+    repo=$(_repo_root)
+
+    if [ -z "${repo}" ]; then
+        _log "Not running from a git repository. Manual update required."
+    elif ! command -v git >/dev/null 2>&1; then
+        _log "git not found. Cannot check for remote updates."
+    else
+        branch=$(git -C "${repo}" rev-parse --abbrev-ref HEAD 2>/dev/null)
+        if git -C "${repo}" fetch --quiet origin "${branch}" 2>/dev/null; then
+            behind=$(git -C "${repo}" rev-list "HEAD..origin/${branch}" --count 2>/dev/null || echo "0")
+            if [ "${behind:-0}" -gt 0 ]; then
+                _log "${behind} commit(s) available from origin/${branch}."
+                _log "Run 'upgrade --apply' to update."
+            else
+                _log "OS source is up to date (origin/${branch})."
+            fi
+        else
+            _log "Could not reach remote. Check network connection."
+        fi
+    fi
+
+    # Report installed packages
+    if [ -d "${PKG_DB}" ]; then
+        pkg_count=$(find "${PKG_DB}" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
+        if [ "${pkg_count}" -gt 0 ]; then
+            _log "${pkg_count} installed package(s):"
+            for pkgfile in "${PKG_DB}"/*; do
+                [ -f "${pkgfile}" ] || continue
+                pkg=$(basename "${pkgfile}")
+                ver=$(cat "${pkgfile}" 2>/dev/null | head -1)
+                if [ -n "${ver}" ]; then
+                    printf "  %-24s %s\n" "${pkg}" "${ver}"
+                else
+                    printf "  %s\n" "${pkg}"
+                fi
+            done
+        else
+            _log "No packages installed."
+        fi
+    else
+        _log "Package database not found. Run 'bash install.sh' to initialise."
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# --apply: git pull + upgrade all installed packages
+# ---------------------------------------------------------------------------
+_apply() {
+    _show_version
+    _log "Applying updates..."
+
+    repo=$(_repo_root)
+
+    # --- git pull ---
+    if [ -z "${repo}" ]; then
+        _log "Not in a git repository. Skipping source update."
+    elif ! command -v git >/dev/null 2>&1; then
+        _log "git not found. Skipping source update."
+    else
+        branch=$(git -C "${repo}" rev-parse --abbrev-ref HEAD 2>/dev/null)
+        _log "Pulling from origin/${branch}..."
+        if git -C "${repo}" pull --ff-only origin "${branch}" 2>&1; then
+            _log "Source updated."
+        else
+            _log "git pull failed; continuing with package upgrades."
+        fi
+    fi
+
+    # --- upgrade installed packages ---
+    upgraded=0
+    if [ -d "${PKG_DB}" ]; then
+        for pkgfile in "${PKG_DB}"/*; do
+            [ -f "${pkgfile}" ] || continue
+            pkg=$(basename "${pkgfile}")
+            if [ -f "${PKG_DIR}/${pkg}/upgrade.sh" ]; then
+                _log "Upgrading: ${pkg}"
+                sh "${PKG_DIR}/${pkg}/upgrade.sh"
+                upgraded=$((upgraded + 1))
+            elif [ -f "${PKG_DIR}/${pkg}/install.sh" ]; then
+                _log "Reinstalling: ${pkg}"
+                sh "${PKG_DIR}/${pkg}/install.sh"
+                upgraded=$((upgraded + 1))
+            else
+                _log "No upgrade script for: ${pkg} (skipping)"
+            fi
+        done
+    fi
+
+    _log "Upgrade complete. ${upgraded} package(s) processed."
+    _log "Restart the AIOS shell to apply all changes."
+}
+
+# ---------------------------------------------------------------------------
+# --help
+# ---------------------------------------------------------------------------
+_show_help() {
+    cat << 'EOF'
+Usage: os-upgrade [OPTION]
+
+  (no option)   Check for available updates (same as --check)
+  --check       Fetch remote changes and report available updates
+  --apply       Apply updates: git pull + upgrade installed packages
+  --status      Show current AIOS-Lite version information
+  --help        Show this help message
+
+Examples:
+  os-upgrade              # Check for updates
+  os-upgrade --apply      # Apply updates
+  os-upgrade --status     # Show version info
+
+Logs are written to: $OS_ROOT/var/log/aura.log
+EOF
+}
+
+# ---------------------------------------------------------------------------
+# Argument dispatch
+# ---------------------------------------------------------------------------
+MODE="${1:---check}"
+
+case "${MODE}" in
+    --check|check)
+        _check
+        ;;
+    --apply|apply)
+        _apply
+        ;;
+    --status|status)
+        _show_version
+        ;;
+    --help|-h|help)
+        _show_help
+        ;;
+    *)
+        echo "[os-upgrade] Unknown option: ${MODE}" >&2
+        echo "Run 'os-upgrade --help' for usage." >&2
+        exit 1
+        ;;
+esac

@@ -453,7 +453,9 @@ while true; do
             aura_log "CMD: upgrade $*"
             shift
             _upgrade_flag="${1:---check}"
-            if command -v os-install >/dev/null 2>&1; then
+            if command -v os-upgrade >/dev/null 2>&1; then
+                os-upgrade "$_upgrade_flag"
+            elif command -v os-install >/dev/null 2>&1; then
                 case "$_upgrade_flag" in
                     --apply|apply)
                         aura_say "Upgrading all installed packages..."
@@ -466,7 +468,7 @@ while true; do
                         ;;
                 esac
             else
-                aura_say "os-install not found."
+                aura_say "os-upgrade not found."
             fi
             ;;
         exit|quit)
