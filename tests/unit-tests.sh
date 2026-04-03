@@ -201,6 +201,26 @@ rm -rf "$_STATE_DIR" "$_AURA_LOG_FILE" "$_EVENTS_LOG"
 [ "$_created_os_state" = true ] && rm -f "$_STUB_OS_STATE"
 
 # ---------------------------------------------------------------------------
+# Python AI Core module tests (intent_engine, router, bots)
+# ---------------------------------------------------------------------------
+_PY_TESTS="$REPO_ROOT/tests/test_python_modules.py"
+if [ -f "$_PY_TESTS" ] && command -v python3 >/dev/null 2>&1; then
+    echo
+    echo "=== Python AI Core module tests ==="
+    _py_out=$(python3 "$_PY_TESTS" 2>&1)
+    echo "$_py_out"
+    _py_pass=$(echo "$_py_out" | grep -c "^\[PASS\]" || true)
+    _py_fail=$(echo "$_py_out" | grep -c "^\[FAIL\]" || true)
+    PASS=$((PASS + _py_pass))
+    if [ "${_py_fail:-0}" -gt 0 ]; then
+        FAIL=$((FAIL + _py_fail))
+        ERRORS="$ERRORS\n  - Python AI Core tests: $_py_fail failure(s)"
+    fi
+else
+    echo "[SKIP] test_python_modules.py not found or python3 unavailable"
+fi
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 echo
