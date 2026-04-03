@@ -43,8 +43,8 @@ Examples:
 
 | Month | Expected Activity |
 |---|---|
-| January, March, May, July, September, November | Minor release (odd months) |
-| February, April, June, August, October, December | Patch release (even months) |
+| January, March, May, July, September, November | Minor release (odd-numbered months: 1, 3, 5, 7, 9, 11) |
+| February, April, June, August, October, December | Patch release (even-numbered months: 2, 4, 6, 8, 10, 12) |
 
 This is a target, not a hard commitment. Releases may slip or be skipped if the quality bar is not met.
 

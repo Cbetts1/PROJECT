@@ -20,7 +20,7 @@
 
 | Goal | Description | Status |
 |---|---|---|
-| **v1.0 Stable release** | First formal stable release; freeze the public API; publish SemVer versioning | 🔄 In progress |
+| **v1.0 Stable release** | First formal stable release; freeze the public API; publish SemVer versioning | 🔄 Targeting Q2 2026 |
 | **CI/CD pipeline** | GitHub Actions: run unit + integration tests on every PR across Termux and Linux runners | 🔄 In progress |
 | **Governance framework** | Publish `GOVERNANCE.md`, `MAINTENANCE.md`, `COMMUNITY.md`, `ROADMAP.md` | ✅ Complete |
 | **Issue templates** | Bug report + feature request templates in `.github/ISSUE_TEMPLATE/` | ✅ Complete |
