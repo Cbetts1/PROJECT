@@ -80,7 +80,7 @@ aura_log() {
 
 # === Fuzzy Command Matching (awk Levenshtein) ===
 # All known commands — used for typo suggestion / intent correction.
-KNOWN_CMDS="ask recall recall.best ctx.show ctx.add sem.set sem.get sem.search sem.delete sem.list mem.set mem.get mem.search mem.delete mem.tag mem.list bridge bridge.detect bridge.ios bridge.android mirror mirror.mount mirror.unmount mirror.ls msg event mode status services ps info help exit quit sysinfo uptime disk ls cd read write start stop restart kill upgrade"
+KNOWN_CMDS="ask recall recall.best ctx.show ctx.add sem.set sem.get sem.search sem.delete sem.list mem.set mem.get mem.search mem.delete mem.tag mem.list bridge bridge.detect bridge.ios bridge.android mirror mirror.mount mirror.unmount mirror.ls msg event mode status services ps info help exit quit sysinfo uptime disk ls cd read write start stop restart kill update upgrade"
 
 cmd_fuzzy_match() {
     input="$1"
@@ -209,6 +209,7 @@ Services:
   restart <svc>        Restart init.d service
 
 Packages:
+  update               Refresh the package index
   upgrade              Check installed packages for upgrades
   upgrade --apply      Apply all pending package upgrades
 EOH
@@ -449,6 +450,15 @@ while true; do
 
         help)
             help_cmd ;;
+        update)
+            aura_log "CMD: update"
+            if command -v os-install >/dev/null 2>&1; then
+                aura_say "Refreshing package index..."
+                os-install update
+            else
+                aura_say "os-install not found."
+            fi
+            ;;
         upgrade)
             aura_log "CMD: upgrade $*"
             shift
@@ -456,6 +466,8 @@ while true; do
             if command -v os-install >/dev/null 2>&1; then
                 case "$_upgrade_flag" in
                     --apply|apply)
+                        aura_say "Refreshing package index..."
+                        os-install update
                         aura_say "Upgrading all installed packages..."
                         os-install upgrade-all
                         ;;

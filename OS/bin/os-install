@@ -4,6 +4,19 @@ PKG_DIR="$OS_ROOT/usr/pkg"
 INSTALLED="$OS_ROOT/var/pkg"
 
 case "$1" in
+  update)
+    echo "Updating package index..."
+    if [ -d "$PKG_DIR" ]; then
+        count=0
+        for pkg_path in "$PKG_DIR"/*/; do
+            [ -d "$pkg_path" ] || continue
+            count=$((count + 1))
+        done
+        echo "Package index refreshed. $count package(s) available."
+    else
+        echo "Package directory not found: $PKG_DIR"
+    fi
+    ;;
   install)
     pkg="$2"
     if [ -f "$PKG_DIR/$pkg/install.sh" ]; then
@@ -72,6 +85,6 @@ case "$1" in
     ls "$INSTALLED"
     ;;
   *)
-    echo "Usage: os-install {install|remove|upgrade|upgrade-all|list} [package]"
+    echo "Usage: os-install {update|install|remove|upgrade|upgrade-all|list} [package]"
     ;;
 esac
