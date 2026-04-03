@@ -1,148 +1,84 @@
 # Changelog
 
-All notable changes to **AIOS-Lite / AIOSCPU** are documented here.
+All notable changes to AIOS-Lite are documented here.
 
-This project follows [Semantic Versioning](https://semver.org/) and the
-[Keep a Changelog](https://keepachangelog.com/) format.
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).  
+Versions follow [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [1.0.0] — 2026-04-03 — "Aurora"
+## [Unreleased]
 
-*First public release.*
+### In Progress
+- Persistent SQLite memory backend for symbolic and semantic layers
+- Improved intent classification accuracy
+- Web UI dashboard (`os-httpd` frontend)
+
+---
+
+## [0.2.0] — 2026-04-01
 
 ### Added
-
-#### OS Kernel & Boot
-- `OS/sbin/init` — PID-1 equivalent: resolves `OS_ROOT`, creates runtime
-  directories, writes initial `proc/os.state`, then runs `rc2.d` services
-- `OS/etc/rc2.d/` runlevel 2 service chain: S10-banner → S20-devices →
-  S30-aura-bridge → S40-os-kernel → S60-aura-agents → S70-aura-tasks
-- `OS/bin/os-syscall` — system-call gate (read, write, spawn, kill, …)
-  with audit logging to `var/log/syscall.log`
-- `OS/bin/os-sched` — priority round-robin scheduler; background pruning of
-  dead PIDs every 5 s
-- `OS/bin/os-perms` — capability-based permission model with wildcard matching
-- `OS/bin/os-resource` — CPU / memory / disk / thermal resource monitor
-  (68 °C thermal limit for Samsung S21 FE)
-- `OS/bin/os-recover` — five-stage recovery: directory repair → state repair
-  → service cleanup → log rotation → dependency audit
-- `OS/bin/os-service` and `os-service-status` — service lifecycle management
-- `OS/bin/os-event` and `os-msg` — event bus for inter-process messaging
-- `OS/bin/os-httpd` — Python 3 HTTP/WebSocket REST server with TLS support,
-  token authentication, Server-Sent Events, and per-request metrics logging
-- `OS/bin/os-netconf` — full network manager: interfaces, WiFi, Bluetooth,
-  IP, routing, DNS, firewall (iptables), NAT, mDNS discovery, snapshot save/load
-- `OS/lib/filesystem.py` — `OS_ROOT`-jailed file I/O; path-traversal blocking
-  via `os.path.realpath()` comparison
-
-#### AI Core
-- `ai/core/intent_engine.py` — natural-language intent classification
-- `ai/core/router.py` — intent-to-bot dispatcher
-- `ai/core/bots.py` — HealthBot, LogBot, RepairBot (all extend `BaseBot`)
-- `ai/core/fuzzy.py` — fuzzy command matching
-- `ai/core/llama_client.py` — LLaMA inference wrapper + rule-based mock fallback
-- `ai/core/commands.py` — natural-language command parser
-- `ai/core/ai_backend.py` — top-level AI dispatch backend
-- LLaMA model slot: place any `.gguf` file in `llama_model/` to enable full LLM
-
-#### Memory System
-- Rolling 50-line context window at `OS/proc/aura/context/window`
-- Symbolic key-value memory (`mem.set` / `mem.get`)
-- Semantic embedding memory (`sem.set` / `sem.search`)
-- Hybrid recall engine combining all three layers
-- AURA persistent SQLite memory (`aura/schema-memory.sql`)
-
-#### Cross-OS Bridge
-- `OS/bin/os-bridge` — bridge control for iOS (libimobiledevice), Android
-  (ADB), and Linux/SSH targets
-- `OS/bin/os-mirror` — device filesystem mirroring into `OS/mirror/`
-- Host-OS auto-detection at boot (`OS/etc/init.d/aura-bridge`)
-
-#### Shell & User Interface
-- `OS/bin/os-shell` — primary interactive AI shell with `ask`, `recall`,
-  `mem.*`, `sem.*`, `bridge.*`, `mirror.*`, `status`, `services`, `help`
-- `OS/bin/os-real-shell` — full OS shell
-- `bin/aios` — dual AI shell entry-point
-- `bin/aios-sys` — OS shell entry-point
-- `bin/aios-heartbeat` — background heartbeat daemon
-
-#### AURA Agent Layer
-- `aura/aura-agent.py` — AURA autonomous agent
-- `aura/aura-config.json` — agent configuration
-- `lib/aura-core.sh`, `aura-ai.sh`, `aura-fs.sh`, `aura-llama.sh`,
-  `aura-net.sh`, `aura-proc.sh`, `aura-typo.sh` — AURA module library
-
-#### AIOSCPU Disk Image
-- `aioscpu/build/build-image.sh` — reproducible Debian-based x86-64 disk
-  image builder (requires `debootstrap`)
-- `aioscpu/rootfs-overlay/` — OS overlay files baked into the image
-- `aioscpu-secure-run` wrapper with command denylist
-- `aura.service` systemd unit with `ProtectSystem=strict` sandboxing
-
-#### Security & Compliance
-- Capability-based permissions with syscall audit log
-- TLS 1.2-minimum enforcement in `os-httpd`
-- API token authentication for all REST endpoints
-- Spawn whitelist in `os-syscall`
-- Path-traversal blocking in `filesystem.py`
-- AURA sudoers rule scoped to single secure-run wrapper only
-- `docs/SECURITY.md` — full security documentation
-- `docs/COMPLIANCE.md` — licensing, privacy, and export compliance
-- `docs/LEGAL.md` — AURA privacy & security notice
-- `licenses/THIRD_PARTY_LICENSES.md` — upstream dependency licenses
-
-#### Documentation
-- `docs/ARCHITECTURE.md` — system architecture and directory structure
-- `docs/KERNEL-DESIGN.md` — pseudo-kernel design, boot sequence, syscall table
-- `docs/CAPABILITIES.md` — full capability matrix (status / component / tested)
-- `docs/API-REFERENCE.md` — complete API reference (syscall, kernel, REST, AI)
-- `docs/AURA-API.md` — AURA agent API reference
-- `docs/AIOSCPU-ARCHITECTURE.md` — disk-image architecture
-- `docs/AI_MODEL_SETUP.md` — LLM model setup guide
-- `docs/BUILDING-IMAGE.md` — disk image build guide
-- `docs/INSTALL.md` — installation guide
-- `docs/PHONE_SPECS.md` — Samsung Galaxy S21 FE target device specs
-- `docs/REPRODUCIBLE-BUILD.md` — reproducible build instructions
-
-#### Testing
-- `tests/unit-tests.sh` — 17 shell tests + 40 Python module tests (57 total)
-- `tests/integration-tests.sh` — 87 integration tests
-- `tests/test_python_modules.py` — standalone Python AI core test suite
-
-#### Branding & Identity
-- `branding/LOGO_ASCII.txt` — ASCII logo and AIOSCPU banner
-- `branding/WATERMARK.txt` — distribution watermark
+- Dual-shell architecture: `bin/aios` (AI shell) and `bin/aios-sys` (system shell)
+- `bin/aios-heartbeat` daemon for continuous service health monitoring
+- Cross-OS bridge layer (`OS/lib/aura-bridge/`) with iOS, Android, and SSH modules
+- Filesystem mirror system (`OS/bin/os-mirror`) — mount any device under `$OS_ROOT/mirror/`
+- AURA semantic memory layer (`OS/lib/aura-semantic/`) with embedding-based search
+- AURA hybrid recall engine (`OS/lib/aura-hybrid/`) combining all memory layers
+- AURA policy engine (`OS/lib/aura-policy/`) for event-driven automation rules
+- AURA background agents (`OS/lib/aura-agents/`)
+- AURA scheduled tasks (`OS/lib/aura-tasks/`)
+- `OS/lib/filesystem.py` — OS_ROOT-isolated Python file I/O abstraction
+- `os-recover` self-repair command
+- `os-httpd` built-in HTTP server for local REST API access
+- `os-netconf` network configuration command (WiFi, Bluetooth, IP, routing)
+- Capability-based permissions model (`OS/etc/perms.d/`, `os-perms`)
+- Service registry with health files (`os-service`, `os-service-health`, `os-service-status`)
+- Runlevel system (0–3) with `os-kernelctl runlevel` transitions
+- Syscall dispatcher (`OS/bin/os-syscall`)
+- Cooperative scheduler (`OS/bin/os-sched`) with priority tiers
+- Resource manager (`OS/bin/os-resource`) with soft CPU/memory quotas
+- `AIOSCPU` disk image build system (`aioscpu/build/build-image.sh`) for x86-64
+- Integration test suite (`tests/integration-tests.sh`, 87 tests)
+- `docs/OS-ARCHITECTURE.md` — full architecture reference
+- `docs/MANUAL.md` — instruction manual
+- `docs/LEGAL.md` — complete legal and compliance package
+- `ROADMAP.md` and `CHANGELOG.md`
+- `LICENSE` (MIT)
 
 ### Changed
-
-- Nothing — this is the initial public release.
-
-### Deprecated
-
-- Nothing.
-
-### Removed
-
-- Nothing.
+- `sbin/init` boot sequence refactored into five distinct phases
+- `README.md` fully rewritten as GitHub landing page
+- `docs/REPRODUCIBLE-BUILD.md` expanded with one-shot install script description and verification checklist
+- `OS/etc/os-release` updated to version `0.2`
 
 ### Fixed
-
-- `OS/bin/os-httpd`: enforced TLS 1.2 minimum (resolved CodeQL
-  `py/insecure-protocol` finding).
-
-### Security
-
-- TLS floor set to `PROTOCOL_TLS_CLIENT` + `minimum_version=TLSVersion.TLSv1_2`
-  in `os-httpd` to prevent downgrade to SSLv3 / TLS 1.0 / TLS 1.1.
+- `os-shell` now correctly handles missing `$OS_ROOT/proc/` directory on first boot
+- Log rotation now triggers reliably at 1000 lines
+- Bridge detection no longer crashes when `adb` is not installed
 
 ---
 
-## [0.1.0] — 2026-01 — *Pre-release / Development*
+## [0.1.0] — 2026-01-15
 
-Internal development build. Not publicly released.
+### Added
+- Initial project structure: `OS/sbin/init`, `OS/bin/os-shell`, `OS/bin/os-ai`
+- Basic AI shell with rule-based intent handling
+- llama.cpp integration via `OS/lib/aura-llm/` and `lib/aura-llama.sh`
+- Symbolic key-value memory (`OS/lib/aura-memory/`)
+- Event system (`OS/bin/os-event`)
+- Message bus (`OS/bin/os-msg`)
+- Service health basics (`OS/bin/os-service`, `OS/bin/os-service-status`)
+- Python AI Core: `ai/core/intent_engine.py`, `router.py`, `bots.py`, `ai_backend.py`
+- Fuzzy command matching (`ai/core/fuzzy.py`)
+- Unit test suite (`tests/unit-tests.sh`, 57 tests: 17 shell + 40 Python)
+- `docs/ARCHITECTURE.md`, `docs/INSTALL.md`, `docs/CAPABILITIES.md`
+- `branding/LOGO_ASCII.txt`, `branding/WATERMARK.txt`
+- Samsung Galaxy S21 FE optimisation profile (`docs/PHONE_SPECS.md`)
+- `config/aios.conf` and `config/llama-settings.conf`
 
 ---
 
-[1.0.0]: https://github.com/Cbetts1/PROJECT/releases/tag/v1.0.0
-[0.1.0]: https://github.com/Cbetts1/PROJECT/releases/tag/v0.1.0
+*End of Changelog*
+
+> © 2026 Christopher Betts | AIOS-Lite | https://github.com/Cbetts1/PROJECT

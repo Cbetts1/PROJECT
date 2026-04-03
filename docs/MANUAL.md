@@ -1,796 +1,446 @@
-# AIOS-Lite — Full Instruction Manual
+# AIOS-Lite — Instruction Manual
 
-**Version:** 0.1-alpha
-**Author:** Christopher Betts
-**Repository:** <https://github.com/Cbetts1/PROJECT>
-
-> © 2026 Christopher Betts. All rights reserved.
+> © 2026 Christopher Betts | AIOSCPU Official
+> *Created and developed by Christopher Betts. All code was generated or refined using AI tools under the creator's direction.*
 
 ---
 
 ## Table of Contents
 
-1. [What Is AIOS-Lite?](#1-what-is-aios-lite)
+1. [What is AIOS-Lite?](#1-what-is-aios-lite)
 2. [How It Works](#2-how-it-works)
-3. [Architecture](#3-architecture)
-4. [Installation](#4-installation)
-5. [Operation](#5-operation)
-6. [Updating](#6-updating)
-7. [Repairing](#7-repairing)
-8. [Extending](#8-extending)
-9. [Troubleshooting](#9-troubleshooting)
-10. [Glossary](#10-glossary)
+3. [Installation](#3-installation)
+4. [Operation](#4-operation)
+5. [Updating](#5-updating)
+6. [Repair and Recovery](#6-repair-and-recovery)
+7. [Extending the System](#7-extending-the-system)
+8. [Troubleshooting](#8-troubleshooting)
+9. [Glossary](#9-glossary)
 
 ---
 
-## 1. What Is AIOS-Lite?
+## 1. What is AIOS-Lite?
 
-**AIOS-Lite** (Artificial Intelligence Operating System, Lite edition) is a portable, AI-augmented operating system implemented in POSIX shell script and Python. It provides a unified, natural-language-capable shell environment that can run on any Unix-like system and optionally connect to and mirror the filesystems of iOS devices, Android devices, and remote Linux/macOS servers.
+AIOS-Lite is a **portable, AI-augmented operating system** that runs on top of any POSIX host environment. It is not a full OS in the traditional sense — it does not contain a kernel or device drivers. Instead, it provides a complete **OS-like environment in userspace**: its own process model, service registry, scheduler, permissions system, memory system, and AI cognitive layer (AURA).
 
-### Key Properties
+**Key characteristics:**
 
-- **Portable** — The entire OS is a directory tree that can be copied to a USB drive, phone, or server and run from there.
-- **AI-Powered** — User commands pass through a Python-based intent classification pipeline before being dispatched to specialist handlers. An optional local LLM (llama.cpp) provides free-form conversational responses.
-- **Cross-OS** — Bridge modules enable connection to iOS, Android, and remote Linux/macOS hosts. Connected device filesystems are accessible through the `mirror/` namespace.
-- **Self-contained** — The OS kernel requires only POSIX sh, awk, grep, sed, and cksum. No compiled binaries, no root access, no system-wide installation required.
+- **Portable**: Runs from any directory on any Unix-like system. No root required.
+- **AI-native**: Every part of the system can be queried and controlled through natural language using AURA.
+- **Cross-device**: A built-in bridge layer connects to iOS, Android, and remote Linux/macOS systems.
+- **Self-contained**: All state, logs, and data live inside `$OS_ROOT` — uninstalling is as simple as deleting the directory.
+- **Extensible**: Drop a shell script into `OS/lib/aura-mods/` and it becomes part of the OS.
 
-### Primary Use Cases
+### System Layers
 
-- Personal AI assistant shell running on an Android phone (Termux)
-- Portable development and administration environment on a USB drive
-- Unified access point that bridges your phone, laptop, and remote server into a single shell
-- Embedded automation agent on a Raspberry Pi or similar device
+```
++--------------------------------------+
+|         You (the operator)           |
+|    natural language / shell cmds     |
++--------------------------------------+
+|         AI Shell (os-shell)          |
+|    interprets, responds, executes    |
++--------------------------------------+
+|         AURA (AI cognitive layer)    |
+|    intent -> routing -> LLM/bots     |
++--------------------------------------+
+|         OS Services Layer            |
+|    logging, events, health, state    |
++--------------------------------------+
+|         Pseudo-Kernel                |
+|    scheduler, perms, svc registry    |
++--------------------------------------+
+|         Bridge / Mirror Layer        |
+|    iOS . Android . SSH               |
++--------------------------------------+
+|         Your Host OS                 |
+|    Android/Termux . Linux . macOS    |
++--------------------------------------+
+```
 
 ---
 
 ## 2. How It Works
 
-When you launch `bin/aios`, the following sequence takes place:
+### 2.1 Boot
 
-```
-1. Shell Initialization
-   └─ bin/aios sources all lib/aura-*.sh modules
-   └─ Configures OS_ROOT jail path
-   └─ Starts REPL loop
+When you run `sh OS/sbin/init`, the boot sequence proceeds in phases:
 
-2. User Input
-   └─ Raw text entered at the prompt
+1. **Bootstrap** - the environment is set up, `$OS_ROOT` is fixed, and `lib/aura-core.sh` is sourced.
+2. **Early services** - the OS identity is written, the banner is printed, and the state is set to `booting`.
+3. **Subsystem init** - the log system, event bus, message bus, and service health daemon start.
+4. **Kernel services** - the pseudo-kernel, AURA bridge, LLM layer, memory systems, policy engine, and agents start.
+5. **Shell ready** - the state becomes `running` and `os-shell` is launched.
 
-3. Built-in Command Check
-   └─ aios REPL checks for known built-in commands (ask, recall, mem.set, etc.)
-   └─ If matched: executes directly in shell
+### 2.2 The AI Shell
 
-4. AI Dispatch (for "ask" and unrecognised input)
-   └─ lib/aura-ai.sh calls the Python AI backend
-   └─ ai/core/ai_backend.py is invoked
+`os-shell` is the main interface. It accepts both OS commands and natural language. When you type something:
 
-5. Intent Classification
-   └─ IntentEngine.classify(raw_input) in intent_engine.py
-   └─ Returns Intent(category, action, entities, confidence)
+1. The **IntentEngine** classifies it (is it a memory operation? a service query? a bridge command? general chat?).
+2. The **Router** dispatches it to the right handler (HealthBot, LogBot, RepairBot, command handler, or LLM).
+3. The **response** is displayed and, if relevant, stored in the context window memory.
 
-6. Intent Routing
-   └─ Router.dispatch(intent) in router.py
-   └─ Iterates registered Bots; first bot whose can_handle() returns True handles it
+### 2.3 AURA Memory
 
-7. Handler Execution
-   └─ Bot.handle(intent) produces a response string
-   └─ Fallback 1: commands.parse_natural_language()
-   └─ Fallback 2: llama_client.chat() if LLM is available
+AURA has three memory layers:
 
-8. Response Output
-   └─ Response printed to terminal
-   └─ Context window updated
-```
-
-The heartbeat daemon (`bin/aios-heartbeat`) runs independently in the background, checking configured targets at a set interval and logging results.
-
----
-
-## 3. Architecture
-
-### Layer Diagram
-
-```
-+=========================================================+
-|                    USER INTERFACE                        |
-|  bin/aios            bin/aios-sys      bin/aios-heartbeat|
-|  (AI interactive)    (OS dispatcher)   (health monitor)  |
-+==========================+==============================+
-                           |
-+==========================v==============================+
-|                    AI CORE (Python)                      |
-|                                                          |
-|  ai/core/intent_engine.py                                |
-|      classify(input) -> Intent                           |
-|           |                                              |
-|  ai/core/router.py                                       |
-|      dispatch(intent) -> response                        |
-|           |                                              |
-|      +----+----+----+----+                               |
-|      |    |    |    |    |                               |
-|  Health Log Repair cmds  LLM                             |
-|  Bot  Bot  Bot  .py  client.py                           |
-+==========================+==============================+
-                           |
-+==========================v==============================+
-|                AURA FRAMEWORK (Shell)                    |
-|                                                          |
-|  lib/aura-core.sh    (OS_ROOT jail, path rewriting)      |
-|  lib/aura-fs.sh      (filesystem operations)             |
-|  lib/aura-proc.sh    (process management)                |
-|  lib/aura-net.sh     (network utilities)                 |
-|  lib/aura-llm.sh     (LLM invocation wrapper)            |
-|  lib/aura-ai.sh      (AI session management)             |
-|  lib/aura-typo.sh    (typo correction)                   |
-+==========================+==============================+
-                           |
-+==========================v==============================+
-|              OS VIRTUAL ENVIRONMENT (OS/)                |
-|                                                          |
-|  OS/sbin/init         Boot init, rc2.d service start    |
-|  OS/bin/os-shell      Interactive AI shell (inner)       |
-|  OS/bin/os-bridge     Bridge detection and control       |
-|  OS/bin/os-mirror     Device filesystem mounting         |
-|  OS/lib/aura-bridge/  iOS, Android, SSH bridge modules  |
-|  OS/lib/aura-memory/  Symbolic key-value memory store   |
-|  OS/lib/aura-semantic/Semantic embedding index          |
-|  OS/lib/aura-hybrid/  Hybrid recall engine              |
-|  OS/lib/aura-policy/  Event-driven policy engine        |
-|  OS/lib/aura-agents/  Background automation agents      |
-|  OS/lib/aura-tasks/   Scheduled task runner             |
-|  OS/etc/init.d/       Service scripts                    |
-|  OS/etc/rc2.d/        Runlevel 2 symlinks                |
-|  OS/proc/             Runtime state (PID, bridge status) |
-|  OS/mirror/           Mounted device filesystems         |
-|  OS/var/log/          System logs (auto-rotated 1000L)   |
-+=========================================================+
-```
-
-### AI Intent Pipeline (Detail)
-
-```
-User: "show me the disk usage"
-         |
-         v
-IntentEngine.classify()
-  - Tokenises input
-  - Checks rule table for trigger keywords
-  - "disk", "usage" -> category="command", action="fs.df"
-  - Returns Intent(category="command", action="fs.df",
-                   entities=None, confidence=0.9)
-         |
-         v
-Router.dispatch(intent)
-  - Iterates [HealthBot, LogBot, RepairBot]
-  - HealthBot.can_handle(intent): category=="health"? No
-  - LogBot.can_handle(intent): category=="log"? No
-  - RepairBot.can_handle(intent): category=="repair"? No
-  - Fallback: commands.parse_natural_language(intent)
-         |
-         v
-commands.parse_natural_language()
-  - action "fs.df" -> executes df command via aios-sys
-  - Returns formatted disk usage output
-         |
-         v
-Response printed to terminal
-```
-
-### Cross-OS Bridge Architecture
-
-```
-+------------------------------------------+
-|        AIOS-Lite Shell (bin/aios)        |
-+------------------+-----------------------+
-                   |
-        bridge detection & dispatch
-                   |
-     +-------------+-------------+
-     |             |             |
-     v             v             v
-+----------+ +-----------+ +----------+
-| iOS      | | Android   | | Linux/   |
-| Bridge   | | Bridge    | | SSH      |
-| (libimob | | (ADB)     | | Bridge   |
-|  ifuse)  | |           | | (SSHFS)  |
-+----+-----+ +-----+-----+ +----+-----+
-     |               |            |
-     v               v            v
-  iPhone/iPad    Android      Remote host
-  filesystem     sdcard       filesystem
-     |               |            |
-     v               v            v
-OS/mirror/ios/  OS/mirror/   OS/mirror/
-                android/     linux/
-```
-
----
-
-## 4. Installation
-
-### 4.1 Prerequisites
-
-| Requirement | Minimum | Notes |
+| Layer | What it stores | How to use |
 |---|---|---|
-| Shell | POSIX sh | bash 4+ recommended |
-| Python | 3.8 | For AI Core |
-| Git | Any | For cloning and updating |
+| **Context window** | Last 50 interactions | Automatic |
+| **Symbolic memory** | Named key-value facts | `mem.set key value` |
+| **Semantic memory** | Embedding-indexed text | `sem.set key value` |
 
-Optional (enable specific features):
+All three combine in **hybrid recall**: `recall "some topic"` searches all layers at once.
 
-```
-libimobiledevice, ifuse    -> iOS bridge
-adb (Android Debug Bridge) -> Android bridge
-openssh, sshfs             -> SSH/Linux bridge
-llama-cli (llama.cpp)      -> LLM natural language
-```
+### 2.4 The Bridge
 
-### 4.2 Standard Installation
+The bridge layer (`OS/lib/aura-bridge/`) connects AIOS-Lite to other devices:
+
+- **iOS bridge**: uses `libimobiledevice` and `ifuse` to mount iPhone/iPad filesystems.
+- **Android bridge**: uses `adb` to list and mirror Android device storage.
+- **SSH bridge**: uses `ssh` and `sshfs` to mount remote Linux/macOS filesystems.
+
+After mounting, the device's files appear inside `$OS_ROOT/mirror/<type>/`.
+
+### 2.5 Services
+
+Services are long-running background processes managed by the service registry. Each service has a PID file in `var/run/`, a health file in `var/service/`, and a config in `var/service/`. The service registry is controlled with `os-service`.
+
+---
+
+## 3. Installation
+
+### 3.1 Minimum Requirements
+
+| Requirement | Minimum |
+|---|---|
+| POSIX shell | `sh`, `bash`, or `dash` |
+| Core utilities | `awk`, `grep`, `sed`, `cksum`, `date` |
+| Python | 3.8+ (for AI Core) |
+| RAM | 256 MB (without LLM); 4 GB+ (with 7B model) |
+| Storage | 50 MB (without model); 3-8 GB (with GGUF model) |
+
+### 3.2 Quick Install (Android/Termux)
 
 ```sh
-# 1. Clone the repository
+pkg update && pkg upgrade -y
+pkg install git python openssh android-tools libimobiledevice
 git clone https://github.com/Cbetts1/PROJECT.git
-cd PROJECT
-
-# 2. Run the installer
-bash install.sh
-
-# 3. Launch the AI shell
-bash bin/aios
-```
-
-### 4.3 Termux (Android)
-
-```sh
-# Install dependencies
-pkg update
-pkg install git python libimobiledevice ifuse android-tools openssh sshfs
-
-# Clone and install
-git clone https://github.com/Cbetts1/PROJECT.git
-cd PROJECT
-bash install.sh
-
-# Launch
-bash bin/aios
-```
-
-### 4.4 Debian / Ubuntu / Raspberry Pi
-
-```sh
-# Install dependencies
-sudo apt update
-sudo apt install git python3 libimobiledevice-utils ifuse adb openssh-client sshfs
-
-# Clone and install
-git clone https://github.com/Cbetts1/PROJECT.git
-cd PROJECT
-bash install.sh
-
-# Launch
-bash bin/aios
-```
-
-### 4.5 macOS
-
-```sh
-# Install dependencies via Homebrew
-brew install libimobiledevice ifuse android-platform-tools openssh
-
-# Clone and install
-git clone https://github.com/Cbetts1/PROJECT.git
-cd PROJECT
-bash install.sh
-
-# Launch
-bash bin/aios
-```
-
-### 4.6 LLM Model Setup (Optional)
-
-To enable full natural-language AI responses:
-
-```sh
-# 1. Build llama.cpp
-bash build/build.sh --target hosted
-
-# 2. Download a GGUF model
-mkdir -p OS/llama_model
-# 8 GB RAM: Mistral-7B-Instruct-v0.3-Q4_K_M.gguf (~4.4 GB)
-# 6 GB RAM: Llama-3.2-3B-Instruct-Q4_K_M.gguf (~2.0 GB)
-# wget -O OS/llama_model/model.gguf <model-download-url>
-
-# 3. Configure the model path (if not auto-detected)
-# Edit config/aios.conf:
-# LLAMA_MODEL_PATH="OS/llama_model/model.gguf"
-```
-
-See [`docs/AI_MODEL_SETUP.md`](AI_MODEL_SETUP.md) for detailed LLM configuration.
-
-### 4.7 Manual Boot (Without Installer)
-
-```sh
 cd PROJECT/OS
 export OS_ROOT="$(pwd)"
-export AIOS_HOME="$(dirname $(pwd))"
 export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
 sh sbin/init
 ```
 
+### 3.3 Quick Install (Linux)
+
+```sh
+sudo apt-get install -y git python3 openssh-client android-tools-adb libimobiledevice-utils
+git clone https://github.com/Cbetts1/PROJECT.git
+cd PROJECT/OS
+export OS_ROOT="$(pwd)"
+sh sbin/init
+```
+
+### 3.4 Making the Environment Persistent
+
+Add to your shell profile (`~/.bashrc`, `~/.zshrc`, or Termux `~/.bash_profile`):
+
+```sh
+export AIOS_HOME="$HOME/PROJECT"
+export OS_ROOT="$AIOS_HOME/OS"
+export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+alias aios="sh $OS_ROOT/sbin/init"
+alias aios-shell="os-shell"
+```
+
+Then reload: `source ~/.bashrc`
+
+### 3.5 Adding an LLM
+
+```sh
+mkdir -p "$OS_ROOT/../llama_model"
+# Place any GGUF model file there (2-8 GB depending on size)
+# Then build llama.cpp:
+bash "$OS_ROOT/../build/build.sh" --target hosted
+```
+
 ---
 
-## 5. Operation
+## 4. Operation
 
-### 5.1 Starting the System
+### 4.1 Starting the OS
 
-**Standard launch:**
 ```sh
-bash bin/aios
+# Full boot (recommended):
+sh $OS_ROOT/sbin/init
+
+# AI shell only (if OS already booted):
+os-shell
+
+# OS system shell (lower-level):
+bin/aios-sys
 ```
 
-**Launch with explicit configuration:**
-```sh
-AIOS_HOME=/path/to/PROJECT OS_ROOT=/path/to/PROJECT/OS bash bin/aios
-```
+### 4.2 AI Shell Commands
 
-**Launch heartbeat daemon (background):**
-```sh
-bash bin/aios-heartbeat &
-```
+#### General
 
-**OS command dispatcher (non-interactive):**
-```sh
-bash bin/aios-sys -- df -h
-bash bin/aios-sys -- ls OS/var/log/
-```
-
-### 5.2 Shell Modes
-
-AIOS-Lite has three operating modes, switchable with the `mode` command:
-
-| Mode | Description |
+| Command | Action |
 |---|---|
-| `operator` | Default. Structured command mode. AI classifies and routes commands. |
-| `system` | Low-level OS access. Commands pass directly to the OS shell. |
-| `talk` | Conversational mode. All input goes to the LLM for free-form response. |
+| `help` | Print all available commands |
+| `status` | Full OS state dump |
+| `services` | Service health table |
+| `exit` / `quit` | Exit the shell |
+
+#### AI Queries
+
+| Command | Action |
+|---|---|
+| `ask <text>` | Ask AURA a question |
+| `mode talk` | Enter conversational mode |
+| `mode operator` | Enter operator (command) mode |
+| `mode system` | Enter system administration mode |
+
+#### Memory
+
+| Command | Action |
+|---|---|
+| `mem.set <key> <value>` | Store a fact |
+| `mem.get <key>` | Retrieve a fact |
+| `mem.delete <key>` | Delete a fact |
+| `sem.set <key> <value>` | Store semantic memory |
+| `sem.search <query>` | Search semantic memory |
+| `recall <query>` | Hybrid recall across all memory |
+
+#### Bridge and Mirror
+
+| Command | Action |
+|---|---|
+| `bridge.detect` | Detect connected devices |
+| `mirror.mount ios` | Mount iOS device |
+| `mirror.mount android` | Mount Android device |
+| `mirror.mount ssh <host>` | Mount remote host via SSH |
+| `mirror.ls <type>` | List files on mounted device |
+| `mirror.unmount <type>` | Unmount device |
+
+#### System Administration
+
+| Command | Action |
+|---|---|
+| `os-info` | Show OS identity and capabilities |
+| `os-ps` | List running processes |
+| `os-log <message>` | Write to system log |
+| `os-event fire <name>` | Fire a system event |
+| `os-service list` | List all services |
+| `os-service start <name>` | Start a service |
+| `os-service stop <name>` | Stop a service |
+| `os-kernelctl status` | Pseudo-kernel status |
+| `os-resource status` | Resource usage summary |
+| `os-perms list <svc>` | Show service permissions |
+| `os-netconf wifi status` | WiFi status |
+| `os-recover` | Run self-repair |
+
+### 4.3 Dual Shell Mode
+
+AIOS-Lite ships with two shell binaries:
+
+- **`bin/aios`** - AI-first shell. Natural language primary, OS commands secondary.
+- **`bin/aios-sys`** - System shell. OS commands primary, AI secondary.
+
+Both connect to the same underlying OS and memory systems.
+
+### 4.4 Service Management
 
 ```sh
-mode operator   # structured commands (default)
-mode system     # direct OS access
-mode talk       # conversational AI
+os-service list
+os-service start aura-bridge
+os-service stop aura-llm
+os-service-health
+os-service restart aura-agents
 ```
 
-### 5.3 Core Commands Reference
+### 4.5 Logging
 
-**AI and Memory**
-
-```sh
-ask "what is the system status?"      # Natural language query to AI
-recall "phone I connected last week"  # Hybrid memory search
-mem.set project "AIOS-Lite"           # Store a named fact
-mem.get project                       # Retrieve a named fact
-sem.set note "disk is 80 percent full" # Store semantic memory
-sem.search "disk space issue"          # Semantic similarity search
-```
-
-**Device Bridging**
+All logs go to `$OS_ROOT/var/log/aios.log`. Logs are auto-rotated at 1000 lines.
 
 ```sh
-bridge.detect                         # Detect all connected devices
-bridge.detect ios                     # Check for iOS devices specifically
-mirror.mount ios                      # Mount iPhone filesystem
-mirror.mount android                  # Mount Android sdcard
-mirror.mount ssh user@192.168.1.10    # Mount remote Linux via SSH
-mirror.mount auto                     # Mount best available device
-mirror.ls ios                         # List mirrored iOS files
-mirror.ls android
-mirror.ls linux
-```
-
-**System Status**
-
-```sh
-status                                # Full OS state dump
-services                              # Service health overview
-help                                  # Complete command reference
-sys df -h                             # Pass command to OS shell
-```
-
-### 5.4 Service Management
-
-Services are defined in `OS/etc/init.d/` and started at boot via `OS/etc/rc2.d/` symlinks.
-
-```sh
-services                              # View all service statuses
-os-service-status                     # Detailed service health report
-os-kernelctl status                   # Kernel daemon status
-os-event <event-name>                 # Fire a system event
-```
-
-PID files and health status files are stored in `OS/var/service/`.
-
-### 5.5 Logging
-
-All system logs are written to `OS/var/log/`. Logs are auto-rotated at 1000 lines.
-
-```sh
-# View system log
-cat OS/var/log/system.log
-
-# View AURA agent audit log
-cat OS/var/log/aura.log
-
-# View heartbeat log
-cat OS/var/log/heartbeat.log
-
-# Write to system log
-os-log "Custom log entry"
+os-log "my message"
+tail -20 $OS_ROOT/var/log/aios.log
 ```
 
 ---
 
-## 6. Updating
+## 5. Updating
 
-### 6.1 Update via Git
+### 5.1 Update the Code
 
 ```sh
-cd PROJECT
-
-# Fetch latest changes
+cd $AIOS_HOME
 git pull origin main
-
-# Re-run the installer to apply any new configuration
-bash install.sh
 ```
 
-### 6.2 Update LLM Model
+After pulling: if `sbin/init` or `lib/aura-core.sh` changed, restart the OS.  
+Python changes in `ai/core/` take effect immediately on next query.
 
-To replace the LLM model with a newer version:
+### 5.2 Update the LLM Model
 
 ```sh
-# Remove old model
-rm OS/llama_model/*.gguf
-
-# Download and place new model
-# wget -O OS/llama_model/model.gguf <new-model-url>
+rm $OS_ROOT/../llama_model/*.gguf
+# Download new model and place in llama_model/
 ```
 
-### 6.3 Update llama.cpp
+### 5.3 Version Check
 
 ```sh
-# Rebuild from source
-bash build/build.sh --target hosted
-```
-
-### 6.4 Preserve User Data During Updates
-
-User memory, logs, and runtime state are stored under `OS/var/` and `OS/proc/`. These directories are **not** overwritten by `git pull` or `install.sh`. No special action is needed to preserve user data across updates.
-
----
-
-## 7. Repairing
-
-### 7.1 Reset to Clean State
-
-To clear all runtime state without losing user memory:
-
-```sh
-# Clear process state
-rm -f OS/proc/*.pid OS/proc/*.state
-
-# Restart init
-bash OS/sbin/init
-```
-
-### 7.2 Clear Logs
-
-```sh
-# Truncate all logs (does not delete memory or configuration)
-find OS/var/log/ -name "*.log" -exec truncate -s 0 {} \;
-```
-
-### 7.3 Rebuild Configuration
-
-If configuration files are corrupted or missing:
-
-```sh
-# Re-run installer (does not overwrite OS/var/ data)
-bash install.sh
-```
-
-### 7.4 Re-Pair iOS Device
-
-If the iOS bridge stops responding:
-
-```sh
-# Unpair and re-pair
-idevicepair unpair
-idevicepair pair
-idevicepair validate
-mirror.mount ios
-```
-
-### 7.5 Fix ADB Android Bridge
-
-```sh
-# Kill and restart ADB server
-adb kill-server
-adb start-server
-adb devices
-mirror.mount android
-```
-
-### 7.6 Diagnose AI Core Failures
-
-```sh
-# Test Python AI Core directly
-python3 tests/test_python_modules.py
-
-# Test with a specific input
-python3 -c "
-from ai.core.intent_engine import IntentEngine
-ie = IntentEngine()
-print(ie.classify('show disk usage'))
-"
-```
-
-### 7.7 Diagnose Shell Module Failures
-
-```sh
-# Source a module manually and test
-source lib/aura-core.sh
-source lib/aura-fs.sh
-# Then call functions directly
+os-info
+cat $OS_ROOT/etc/os-release
 ```
 
 ---
 
-## 8. Extending
+## 6. Repair and Recovery
 
-### 8.1 Adding a New Shell Command
+### 6.1 Automatic Self-Repair
 
-Shell commands are registered in `lib/aura-ai.sh` and the main REPL in `bin/aios`.
-
-1. Add your command logic as a function in the appropriate `lib/aura-*.sh` module (or a new file).
-2. Register it in the `bin/aios` REPL command dispatcher.
-3. Add help text to the `help` output section.
-4. Add unit tests in `tests/unit-tests.sh`.
-
-### 8.2 Adding a New AI Bot
-
-Bots live in `ai/core/bots.py` and extend `BaseBot`.
-
-```python
-from ai.core.bots import BaseBot
-from ai.core.intent_engine import Intent
-
-class MyBot(BaseBot):
-    def can_handle(self, intent: Intent) -> bool:
-        return intent.category == "mycat"
-
-    def handle(self, intent: Intent) -> str:
-        return f"Handled by MyBot: {intent.action}"
+```sh
+os-recover
 ```
 
-Register your bot in `ai/core/router.py` by adding it to the bot list in `Router.__init__`.
+`os-recover` checks and repairs: missing directories, stopped services, broken log permissions, missing `os-release`, and Python import errors.
 
-### 8.3 Adding a New Bridge Module
+### 6.2 Manual Recovery
 
-Bridge modules are located in `OS/lib/aura-bridge/`. Each module is a shell script that implements:
-
-- `bridge_detect()` — check if the device type is present
-- `bridge_connect()` — establish the connection
-- `bridge_mount()` — mount the filesystem into `OS/mirror/<type>/`
-- `bridge_disconnect()` — cleanly unmount and disconnect
-
-Source your new module in `OS/bin/os-bridge`.
-
-### 8.4 Adding a New Service
-
-1. Create a service script in `OS/etc/init.d/my-service` following the existing service script pattern.
-2. Create a symlink in `OS/etc/rc2.d/`:
-   ```sh
-   ln -s ../init.d/my-service OS/etc/rc2.d/S50my-service
-   ```
-3. The service will start automatically on next boot.
-
-### 8.5 Adding AURA Agents
-
-Background automation agents are configured in `OS/etc/aura/agents.conf`. Each agent specifies:
-
-- A trigger condition (event name or schedule)
-- A shell command or script to run
-
-See `OS/lib/aura-agents/` for implementation details.
-
-### 8.6 Adding Scheduled Tasks
-
-Tasks are configured in `OS/etc/aura/tasks.conf`. Format:
-
-```
-<interval_seconds> <command>
+**OS will not start:**
+```sh
+sh -n lib/aura-core.sh          # Check for syntax errors
+OS_RUNLEVEL=1 sh OS/sbin/init   # Single-user mode
 ```
 
-Example:
+**Service will not start:**
+```sh
+os-service status <name>
+os-service restart <name>
 ```
-300 os-log "5-minute heartbeat checkpoint"
+
+**Bridge mount stuck:**
+```sh
+os-mirror unmount ios
+fusermount -u $OS_ROOT/mirror/ios 2>/dev/null || umount $OS_ROOT/mirror/ios
+```
+
+### 6.3 Full State Reset
+
+```sh
+os-kernelctl halt
+rm -rf $OS_ROOT/var/run/*.pid
+rm -rf $OS_ROOT/var/service/*.health
+rm -rf $OS_ROOT/proc/os $OS_ROOT/proc/os.state
+sh $OS_ROOT/sbin/init
 ```
 
 ---
 
-## 9. Troubleshooting
+## 7. Extending the System
 
-### 9.1 `bash bin/aios` exits immediately with no output
+### 7.1 Writing a Plugin
 
-**Cause:** Missing dependency or configuration error.
+Create a file in `OS/lib/aura-mods/my-plugin.mod`:
 
-**Fix:**
 ```sh
-# Check for syntax errors in AURA modules
-bash -n lib/aura-core.sh
-bash -n lib/aura-ai.sh
-bash -n bin/aios
+#!/bin/sh
+PLUGIN_NAME="my-plugin"
+PLUGIN_VERSION="1.0"
 
-# Ensure AIOS_HOME and OS_ROOT are set
-export AIOS_HOME=$(pwd)
-export OS_ROOT=$(pwd)/OS
-bash bin/aios
+plugin_init() {
+    os-log "my-plugin: loaded"
+}
+
+cmd_myplugin() {
+    echo "Hello from my plugin!"
+}
+
+plugin_init
+```
+
+Add `my-plugin` to `OS/etc/aura/modules`.
+
+### 7.2 Adding a Service
+
+1. Create `OS/etc/init.d/my-service` with `start` and `stop` functions.
+2. Run `os-service register my-service $OS_ROOT/etc/init.d/my-service`.
+3. Add a symlink in `OS/etc/rc2.d/` for auto-start.
+
+### 7.3 Writing an Event Handler
+
+```sh
+os-event listen system.startup my_startup_handler
+
+my_startup_handler() {
+    os-log "System started"
+}
 ```
 
 ---
 
-### 9.2 `ask` command returns no response
+## 8. Troubleshooting
 
-**Cause 1:** Python AI Core is not starting correctly.
-```sh
-python3 ai/core/ai_backend.py "test"
-```
+**`os-shell` command not found**  
+`$OS_ROOT/bin` is not in PATH. Fix: `export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"`
 
-**Cause 2:** AI_BACKEND is set to "mock" — mock backend returns empty.
-Check `etc/aios.conf`: `AI_BACKEND="llama"` or `AI_BACKEND="mock"`.
+**`ask` returns rule-based response only**  
+No GGUF model file in `llama_model/`, or `llama-cli` not installed.
 
----
+**`bridge.detect` finds no devices**  
+ADB not installed, or device not in USB debugging mode. Run `adb devices` to diagnose.
 
-### 9.3 LLM returns no response / hangs
+**`os-mirror mount ssh` hangs**  
+SSH host unreachable or `sshfs` not installed. Run `ssh <user>@<host> echo ok` to test.
 
-**Cause 1:** No model file present.
-```sh
-ls OS/llama_model/
-# Should contain at least one .gguf file
-```
+**High CPU from llama.cpp**  
+Set `LLAMA_THREADS=3` and `LLAMA_CPU_AFFINITY=1-3` in `config/llama-settings.conf`.
 
-**Cause 2:** `llama-cli` is not installed or not in PATH.
-```sh
-which llama-cli
-# If not found: bash build/build.sh --target hosted
-```
-
-**Cause 3:** Insufficient memory. Check `config/aios.conf` for `DEVICE_RAM_GB` and use a smaller model.
+**Services not starting at boot**  
+Check symlinks in `rc2.d/`, then run `os-recover`.
 
 ---
 
-### 9.4 iOS bridge fails (`mirror.mount ios` has no output)
-
-**Step 1:** Check libimobiledevice is installed.
-```sh
-ideviceinfo -s
-```
-
-**Step 2:** Pair the device.
-```sh
-idevicepair pair
-idevicepair validate
-```
-
-**Step 3:** Check ifuse is installed.
-```sh
-which ifuse
-```
-
-**Step 4:** Ensure the device is trusted (accept the "Trust this computer?" prompt on the device).
-
----
-
-### 9.5 Android bridge shows no devices
-
-```sh
-# Verify ADB sees the device
-adb devices
-# If empty: enable USB debugging on the Android device
-# Settings -> Developer Options -> USB Debugging -> On
-# Accept the "Allow USB debugging?" dialog on the device
-
-# Restart ADB server
-adb kill-server && adb start-server
-adb devices
-```
-
----
-
-### 9.6 SSH/SSHFS bridge fails
-
-```sh
-# Test SSH connectivity first
-ssh user@192.168.1.100 "echo OK"
-
-# Check sshfs is installed
-which sshfs
-
-# Try mounting manually
-sshfs user@192.168.1.100:/ OS/mirror/linux/test/ -o reconnect
-```
-
----
-
-### 9.7 Heartbeat daemon crashes on start
-
-```sh
-# Check environment variables
-echo "HEARTBEAT_TARGETS: $HEARTBEAT_TARGETS"
-
-# Run manually with debug output
-bash -x bin/aios-heartbeat
-```
-
----
-
-### 9.8 Logs grow too large
-
-Logs are auto-rotated at 1000 lines. If a log file is unexpectedly large:
-
-```sh
-# Manually truncate
-truncate -s 0 OS/var/log/system.log
-```
-
----
-
-### 9.9 Running Tests
-
-```sh
-# Full unit test suite
-AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS bash tests/unit-tests.sh
-
-# Full integration test suite
-AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS bash tests/integration-tests.sh
-
-# Python AI Core tests only
-python3 tests/test_python_modules.py
-```
-
----
-
-## 10. Glossary
+## 9. Glossary
 
 | Term | Definition |
 |---|---|
 | **AIOS-Lite** | AI-Augmented Portable Operating System, Lite edition |
-| **AURA** | Autonomous Unified Resource Agent — the AIOS-Lite automation and memory framework |
-| **OS_ROOT** | The root directory of the virtual OS environment. All OS file operations are sandboxed to this path. |
-| **AIOS_HOME** | The root of the AIOS-Lite project repository. |
-| **Intent** | A structured representation of user intent produced by the IntentEngine: `{category, action, entities, confidence}`. |
-| **IntentEngine** | Python NLP classifier (`ai/core/intent_engine.py`) that converts raw text into an Intent object. |
-| **Router** | Python dispatcher (`ai/core/router.py`) that routes an Intent to the appropriate Bot or fallback handler. |
-| **Bot** | A Python class extending BaseBot that handles a specific category of intents (HealthBot, LogBot, RepairBot). |
-| **LLM** | Large Language Model — a neural network for natural language understanding and generation. AIOS-Lite uses llama.cpp for local inference. |
-| **GGUF** | A binary model format used by llama.cpp. Model files end in `.gguf`. |
-| **llama.cpp** | An open-source LLM inference engine optimised for CPU/mobile hardware. Used as AIOS-Lite's optional LLM backend. |
-| **Bridge** | A subsystem that connects AIOS-Lite to an external device or host (iOS, Android, SSH). |
-| **Mirror** | The `OS/mirror/` directory namespace where bridged device filesystems are mounted. |
-| **ADB** | Android Debug Bridge — a command-line tool for communicating with Android devices. |
-| **libimobiledevice** | An open-source library for communicating with iOS devices. |
-| **ifuse** | A FUSE-based tool for mounting iOS device filesystems. |
-| **SSHFS** | SSH Filesystem — mounts remote filesystems over SSH. |
-| **Hybrid Memory** | AIOS-Lite's three-layer memory system: context window + symbolic store + semantic index. |
-| **Context Window** | A rolling log of recent commands and conversation turns, used as short-term AI memory. |
-| **Symbolic Memory** | A key-value store for named facts, accessible with `mem.set` / `mem.get`. |
-| **Semantic Memory** | An embedding-based index for similarity search, accessible with `sem.set` / `sem.search`. |
-| **Heartbeat** | A periodic health check performed by `bin/aios-heartbeat` to verify that monitored targets are alive. |
-| **POSIX** | Portable Operating System Interface — a family of standards for Unix-like operating systems. |
-| **rc2.d** | A SysV-style runlevel directory. Symlinks here point to service scripts that are started automatically at boot. |
-| **init** | The first process executed by the OS (`OS/sbin/init`). Starts all rc2.d services. |
-| **Q4_K_M** | A quantisation format for GGUF models (4-bit, K-means, medium quality). Balances quality and memory footprint. |
+| **AIOSCPU** | The x86-64 disk image variant |
+| **AURA** | Autonomous Unified Resource Agent - the AI cognitive layer |
+| **OS_ROOT** | Root directory of the AIOS-Lite environment (`PROJECT/OS`) |
+| **AIOS_HOME** | Parent directory of the repository clone |
+| **Pseudo-kernel** | Daemons that perform kernel-like functions in userspace |
+| **Bridge** | Subsystem connecting AIOS-Lite to external devices |
+| **Mirror** | External device filesystem mounted under `$OS_ROOT/mirror/` |
+| **GGUF** | File format for quantised LLaMA models |
+| **llama.cpp** | Open-source C++ inference engine for local LLaMA models |
+| **IntentEngine** | Classifies user input into intent categories |
+| **Router** | Dispatches intents to the appropriate handler |
+| **Bot** | Specialised handler (HealthBot, LogBot, RepairBot) |
+| **Service registry** | Database of registered services managed by `os-service` |
+| **Runlevel** | Integer (0-3) describing current OS operational state |
+| **Syscall** | Standardised call to the pseudo-kernel via `os-syscall` |
+| **Plugin** | Shell script in `OS/lib/aura-mods/` extending the OS |
+| **Symbolic memory** | Key-value memory accessed with `mem.set` / `mem.get` |
+| **Semantic memory** | Embedding-indexed memory for similarity search |
+| **Hybrid recall** | Simultaneous search across all memory layers |
+| **Context window** | Rolling 50-line file of recent interactions |
+| **os-recover** | Self-repair command for common subsystem failures |
+| **ADB** | Android Debug Bridge for USB communication with Android |
+| **libimobiledevice** | Library for communicating with iOS devices |
+| **ifuse** | FUSE driver for mounting iOS device filesystems |
+| **sshfs** | FUSE driver for mounting remote filesystems over SSH |
+| **heartbeat** | Daemon that periodically checks all services |
+| **Event bus** | System for firing and consuming named events |
+| **Message bus** | IPC system for messages between OS components |
 
 ---
 
-*AIOS-Lite Instruction Manual — © 2026 Christopher Betts. All rights reserved.*
+*End of Instruction Manual*
+
+> (c) 2026 Christopher Betts | AIOS-Lite v0.2 | https://github.com/Cbetts1/PROJECT

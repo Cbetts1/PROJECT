@@ -1,6 +1,7 @@
-# AIOS-Lite Reproducible Build Instructions
+# AIOS-Lite — Reproducible Build System
 
-> © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+> © 2026 Christopher Betts | AIOSCPU Official
+> *Created and developed by Christopher Betts. All code was generated or refined using AI tools under the creator's direction.*
 
 ---
 
@@ -13,279 +14,222 @@ AIOS-Lite has two deployment modes:
 | **Portable Shell** | Termux (Android), Linux, macOS | None — clone and run |
 | **AIOSCPU Image** | Any x86-64 machine / QEMU | `sudo bash aioscpu/build/build-image.sh` |
 
-Both modes are reproducible: given the same source tree they produce the same
-functional result.
+Both modes are reproducible: given the same source tree they produce the same functional result.
 
 ---
 
-## 1. Portable Shell Mode (No Build Required)
+## 1. One-Shot Install Script
 
-This is the primary mode for running AIOS-Lite on a mobile device (Android/Termux).
+The install script at `install.sh` in the repository root performs a complete setup in a single command. It does not require root on Termux/Android; it does require `sudo` on Debian/Ubuntu for optional system-wide tools.
 
-### 1.1 Prerequisites
+**What the script does (in order):**
 
-#### Android / Termux
+1. **Detects the host environment** (Termux/Android, Debian/Ubuntu, Arch, macOS).
+2. **Installs system dependencies** using the appropriate package manager (`pkg`, `apt`, `brew`).
+3. **Sets `OS_ROOT`** to the `OS/` directory inside the cloned repository.
+4. **Creates runtime directories** that are not tracked by git (`var/log/`, `var/run/`, `var/service/`, `proc/`).
+5. **Writes `etc/os-release`** with the current version.
+6. **Optionally downloads a quantised LLaMA model** (prompts the user; downloads `llama-3.2-3B-Instruct-Q4_K_M.gguf` from Hugging Face if confirmed).
+7. **Optionally builds llama.cpp** from source using `build/build.sh --target hosted`.
+8. **Runs the test suite** (`bash tests/unit-tests.sh`) to verify the installation.
+9. **Prints the boot command** and exits.
 
+**To run:**
 ```sh
-pkg update && pkg upgrade
-pkg install python git openssh
-# Optional — for AI inference
-pkg install clang cmake ninja
-# Optional — for device bridges
-pkg install android-tools libimobiledevice
+git clone https://github.com/Cbetts1/PROJECT.git
+cd PROJECT
+bash install.sh
 ```
 
-#### Debian / Ubuntu (Linux)
+---
+
+## 2. Clean-Device Setup Steps
+
+These steps describe a fully manual, step-by-step install from a clean device — no prior setup assumed.
+
+### 2.1 Android (Termux) — Clean Device
 
 ```sh
-sudo apt-get update
-sudo apt-get install -y python3 git openssh-client
-# Optional
-sudo apt-get install -y android-tools-adb libimobiledevice-utils ifuse
-```
+# Step 1: Install Termux from F-Droid (recommended) or Play Store
+# Step 2: Open Termux and update base packages
+pkg update && pkg upgrade -y
 
-#### macOS
+# Step 3: Install runtime dependencies
+pkg install -y git python openssh android-tools libimobiledevice ifuse
 
-```sh
-brew install python3 git
-# Optional
-brew install libimobiledevice ifuse android-platform-tools
-```
+# Step 4: Install optional build tools (for llama.cpp)
+pkg install -y clang cmake ninja
 
-### 1.2 Clone & Boot
-
-```sh
-# Step 1: Clone the repository
+# Step 5: Clone the repository
 git clone https://github.com/Cbetts1/PROJECT.git
 cd PROJECT
 
-# Step 2: Export environment variables
-export AIOS_HOME="$(pwd)"
-export OS_ROOT="$(pwd)/OS"
+# Step 6: Set up environment
+cd OS
+export OS_ROOT="$(pwd)"
 export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
 
-# Step 3: Boot the OS
-sh OS/sbin/init
+# Step 7: Create runtime directories
+mkdir -p var/log var/run var/service var/events proc
 
-# Step 4: (Optional) Generate API token for HTTP server
-OS_ROOT="$OS_ROOT" python3 OS/bin/os-httpd --token-gen
+# Step 8: Boot the OS
+sh sbin/init
 ```
 
-### 1.3 Install AI Model (Optional)
-
-For full LLM inference:
+### 2.2 Debian / Ubuntu — Clean Machine
 
 ```sh
-# Build llama.cpp
-cd /tmp
-git clone https://github.com/ggerganov/llama.cpp.git
-cd llama.cpp && cmake -B build -DLLAMA_NATIVE=ON && cmake --build build -j4
-cp build/bin/llama-cli "$AIOS_HOME/llama_model/"
+# Step 1: Update system
+sudo apt-get update && sudo apt-get upgrade -y
 
-# Place a GGUF model
-# 8 GB RAM → 7B Q4_K_M model (~4 GB)
-# 6 GB RAM → 3B Q4_K_M model (~2 GB)
-cp ~/models/your-model.Q4_K_M.gguf "$AIOS_HOME/llama_model/"
-```
-
-### 1.4 Environment Variables Reference
-
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `AIOS_HOME` | repo root | AIOS project root |
-| `OS_ROOT` | `$AIOS_HOME/OS` | Virtual filesystem jail |
-| `AIOS_NAME` | `AIOS-Lite` | OS display name |
-| `AIOS_VERSION` | `0.1` | OS version |
-| `ENABLE_LLM` | `1` | Enable LLaMA inference |
-| `ENABLE_BRIDGE` | `1` | Enable cross-OS bridge |
-| `ENABLE_AGENTS` | `1` | Enable background agents |
-| `KERNEL_HEARTBEAT_INTERVAL` | `5` | Heartbeat interval (seconds) |
-| `LOG_MAX_LINES` | `1000` | Log rotation threshold |
-
----
-
-## 2. AIOSCPU Disk Image Mode
-
-Produces a bootable `aioscpu-debian-amd64.img` suitable for QEMU or bare metal.
-
-### 2.1 Host Requirements
-
-- Linux host (Debian/Ubuntu recommended)
-- 10 GB free disk space
-- 2 GB RAM minimum
-- Root / sudo access
-
-### 2.2 Dependencies
-
-```sh
-sudo apt-get update
+# Step 2: Install dependencies
 sudo apt-get install -y \
-    debootstrap \
-    parted \
-    qemu-system-x86 \
-    qemu-utils \
-    grub-pc-bin \
-    grub-common \
-    xorriso \
-    rsync \
-    util-linux
+    git python3 python3-pip openssh-client \
+    android-tools-adb libimobiledevice-utils ifuse sshfs \
+    build-essential cmake ninja-build
+
+# Step 3: Clone repository
+git clone https://github.com/Cbetts1/PROJECT.git
+cd PROJECT
+
+# Step 4: Set up environment
+cd OS
+export OS_ROOT="$(pwd)"
+export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+mkdir -p var/log var/run var/service var/events proc
+
+# Step 5: Optional — install Python dependencies for AI Core
+pip3 install -r ../ai/requirements.txt 2>/dev/null || true
+
+# Step 6: Boot
+sh sbin/init
 ```
 
-### 2.3 Build the Image
+### 2.3 macOS — Clean Machine
 
 ```sh
-cd aioscpu/build
-sudo bash build-image.sh
-# Output: aioscpu/build/aioscpu-debian-amd64.img (~6 GB)
+# Step 1: Install Homebrew (if not present)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Step 2: Install dependencies
+brew install git python3 libimobiledevice android-platform-tools sshfs
+
+# Step 3: Clone and boot (same as Linux)
+git clone https://github.com/Cbetts1/PROJECT.git
+cd PROJECT/OS
+export OS_ROOT="$(pwd)"
+export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+mkdir -p var/log var/run var/service var/events proc
+sh sbin/init
 ```
 
-The build script:
-1. Runs `debootstrap` for a minimal Debian rootfs
-2. Installs required packages in a chroot
-3. Creates `aios` and `aura` system users
-4. Applies `rootfs-overlay/` tree
-5. Copies the AURA agent to `/opt/aura/`
-6. Creates a 6 GB image with ext4 root partition
-7. Installs GRUB into the image MBR
-
-### 2.4 Run in QEMU
+### 2.4 LLaMA Model Setup
 
 ```sh
-# Text console (fastest)
-qemu-system-x86_64 \
-    -m 2048 \
-    -hda aioscpu/build/aioscpu-debian-amd64.img \
-    -nographic
+# Create model directory
+mkdir -p "$OS_ROOT/../llama_model"
 
-# With KVM acceleration
-qemu-system-x86_64 \
-    -m 2048 \
-    -hda aioscpu/build/aioscpu-debian-amd64.img \
-    -enable-kvm \
-    -nographic
+# Option A: Download a small quantised model (3B, ~2GB)
+# From Hugging Face (requires huggingface-cli or wget):
+wget -O "$OS_ROOT/../llama_model/llama-3.2-3B-Q4_K_M.gguf" \
+    "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf"
+
+# Option B: Copy a model you already have
+cp ~/models/your-model.gguf "$OS_ROOT/../llama_model/"
+
+# Build llama.cpp (optional, for inference)
+bash "$OS_ROOT/../build/build.sh" --target hosted
 ```
 
-Default credentials: `aios` / `aios` — **change immediately**.
+### 2.5 AIOSCPU Disk Image (x86-64)
+
+```sh
+# Requires: Linux host, sudo, debootstrap, parted, qemu-utils, xorriso, grub
+sudo apt-get install -y debootstrap parted qemu-utils xorriso grub-pc-bin grub-common
+
+git clone https://github.com/Cbetts1/PROJECT.git
+cd PROJECT
+sudo bash aioscpu/build/build-image.sh
+# Output: aioscpu/build/aioscpu.iso  (bootable ISO)
+# Test:   qemu-system-x86_64 -m 2G -cdrom aioscpu/build/aioscpu.iso
+```
 
 ---
 
-## 3. Dependency Audit
+## 3. Verification Checklist
 
-Run the built-in dependency audit at any time:
+After installation, run through this checklist to confirm a working system.
+
+### 3.1 Core Boot
+
+- [ ] `sh OS/sbin/init` completes without errors
+- [ ] `OS/proc/os.state` file exists and contains `OS_STATE=running`
+- [ ] `OS/proc/os.identity` file exists and contains `OS_NAME=AIOS-Lite`
+- [ ] `OS/var/log/` directory is writable and contains at least one log entry
+
+### 3.2 Commands
+
+- [ ] `os-info` prints OS name, version, and capabilities
+- [ ] `os-state` dumps the current OS state without errors
+- [ ] `os-ps` lists running processes
+- [ ] `os-service list` shows services with status
+
+### 3.3 AI Shell
+
+- [ ] `os-shell` launches without errors
+- [ ] `help` inside `os-shell` prints the command list
+- [ ] `ask hello` returns a response (rule-based fallback if no LLM)
+- [ ] `mem.set testkey testval` stores a value without error
+- [ ] `mem.get testkey` returns `testval`
+
+### 3.4 LLM (if model installed)
+
+- [ ] A `.gguf` file exists in `llama_model/`
+- [ ] `llama-cli --version` works (or `llama-cli` is on PATH)
+- [ ] `ask what time is it` returns an LLM-generated response
+- [ ] Token generation completes within a reasonable time for the hardware
+
+### 3.5 Bridge (if devices connected)
+
+- [ ] `os-bridge detect` runs without error
+- [ ] `os-mirror mount android` succeeds (if Android device connected with USB debugging)
+- [ ] `ls $OS_ROOT/mirror/android/` shows device files
+
+### 3.6 Test Suite
 
 ```sh
-OS_ROOT="$(pwd)/OS" sh OS/bin/os-recover deps
-```
-
-### Required (core functionality)
-
-| Binary | Package | Purpose |
-|--------|---------|---------|
-| `sh` | built-in | POSIX shell |
-| `python3` | `python3` | AI core, filesystem module, HTTP server |
-| `awk` | `gawk` or `mawk` | Fuzzy matching, log processing |
-| `grep` | `grep` | Pattern matching |
-| `sed` | `sed` | Text processing |
-| `date` | `coreutils` | Timestamps |
-| `mkdir` | `coreutils` | Directory creation |
-| `uname` | `coreutils` | System identification |
-
-### Optional (enhanced features)
-
-| Binary | Package | Feature |
-|--------|---------|---------|
-| `openssl` | `openssl` | HTTPS certificate generation |
-| `llama-cli` | `llama.cpp` | LLM inference |
-| `adb` | `android-tools` | Android bridge |
-| `ideviceinfo` | `libimobiledevice` | iOS bridge |
-| `nmcli` | `network-manager` | WiFi management |
-| `bluetoothctl` | `bluez` | Bluetooth management |
-| `avahi-browse` | `avahi-utils` | mDNS service discovery |
-| `nmap` | `nmap` | Network scanning |
-| `iptables` | `iptables` | Firewall rules |
-
----
-
-## 4. Running the Test Suite
-
-All tests must pass before deployment.
-
-```sh
-# From repo root:
-cd /path/to/PROJECT
-
-# 1. Unit tests (shell + Python AI core)
+# Unit tests (57 total: 17 shell + 40 Python)
 AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS bash tests/unit-tests.sh
 
-# 2. Integration tests
+# Integration tests (87 total)
 AIOS_HOME=$(pwd) OS_ROOT=$(pwd)/OS bash tests/integration-tests.sh
 
-# 3. Python module tests only
+# Python AI Core tests only
 python3 tests/test_python_modules.py
-
-# Expected output:
-# Unit:        17 passed, 0 failed
-# Integration: 49 passed, 0 failed
-# Python:      40 tests, 0 failures
 ```
 
----
+- [ ] All unit tests pass
+- [ ] All integration tests pass
+- [ ] Python module tests pass
 
-## 5. Self-Repair Test
+### 3.7 Reproducibility Hash
 
-Verify the self-repair system works on a clean slate:
+To verify your build matches a known-good state, compute a checksum of the OS tree (excluding runtime-generated files):
 
 ```sh
-# Step 1: Remove some required directories to simulate corruption
-cd /path/to/PROJECT
-rm -rf OS/var/resource OS/var/backup OS/mirror
-
-# Step 2: Run recovery
-OS_ROOT=$(pwd)/OS sh OS/bin/os-recover repair
-
-# Step 3: Verify repair succeeded
-OS_ROOT=$(pwd)/OS sh OS/bin/os-recover check
-# Expected: all checks pass
+find OS/ -type f \
+    ! -path 'OS/var/*' \
+    ! -path 'OS/proc/*' \
+    ! -path 'OS/mirror/*' \
+    ! -name '*.pid' \
+    ! -name '*.health' \
+    | sort | xargs cksum | cksum
 ```
+
+Compare the output with the hash published in the release notes for the version you have installed.
 
 ---
 
-## 6. Persistence Test
+*End of Reproducible Build System*
 
-Verify that state persists across reboots:
-
-```sh
-# Step 1: Set a memory value
-export OS_ROOT="$(pwd)/OS"
-echo "mem.set test.key my_persistent_value" | sh OS/bin/os-shell
-
-# Step 2: Simulate reboot (re-init)
-sh OS/sbin/init --no-shell
-
-# Step 3: Read it back
-echo "mem.get test.key" | sh OS/bin/os-shell
-# Expected output: my_persistent_value
-```
-
----
-
-## 7. Environment Isolation
-
-AIOS-Lite is fully self-contained within `OS_ROOT`:
-
-```
-All runtime state → OS/proc/
-All logs          → OS/var/log/
-All service PIDs  → OS/var/service/
-All memory        → OS/proc/aura/
-All events        → OS/var/events/
-All config        → OS/etc/
-```
-
-No files are written outside `OS_ROOT` during normal operation.  The
-filesystem jail (`OS/lib/filesystem.py`) enforces this boundary with a
-realpath check on every I/O operation.
-
----
-
-*Last updated: 2026-04-03*
+> © 2026 Christopher Betts | AIOS-Lite | https://github.com/Cbetts1/PROJECT
