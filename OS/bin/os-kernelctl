@@ -1,14 +1,16 @@
 #!/bin/sh
+# os-kernelctl — Control and query the logical kernel surface at $OS_ROOT/proc/os
+# Sections: state, services, ai, bridge, health, logs
 
 OS_ROOT="${OS_ROOT:-/}"
 STATE="$OS_ROOT/var/service"
 PIDFILE="$STATE/os-kernel.pid"
-PROCFILE="$OS_ROOT/proc/os"
-STATEFILE="$OS_ROOT/proc/os.state"
+PROCDIR="$OS_ROOT/proc/os"
 INITD="$OS_ROOT/etc/init.d/os-kernel"
 LOG="$OS_ROOT/var/log/os.log"
 
-cmd="$1"
+cmd="${1:-help}"
+shift
 
 _kernel_uptime() {
     if [ -f "$STATEFILE" ]; then
@@ -95,17 +97,18 @@ case "$cmd" in
             echo "Running: yes"
             echo "PID:      $pid"
         else
-            echo "Running: no (stale pid=$pid)"
+            echo "Running: no (stale pid $pid)"
         fi
     else
         echo "Running: no"
     fi
-    echo ""
-    echo "Kernel Personality:"
-    if [ -f "$PROCFILE" ]; then
-        cat "$PROCFILE"
+
+    echo
+    echo "Kernel State:"
+    if [ -f "$PROCDIR/state" ]; then
+        cat "$PROCDIR/state"
     else
-        echo "(none)"
+        echo "(state not initialised)"
     fi
     ;;
 
@@ -122,64 +125,52 @@ case "$cmd" in
 
   reload)
     echo "[os-kernelctl] Reloading kernel personality..."
-    if [ -f "$PROCFILE" ]; then
-        . "$PROCFILE"
+    if [ -f "$PROCDIR/state" ]; then
+        . "$PROCDIR/state"
         echo "Loaded OS personality:"
-        echo "Name:    $OS_NAME"
-        echo "Version: $OS_VERSION"
+        echo "  Name:    ${OS_NAME:-unknown}"
+        echo "  Version: ${OS_VERSION:-unknown}"
+        echo "  Vendor:  ${OS_VENDOR:-unknown}"
     else
-        echo "No kernel personality file found."
+        echo "No kernel state found at $PROCDIR/state."
     fi
     ;;
 
   info)
     echo "Kernel Personality Info"
     echo "======================="
-    if [ -f "$PROCFILE" ]; then
-        cat "$PROCFILE"
+    if [ -f "$PROCDIR/state" ]; then
+        cat "$PROCDIR/state"
     else
         echo "(none)"
     fi
     ;;
 
-  uptime)
-    _kernel_uptime
-    ;;
-
-  metrics)
-    _kernel_metrics
-    ;;
-
-  proc)
-    _kernel_proc_dump "${2:-text}"
-    ;;
-
-  log)
-    n="${2:-40}"
-    echo "=== Kernel Log (last $n lines) ==="
-    tail -n "$n" "$LOG" 2>/dev/null || echo "(log not found: $LOG)"
-    echo "=================================="
-    ;;
-
-  set)
-    key="$2"; val="$3"
-    if [ -z "$key" ] || [ -z "$val" ]; then
-        echo "Usage: os-kernelctl set <key> <value>"
-        exit 1
-    fi
-    if [ -f "$PROCFILE" ]; then
-        # Update or append the key
-        grep -v "^${key}=" "$PROCFILE" > "$PROCFILE.tmp" 2>/dev/null
-        printf '%s="%s"\n' "$key" "$val" >> "$PROCFILE.tmp"
-        mv "$PROCFILE.tmp" "$PROCFILE"
-        echo "[os-kernelctl] Set $key=$val"
+  list)
+    echo "proc/os sections:"
+    if [ -d "$PROCDIR" ]; then
+        for f in "$PROCDIR"/*; do
+            [ -f "$f" ] && echo "  $(basename "$f")"
+        done
     else
-        printf '%s="%s"\n' "$key" "$val" > "$PROCFILE"
-        echo "[os-kernelctl] Created $PROCFILE and set $key=$val"
+        echo "  (proc/os directory not found)"
+    fi
+    ;;
+
+  query)
+    section="${1:-state}"
+    target="$PROCDIR/$section"
+    if [ -f "$target" ]; then
+        echo "=== proc/os/$section ==="
+        cat "$target"
+    else
+        echo "Section '$section' not found in $PROCDIR" >&2
+        exit 1
     fi
     ;;
 
   *)
-    echo "Usage: os-kernelctl {status|restart|reload|info|uptime|metrics|proc [json]|log [n]|set <key> <val>}"
+    echo "Usage: os-kernelctl {status|restart|reload|info|list|query <section>}"
+    echo "Sections: state  services  ai  bridge  health  logs"
     ;;
 esac

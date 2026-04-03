@@ -71,6 +71,7 @@ mkdir -p \
     "$OS_ROOT/proc/aura/memory" \
     "$OS_ROOT/proc/aura/semantic" \
     "$OS_ROOT/proc/aura/bridge" \
+    "$OS_ROOT/proc/os" \
     "$OS_ROOT/mirror/ios" \
     "$OS_ROOT/mirror/android" \
     "$OS_ROOT/mirror/linux" \
@@ -94,6 +95,77 @@ kernel_pid=0
 os_version=${AIOS_VERSION:-0.1}
 runlevel=2
 last_heartbeat=$(date +%s)
+EOF
+fi
+
+# ---------------------------------------------------------------------------
+# Initialise proc/os kernel surface (write defaults only if files absent)
+# ---------------------------------------------------------------------------
+_PROC_OS="$OS_ROOT/proc/os"
+_BOOT_TS=$(date +%s)
+
+if [ ! -f "$_PROC_OS/state" ]; then
+    cat > "$_PROC_OS/state" << EOF
+OS_NAME="${AIOS_NAME:-AIOS-Lite}"
+OS_VERSION="${AIOS_VERSION:-0.1}"
+OS_VENDOR="${AIOS_VENDOR:-Chris}"
+boot_time=$_BOOT_TS
+runlevel=${TARGET:-2}
+kernel_pid=0
+EOF
+fi
+
+if [ ! -f "$_PROC_OS/services" ]; then
+    cat > "$_PROC_OS/services" << 'EOF'
+# Service registry — updated by os-service at runtime
+banner=stopped
+os-kernel=stopped
+aura-bridge=stopped
+aura-agents=stopped
+aura-tasks=stopped
+devices=stopped
+EOF
+fi
+
+if [ ! -f "$_PROC_OS/ai" ]; then
+    cat > "$_PROC_OS/ai" << 'EOF'
+# AI subsystem state — updated by os-ai at runtime
+ai_status=offline
+llm_backend=none
+model_loaded=false
+last_query=0
+EOF
+fi
+
+if [ ! -f "$_PROC_OS/bridge" ]; then
+    cat > "$_PROC_OS/bridge" << 'EOF'
+# Bridge subsystem state — updated by os-bridge at runtime
+bridge_status=offline
+ios=disconnected
+android=disconnected
+linux=disconnected
+EOF
+fi
+
+if [ ! -f "$_PROC_OS/health" ]; then
+    cat > "$_PROC_OS/health" << EOF
+# Health metrics — updated by os-selftest and os-kernel at runtime
+cpu_ok=unknown
+mem_ok=unknown
+disk_ok=unknown
+thermal_ok=unknown
+last_check=$_BOOT_TS
+EOF
+fi
+
+if [ ! -f "$_PROC_OS/logs" ]; then
+    cat > "$_PROC_OS/logs" << 'EOF'
+# Log manifest — paths relative to OS_ROOT
+os_log=var/log/os.log
+aura_log=var/log/aura.log
+events_log=var/log/events.log
+syscall_log=var/log/syscall.log
+recover_log=var/log/recover.log
 EOF
 fi
 

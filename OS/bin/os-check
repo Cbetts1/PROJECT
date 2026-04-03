@@ -1,0 +1,76 @@
+#!/bin/sh
+# os-check — Scan OS_ROOT for incomplete placeholders
+# Reports every TODO / STUB / FIXME / PLACEHOLDER / HACK found in
+# shell scripts, Python files, and config files under OS_ROOT.
+#
+# Usage: os-check [--strict]
+#   --strict  Exit 1 if any markers are found (useful in CI/selftest).
+#
+# Output format: <file>:<line>: <marker> — <text>
+
+OS_ROOT="${OS_ROOT:-/}"
+STRICT=0
+[ "$1" = "--strict" ] && STRICT=1
+
+MARKERS="TODO\|STUB\|FIXME\|PLACEHOLDER\|HACK\|NOTIMPL"
+
+FOUND=0
+
+echo "os-check: scanning $OS_ROOT"
+echo "Markers: TODO  STUB  FIXME  PLACEHOLDER  HACK  NOTIMPL"
+echo "========================================================="
+
+# Search shell scripts (*.sh, bin/*, sbin/*), Python, and conf/txt files
+# Avoid scanning binary files, .git, mirror mounts, and llama models.
+find "$OS_ROOT" \
+    \( -path "$OS_ROOT/.git" -o \
+       -path "$OS_ROOT/mirror" -o \
+       -path "$OS_ROOT/llama_model" -o \
+       -path "$OS_ROOT/tmp" \) -prune \
+    -o -type f \( \
+        -name "*.sh" -o \
+        -name "*.py" -o \
+        -name "*.conf" -o \
+        -name "*.txt" -o \
+        -name "*.md" -o \
+        -name "*.mod" -o \
+        -name "*.rules" -o \
+        -name "*.list" \
+    \) -print \
+    -o -type f \( \
+        -path "$OS_ROOT/bin/*" -o \
+        -path "$OS_ROOT/sbin/*" -o \
+        -path "$OS_ROOT/etc/init.d/*" \
+    \) -print \
+    2>/dev/null \
+| sort -u \
+| while IFS= read -r file; do
+    # Skip binary files and this script itself
+    [ "$(realpath "$file" 2>/dev/null || echo "$file")" = \
+      "$(realpath "$OS_ROOT/bin/os-check" 2>/dev/null || echo "$OS_ROOT/bin/os-check")" ] && continue
+    file -b "$file" 2>/dev/null | grep -q "binary\|ELF\|data" && continue
+    matches=$(grep -n "$MARKERS" "$file" 2>/dev/null)
+    if [ -n "$matches" ]; then
+        echo "$matches" | while IFS= read -r match; do
+            lineno=$(echo "$match" | cut -d: -f1)
+            text=$(echo "$match" | cut -d: -f2-)
+            printf "%s:%s: %s\n" "$file" "$lineno" "$text"
+        done
+        echo "FOUND" >> /tmp/os-check-$$.tmp
+    fi
+done
+
+# Count hits (using temp file written in subshell)
+if [ -f /tmp/os-check-$$.tmp ]; then
+    FOUND=$(wc -l < /tmp/os-check-$$.tmp)
+    rm -f /tmp/os-check-$$.tmp
+fi
+
+echo
+echo "========================================================="
+if [ "$FOUND" -gt 0 ]; then
+    echo "os-check: $FOUND file(s) contain placeholder markers."
+    [ "$STRICT" -eq 1 ] && exit 1
+else
+    echo "os-check: clean — no placeholder markers found."
+fi

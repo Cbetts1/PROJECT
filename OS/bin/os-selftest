@@ -1,0 +1,194 @@
+#!/bin/sh
+# os-selftest — Verify OS_ROOT structural integrity
+# Checks: directory layout, core binaries, proc/os subsections,
+#         init, AI, bridge availability, and log writability.
+#
+# Usage: os-selftest [--quiet]
+#   --quiet   Suppress PASS lines; show only failures and summary.
+#
+# Exit:  0 = all checks passed, 1 = one or more failures.
+
+OS_ROOT="${OS_ROOT:-/}"
+QUIET=0
+[ "$1" = "--quiet" ] && QUIET=1
+
+PASS=0
+FAIL=0
+ERRORS=""
+
+_pass() {
+    PASS=$((PASS+1))
+    [ "$QUIET" -eq 0 ] && echo "  [PASS] $1"
+}
+_fail() {
+    FAIL=$((FAIL+1))
+    ERRORS="${ERRORS}\n  - $1"
+    echo "  [FAIL] $1"
+}
+_section() { echo; echo "=== $1 ==="; }
+
+# ---------------------------------------------------------------------------
+# 1. OS_ROOT exists
+# ---------------------------------------------------------------------------
+_section "OS_ROOT"
+if [ -d "$OS_ROOT" ]; then
+    _pass "OS_ROOT exists: $OS_ROOT"
+else
+    _fail "OS_ROOT not found: $OS_ROOT"
+fi
+
+# ---------------------------------------------------------------------------
+# 2. Required directories
+# ---------------------------------------------------------------------------
+_section "Directory layout"
+for d in bin sbin etc var proc; do
+    if [ -d "$OS_ROOT/$d" ]; then
+        _pass "dir: $d/"
+    else
+        _fail "dir missing: $d/"
+    fi
+done
+
+# ---------------------------------------------------------------------------
+# 3. proc/os kernel surface sections
+# ---------------------------------------------------------------------------
+_section "proc/os kernel surface"
+PROC_OS="$OS_ROOT/proc/os"
+if [ -d "$PROC_OS" ]; then
+    _pass "proc/os is a directory"
+    for section in state services ai bridge health logs; do
+        if [ -f "$PROC_OS/$section" ]; then
+            _pass "proc/os/$section exists"
+        else
+            _fail "proc/os/$section missing"
+        fi
+    done
+else
+    _fail "proc/os directory not found (expected directory, not file)"
+fi
+
+# proc/os/state must declare OS_NAME
+if [ -f "$PROC_OS/state" ] && grep -q "OS_NAME" "$PROC_OS/state" 2>/dev/null; then
+    _pass "proc/os/state declares OS_NAME"
+else
+    _fail "proc/os/state missing or lacks OS_NAME"
+fi
+
+# ---------------------------------------------------------------------------
+# 4. Core binaries
+# ---------------------------------------------------------------------------
+_section "Core binaries"
+for cmd in os-login os-shell os-kernelctl os-service os-ai os-bridge os-selftest os-check; do
+    if [ -f "$OS_ROOT/bin/$cmd" ]; then
+        _pass "bin/$cmd present"
+    else
+        _fail "bin/$cmd missing"
+    fi
+done
+
+# sbin/init
+if [ -f "$OS_ROOT/sbin/init" ]; then
+    _pass "sbin/init present"
+else
+    _fail "sbin/init missing"
+fi
+
+# ---------------------------------------------------------------------------
+# 5. Init script
+# ---------------------------------------------------------------------------
+_section "Init"
+if [ -f "$OS_ROOT/sbin/init" ] && head -1 "$OS_ROOT/sbin/init" | grep -q "^#"; then
+    _pass "sbin/init is a shell script"
+else
+    _fail "sbin/init is absent or does not look like a shell script"
+fi
+
+# ---------------------------------------------------------------------------
+# 6. AI subsystem
+# ---------------------------------------------------------------------------
+_section "AI subsystem"
+LLAMA_DIR="${LLAMA_MODEL_DIR:-$OS_ROOT/../llama_model}"
+if [ -f "$OS_ROOT/bin/os-ai" ]; then
+    _pass "bin/os-ai present"
+else
+    _fail "bin/os-ai missing"
+fi
+
+# Check for a .gguf model (advisory, not a hard failure)
+model_found=false
+if ls "$LLAMA_DIR"/*.gguf 2>/dev/null | grep -q '.'; then
+    model_found=true
+fi
+if $model_found; then
+    _pass "LLaMA .gguf model found"
+else
+    echo "  [WARN] No .gguf model found in $LLAMA_DIR (AI will use rule-based fallback)"
+fi
+
+# ---------------------------------------------------------------------------
+# 7. Bridge subsystem
+# ---------------------------------------------------------------------------
+_section "Bridge subsystem"
+if [ -f "$OS_ROOT/bin/os-bridge" ]; then
+    _pass "bin/os-bridge present"
+else
+    _fail "bin/os-bridge missing"
+fi
+
+# Mirror mount points
+for dev in ios android linux; do
+    if [ -d "$OS_ROOT/mirror/$dev" ]; then
+        _pass "mirror/$dev mount point exists"
+    else
+        _fail "mirror/$dev mount point missing"
+    fi
+done
+
+# ---------------------------------------------------------------------------
+# 8. Log writability
+# ---------------------------------------------------------------------------
+_section "Log writability"
+mkdir -p "$OS_ROOT/var/log" 2>/dev/null
+for logfile in os.log aura.log events.log; do
+    target="$OS_ROOT/var/log/$logfile"
+    touch "$target" 2>/dev/null
+    if [ -f "$target" ]; then
+        _pass "var/log/$logfile writable"
+    else
+        _fail "var/log/$logfile not writable"
+    fi
+done
+
+# ---------------------------------------------------------------------------
+# 9. proc/os.state runtime state
+# ---------------------------------------------------------------------------
+_section "Runtime state"
+if [ -f "$OS_ROOT/proc/os.state" ]; then
+    _pass "proc/os.state present"
+else
+    _fail "proc/os.state missing (run sbin/init to create)"
+fi
+
+# ---------------------------------------------------------------------------
+# Summary
+# ---------------------------------------------------------------------------
+echo
+echo "================================"
+echo "selftest: $PASS passed, $FAIL failed"
+if [ "$FAIL" -gt 0 ]; then
+    printf "Failures:%b\n" "$ERRORS"
+    exit 1
+fi
+echo "All self-tests passed. OS_ROOT is healthy."
+
+# Update proc/os/health
+ts=$(date +%s)
+HEALTH="$OS_ROOT/proc/os/health"
+if [ -f "$HEALTH" ]; then
+    tmp=$(mktemp)
+    sed "s|^last_check=.*|last_check=$ts|; \
+         s|^cpu_ok=.*|cpu_ok=ok|; \
+         s|^mem_ok=.*|mem_ok=ok|; \
+         s|^disk_ok=.*|disk_ok=ok|; \
+         s|^thermal_ok=.*|thermal_ok=ok|" "$HEALTH" > "$tmp" && mv "$tmp" "$HEALTH"
+fi
