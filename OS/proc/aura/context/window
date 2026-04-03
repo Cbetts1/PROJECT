@@ -1,32 +1,6 @@
 uptime
 disk
 ls
-mem.set test.key.6194 integration_value
-mem.get test.key.6194
-sem.set sem.test.6194 hello semantic world
-sem.search hello
-sysinf
-sysinfo
-ask hello
-ai: Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?
-mode system
-mode operator
-write integration-test-file.txt hello_integration
-read integration-test-file.txt
-services
-help
-sysinfo
-netinfo
-diskinfo
-logread aura
-echo test_passthrough_6194
-sysinf
-sysinfo
-help
-sysinfo
-uptime
-disk
-ls
 mem.set test.key.8567 integration_value
 mem.get test.key.8567
 sem.set sem.test.8567 hello semantic world
@@ -46,5 +20,31 @@ netinfo
 diskinfo
 logread aura
 echo test_passthrough_8567
+sysinf
+sysinfo
+help
+sysinfo
+uptime
+disk
+ls
+mem.set test.key.11406 integration_value
+mem.get test.key.11406
+sem.set sem.test.11406 hello semantic world
+sem.search hello
+sysinf
+sysinfo
+ask hello
+ai: Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?
+mode system
+mode operator
+write integration-test-file.txt hello_integration
+read integration-test-file.txt
+services
+help
+sysinfo
+netinfo
+diskinfo
+logread aura
+echo test_passthrough_11406
 sysinf
 sysinfo
