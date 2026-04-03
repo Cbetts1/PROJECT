@@ -7,3 +7,7 @@ OS/mirror/android/*
 OS/mirror/linux/ssh_*
 OS/var/log/*.log.1
 OS/proc/aura/bridge/status
+__pycache__/
+*.pyc
+*.pyo
+aura/__pycache__/
