@@ -1,0 +1,41 @@
+#!/bin/sh
+# OS/bin/os-emit — Emit a named event
+# © 2026 Chris Betts | AIOSCPU Official
+#
+# Emits an event to the event system.
+#
+# Usage:
+#   os-emit <event-type> [data...]
+#
+# Example:
+#   os-emit service.started banner
+#   os-emit user.login admin
+
+_SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+OS_ROOT="${OS_ROOT:-$(cd "$_SCRIPT_DIR/.." 2>/dev/null && pwd)}"
+
+EVENTS_DIR="$OS_ROOT/var/events"
+EVENTS_LOG="$OS_ROOT/var/log/events.log"
+
+mkdir -p "$EVENTS_DIR" "$(dirname "$EVENTS_LOG")" 2>/dev/null
+
+# Parse arguments
+EVENT_TYPE="${1:-unknown}"
+shift 2>/dev/null || true
+EVENT_DATA="$*"
+
+# Generate timestamp
+TIMESTAMP=$(date +%s%N 2>/dev/null || echo "$(date +%s)000000000")
+TS_HUMAN=$(date '+%Y-%m-%d %H:%M:%S')
+
+# Create event file
+EVENT_FILE="$EVENTS_DIR/${TIMESTAMP}.event"
+echo "[$TS_HUMAN] ${EVENT_TYPE}: ${EVENT_DATA}" > "$EVENT_FILE"
+
+# Log to events.log
+echo "[$TS_HUMAN] ${EVENT_TYPE}: ${EVENT_DATA}" >> "$EVENTS_LOG"
+
+# Output confirmation (quiet by default, use -v for verbose)
+if [ "${1:-}" = "-v" ] || [ "${VERBOSE:-0}" = "1" ]; then
+    echo "[os-emit] Event emitted: ${EVENT_TYPE}"
+fi

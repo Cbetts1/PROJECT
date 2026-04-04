@@ -15,11 +15,15 @@ Pipeline:
 
 Usage:
     python3 ai_backend.py --input "<text>" --os-root <path> --aios-root <path>
+    python3 ai_backend.py --input "<text>" --os-root <path> --aios-root <path> --json-output
 """
 import argparse
+import datetime
+import json
 import os
 import subprocess
 import sys
+import time
 
 # Allow importing sibling modules regardless of the current working directory.
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -29,6 +33,36 @@ from commands import parse_natural_language  # noqa: E402  (legacy fallback)
 from llama_client import run_mock            # noqa: E402
 from intent_engine import IntentEngine       # noqa: E402
 from router import Router                    # noqa: E402
+
+
+def log_query(os_root: str, user_input: str, intent_str: str, confidence: float,
+              response_length: int, duration_ms: int) -> None:
+    """Log AI query to OS/var/log/ai-queries.log in structured JSON format."""
+    log_dir = os.path.join(os_root, "var", "log")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "ai-queries.log")
+    
+    ts = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    
+    # Escape special characters for JSON
+    escaped_input = user_input.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+    
+    entry = {
+        "ts": ts,
+        "level": "INFO",
+        "component": "ai-backend",
+        "input": escaped_input,
+        "intent": intent_str,
+        "confidence": round(confidence, 2),
+        "response_length": response_length,
+        "duration_ms": duration_ms,
+    }
+    
+    try:
+        with open(log_file, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except OSError:
+        pass  # Silently ignore logging errors
 
 
 def run_system_command(plan, aios_root: str) -> str:
@@ -62,16 +96,21 @@ def chat_response(user_input: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="AIOS AI dispatch backend")
-    parser.add_argument("--input",      required=True, help="User input string")
-    parser.add_argument("--os-root",    required=True, help="OS_ROOT jail path")
-    parser.add_argument("--aios-root",  required=True, help="AIOS project root")
+    parser.add_argument("--input",       required=True, help="User input string")
+    parser.add_argument("--os-root",     required=True, help="OS_ROOT jail path")
+    parser.add_argument("--aios-root",   required=True, help="AIOS project root")
+    parser.add_argument("--json-output", action="store_true",
+                        help="Wrap response in JSON format")
     args = parser.parse_args()
+
+    start_time = time.time()
 
     # ------------------------------------------------------------------
     # Primary path: IntentEngine → Router → Bot
     # ------------------------------------------------------------------
     engine = IntentEngine()
     intent = engine.classify(args.input)
+    intent_str = f"{intent.category}.{intent.action}"
 
     router = Router(os_root=args.os_root, aios_root=args.aios_root)
     bot_response = router.dispatch(intent)
@@ -87,9 +126,31 @@ def main() -> None:
         else:
             resp = run_system_command(plan, args.aios_root)
 
-    sys.stdout.write(resp)
-    if not resp.endswith("\n"):
-        sys.stdout.write("\n")
+    # Calculate duration
+    duration_ms = int((time.time() - start_time) * 1000)
+
+    # Log the query
+    log_query(
+        os_root=args.os_root,
+        user_input=args.input,
+        intent_str=intent_str,
+        confidence=intent.confidence,
+        response_length=len(resp),
+        duration_ms=duration_ms,
+    )
+
+    # Output response
+    if args.json_output:
+        output = {
+            "status": "ok",
+            "response": resp.rstrip("\n"),
+            "intent": intent_str,
+        }
+        sys.stdout.write(json.dumps(output) + "\n")
+    else:
+        sys.stdout.write(resp)
+        if not resp.endswith("\n"):
+            sys.stdout.write("\n")
 
 
 if __name__ == "__main__":

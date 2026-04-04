@@ -24,7 +24,14 @@ case "$1" in
   stop)
     health "status=stopped"
     ;;
+  status)
+    if [ -f "$HEALTH" ]; then
+      cat "$HEALTH"
+    else
+      echo "status=unknown"
+    fi
+    ;;
   *)
-    echo "Usage: banner {start|stop}"
+    echo "Usage: banner {start|stop|status}"
     ;;
 esac
