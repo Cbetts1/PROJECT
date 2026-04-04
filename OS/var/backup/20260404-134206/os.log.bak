@@ -1,0 +1,200 @@
+[2026-04-03T12:05:05Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-03T12:05:05Z] [perms] GRANT principal=test-principal-11406 cap=test.cap
+[2026-04-03T12:05:05Z] [perms] ALLOW principal=test-principal-11406 cap=test.cap
+[2026-04-03T12:05:05Z] [perms] REVOKE principal=test-principal-11406 cap=test.cap
+[2026-04-03T12:05:05Z] [perms] DENY principal=test-principal-11406 cap=test.cap
+[2026-04-03T12:05:05Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-11406.txt
+[2026-04-03T12:05:05Z] [recover] recovery mode started
+[2026-04-03T12:05:06Z] [recover] recovery mode complete
+[2026-04-03T12:05:06Z] [recover] backup created: 20260403-120506
+[os-kernel] heartbeat 5019
+[2026-04-03T16:43:47Z] [sched] add pid=4665 pri=5
+[2026-04-03T16:43:47Z] [sched] remove pid=4665
+[2026-04-03T16:43:47Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
+[2026-04-03T16:43:47Z] [perms] ALLOW principal=aura cap=fs.read
+[2026-04-03T16:43:47Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-03T16:43:47Z] [perms] GRANT principal=test-principal-4665 cap=test.cap
+[2026-04-03T16:43:47Z] [perms] ALLOW principal=test-principal-4665 cap=test.cap
+[2026-04-03T16:43:47Z] [perms] REVOKE principal=test-principal-4665 cap=test.cap
+[2026-04-03T16:43:47Z] [perms] DENY principal=test-principal-4665 cap=test.cap
+[2026-04-03T16:43:47Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-4665.txt
+[2026-04-03T16:43:47Z] [recover] recovery mode started
+[2026-04-03T16:43:48Z] [recover] recovery mode complete
+[2026-04-03T16:43:48Z] [recover] backup created: 20260403-164348
+[os-kernel] heartbeat 6660
+[2026-04-03T16:44:14Z] [sched] add pid=6302 pri=5
+[2026-04-03T16:44:14Z] [sched] remove pid=6302
+[2026-04-03T16:44:14Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
+[2026-04-03T16:44:14Z] [perms] ALLOW principal=aura cap=fs.read
+[2026-04-03T16:44:14Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-03T16:44:14Z] [perms] GRANT principal=test-principal-6302 cap=test.cap
+[2026-04-03T16:44:14Z] [perms] ALLOW principal=test-principal-6302 cap=test.cap
+[2026-04-03T16:44:14Z] [perms] REVOKE principal=test-principal-6302 cap=test.cap
+[2026-04-03T16:44:14Z] [perms] DENY principal=test-principal-6302 cap=test.cap
+[2026-04-03T16:44:15Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-6302.txt
+[2026-04-03T16:44:15Z] [recover] recovery mode started
+[2026-04-03T16:44:15Z] [recover] recovery mode complete
+[2026-04-03T16:44:15Z] [recover] backup created: 20260403-164415
+[os-kernel] heartbeat 9102
+[2026-04-03T16:45:23Z] [sched] add pid=8297 pri=5
+[2026-04-03T16:45:23Z] [sched] remove pid=8297
+[2026-04-03T16:45:23Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
+[2026-04-03T16:45:23Z] [perms] ALLOW principal=aura cap=fs.read
+[2026-04-03T16:45:23Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-03T16:45:23Z] [perms] GRANT principal=test-principal-8297 cap=test.cap
+[2026-04-03T16:45:23Z] [perms] ALLOW principal=test-principal-8297 cap=test.cap
+[2026-04-03T16:45:23Z] [perms] REVOKE principal=test-principal-8297 cap=test.cap
+[2026-04-03T16:45:23Z] [perms] DENY principal=test-principal-8297 cap=test.cap
+[2026-04-03T16:45:23Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-8297.txt
+[2026-04-03T16:45:23Z] [recover] recovery mode started
+[2026-04-03T16:45:23Z] [recover] recovery mode complete
+[2026-04-03T16:45:23Z] [recover] backup created: 20260403-164523
+[os-kernel] heartbeat 4849
+[2026-04-03T17:07:00Z] [sched] add pid=4041 pri=5
+[2026-04-03T17:07:00Z] [sched] remove pid=4041
+[2026-04-03T17:07:00Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
+[2026-04-03T17:07:00Z] [perms] ALLOW principal=aura cap=fs.read
+[2026-04-03T17:07:00Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-03T17:07:00Z] [perms] GRANT principal=test-principal-4041 cap=test.cap
+[2026-04-03T17:07:00Z] [perms] ALLOW principal=test-principal-4041 cap=test.cap
+[2026-04-03T17:07:00Z] [perms] REVOKE principal=test-principal-4041 cap=test.cap
+[2026-04-03T17:07:00Z] [perms] DENY principal=test-principal-4041 cap=test.cap
+[2026-04-03T17:07:00Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-4041.txt
+[2026-04-03T17:07:00Z] [recover] recovery mode started
+[2026-04-03T17:07:00Z] [recover] created dir: var/pkg
+[2026-04-03T17:07:00Z] [recover] created dir: mirror/ios
+[2026-04-03T17:07:00Z] [recover] created dir: mirror/android
+[2026-04-03T17:07:00Z] [recover] recovery mode complete
+[2026-04-03T17:07:00Z] [recover] backup created: 20260403-170700
+[os-kernel] heartbeat 7337
+[2026-04-03T17:11:44Z] [sched] add pid=6527 pri=5
+[2026-04-03T17:11:44Z] [sched] remove pid=6527
+[2026-04-03T17:11:44Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
+[2026-04-03T17:11:44Z] [perms] ALLOW principal=aura cap=fs.read
+[2026-04-03T17:11:44Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-03T17:11:44Z] [perms] GRANT principal=test-principal-6527 cap=test.cap
+[2026-04-03T17:11:44Z] [perms] ALLOW principal=test-principal-6527 cap=test.cap
+[2026-04-03T17:11:44Z] [perms] REVOKE principal=test-principal-6527 cap=test.cap
+[2026-04-03T17:11:44Z] [perms] DENY principal=test-principal-6527 cap=test.cap
+[2026-04-03T17:11:44Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-6527.txt
+[2026-04-03T17:11:44Z] [recover] recovery mode started
+[2026-04-03T17:11:44Z] [recover] recovery mode complete
+[2026-04-03T17:11:44Z] [recover] backup created: 20260403-171144
+[os-kernel] heartbeat 10013
+[2026-04-03T17:15:05Z] [sched] add pid=9195 pri=5
+[2026-04-03T17:15:05Z] [sched] remove pid=9195
+[2026-04-03T17:15:05Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
+[2026-04-03T17:15:05Z] [perms] ALLOW principal=aura cap=fs.read
+[2026-04-03T17:15:05Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-03T17:15:05Z] [perms] GRANT principal=test-principal-9195 cap=test.cap
+[2026-04-03T17:15:05Z] [perms] ALLOW principal=test-principal-9195 cap=test.cap
+[2026-04-03T17:15:05Z] [perms] REVOKE principal=test-principal-9195 cap=test.cap
+[2026-04-03T17:15:05Z] [perms] DENY principal=test-principal-9195 cap=test.cap
+[2026-04-03T17:15:06Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-9195.txt
+[2026-04-03T17:15:06Z] [recover] recovery mode started
+[2026-04-03T17:15:06Z] [recover] recovery mode complete
+[2026-04-03T17:15:06Z] [recover] backup created: 20260403-171506
+[os-kernel] heartbeat 12988
+[2026-04-03T17:20:30Z] [sched] add pid=12195 pri=5
+[2026-04-03T17:20:30Z] [sched] remove pid=12195
+[2026-04-03T17:20:30Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
+[2026-04-03T17:20:30Z] [perms] ALLOW principal=aura cap=fs.read
+[2026-04-03T17:20:30Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-03T17:20:30Z] [perms] GRANT principal=test-principal-12195 cap=test.cap
+[2026-04-03T17:20:30Z] [perms] ALLOW principal=test-principal-12195 cap=test.cap
+[2026-04-03T17:20:30Z] [perms] REVOKE principal=test-principal-12195 cap=test.cap
+[2026-04-03T17:20:30Z] [perms] DENY principal=test-principal-12195 cap=test.cap
+[2026-04-03T17:20:31Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-12195.txt
+[2026-04-03T17:20:31Z] [recover] recovery mode started
+[2026-04-03T17:20:31Z] [recover] recovery mode complete
+[2026-04-03T17:20:31Z] [recover] backup created: 20260403-172031
+[os-kernel] heartbeat 15879
+[2026-04-03T17:22:15Z] [sched] add pid=14996 pri=5
+[2026-04-03T17:22:15Z] [sched] remove pid=14996
+[2026-04-03T17:22:15Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
+[2026-04-03T17:22:15Z] [perms] ALLOW principal=aura cap=fs.read
+[2026-04-03T17:22:15Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-03T17:22:16Z] [perms] GRANT principal=test-principal-14996 cap=test.cap
+[2026-04-03T17:22:16Z] [perms] ALLOW principal=test-principal-14996 cap=test.cap
+[2026-04-03T17:22:16Z] [perms] REVOKE principal=test-principal-14996 cap=test.cap
+[2026-04-03T17:22:16Z] [perms] DENY principal=test-principal-14996 cap=test.cap
+[2026-04-03T17:22:17Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-14996.txt
+[2026-04-03T17:22:17Z] [recover] recovery mode started
+[2026-04-03T17:22:17Z] [recover] recovery mode complete
+[2026-04-03T17:22:17Z] [recover] backup created: 20260403-172217
+[os-kernel] heartbeat 18726
+[2026-04-03T17:23:11Z] [sched] add pid=17933 pri=5
+[2026-04-03T17:23:11Z] [sched] remove pid=17933
+[2026-04-03T17:23:11Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
+[2026-04-03T17:23:11Z] [perms] ALLOW principal=aura cap=fs.read
+[2026-04-03T17:23:11Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-03T17:23:11Z] [perms] GRANT principal=test-principal-17933 cap=test.cap
+[2026-04-03T17:23:11Z] [perms] ALLOW principal=test-principal-17933 cap=test.cap
+[2026-04-03T17:23:11Z] [perms] REVOKE principal=test-principal-17933 cap=test.cap
+[2026-04-03T17:23:11Z] [perms] DENY principal=test-principal-17933 cap=test.cap
+[2026-04-03T17:23:11Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-17933.txt
+[2026-04-03T17:23:11Z] [recover] recovery mode started
+[2026-04-03T17:23:11Z] [recover] recovery mode complete
+[2026-04-03T17:23:11Z] [recover] backup created: 20260403-172311
+[os-kernel] heartbeat 22242
+[2026-04-03T17:23:40Z] [sched] add pid=21444 pri=5
+[2026-04-03T17:23:40Z] [sched] remove pid=21444
+[2026-04-03T17:23:40Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
+[2026-04-03T17:23:40Z] [perms] ALLOW principal=aura cap=fs.read
+[2026-04-03T17:23:40Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-03T17:23:40Z] [perms] GRANT principal=test-principal-21444 cap=test.cap
+[2026-04-03T17:23:40Z] [perms] ALLOW principal=test-principal-21444 cap=test.cap
+[2026-04-03T17:23:40Z] [perms] REVOKE principal=test-principal-21444 cap=test.cap
+[2026-04-03T17:23:40Z] [perms] DENY principal=test-principal-21444 cap=test.cap
+[2026-04-03T17:23:40Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-21444.txt
+[2026-04-03T17:23:40Z] [recover] recovery mode started
+[2026-04-03T17:23:40Z] [recover] recovery mode complete
+[2026-04-03T17:23:40Z] [recover] backup created: 20260403-172340
+[os-kernel] heartbeat 4849
+[2026-04-04T01:06:49Z] [sched] add pid=4052 pri=5
+[2026-04-04T01:06:49Z] [sched] remove pid=4052
+[2026-04-04T01:06:49Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
+[2026-04-04T01:06:49Z] [perms] ALLOW principal=aura cap=fs.read
+[2026-04-04T01:06:49Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-04T01:06:49Z] [perms] GRANT principal=test-principal-4052 cap=test.cap
+[2026-04-04T01:06:49Z] [perms] ALLOW principal=test-principal-4052 cap=test.cap
+[2026-04-04T01:06:49Z] [perms] REVOKE principal=test-principal-4052 cap=test.cap
+[2026-04-04T01:06:49Z] [perms] DENY principal=test-principal-4052 cap=test.cap
+[2026-04-04T01:06:49Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-4052.txt
+[2026-04-04T01:06:49Z] [recover] recovery mode started
+[2026-04-04T01:06:49Z] [recover] created dir: var/pkg
+[2026-04-04T01:06:49Z] [recover] created dir: mirror/ios
+[2026-04-04T01:06:49Z] [recover] created dir: mirror/android
+[2026-04-04T01:06:50Z] [recover] recovery mode complete
+[2026-04-04T01:06:50Z] [recover] backup created: 20260404-010650
+[os-kernel] heartbeat 5480
+[os-kernel] heartbeat 5422
+[2026-04-04T13:38:59Z] [sched] add pid=4628 pri=5
+[2026-04-04T13:38:59Z] [sched] remove pid=4628
+[2026-04-04T13:39:00Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
+[2026-04-04T13:39:00Z] [perms] ALLOW principal=aura cap=fs.read
+[2026-04-04T13:39:00Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-04T13:39:00Z] [perms] GRANT principal=test-principal-4628 cap=test.cap
+[2026-04-04T13:39:00Z] [perms] ALLOW principal=test-principal-4628 cap=test.cap
+[2026-04-04T13:39:00Z] [perms] REVOKE principal=test-principal-4628 cap=test.cap
+[2026-04-04T13:39:00Z] [perms] DENY principal=test-principal-4628 cap=test.cap
+[2026-04-04T13:39:00Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-4628.txt
+[2026-04-04T13:39:00Z] [recover] recovery mode started
+[2026-04-04T13:39:00Z] [recover] created dir: var/pkg
+[2026-04-04T13:39:00Z] [recover] created dir: mirror/ios
+[2026-04-04T13:39:00Z] [recover] created dir: mirror/android
+[2026-04-04T13:39:00Z] [recover] recovery mode complete
+[2026-04-04T13:39:00Z] [recover] backup created: 20260404-133900
+[os-kernel] heartbeat 8269
+[2026-04-04T13:42:06Z] [sched] add pid=7471 pri=5
+[2026-04-04T13:42:06Z] [sched] remove pid=7471
+[2026-04-04T13:42:06Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
+[2026-04-04T13:42:06Z] [perms] ALLOW principal=aura cap=fs.read
+[2026-04-04T13:42:06Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-04T13:42:06Z] [perms] GRANT principal=test-principal-7471 cap=test.cap
+[2026-04-04T13:42:06Z] [perms] ALLOW principal=test-principal-7471 cap=test.cap
+[2026-04-04T13:42:06Z] [perms] REVOKE principal=test-principal-7471 cap=test.cap
+[2026-04-04T13:42:06Z] [perms] DENY principal=test-principal-7471 cap=test.cap
+[2026-04-04T13:42:06Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-7471.txt
+[2026-04-04T13:42:06Z] [recover] recovery mode started
+[2026-04-04T13:42:06Z] [recover] recovery mode complete

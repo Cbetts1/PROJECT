@@ -79,7 +79,7 @@ make_executables() {
     chmod +x "$OS_ROOT/lib/filesystem.py" 2>/dev/null || true
 
     # Root-level scripts
-    for f in "$REPO_ROOT/install.sh"; do
+    for f in "$REPO_ROOT/install.sh" "$REPO_ROOT/run.sh" "$REPO_ROOT/update.sh"; do
         [ -f "$f" ] && chmod +x "$f"
     done
 
@@ -106,6 +106,8 @@ create_dirs() {
         "$OS_ROOT/mirror/linux" \
         "$OS_ROOT/tmp" \
         "$OS_ROOT/usr/pkg" \
+        "$REPO_ROOT/var/log" \
+        "$REPO_ROOT/var/run" \
         "$REPO_ROOT/llama_model"
 
     success "Directories created."
@@ -124,6 +126,9 @@ init_files() {
     for log in os.log aura.log events.log messages.log bridge.log; do
         [ -f "$OS_ROOT/var/log/$log" ] || touch "$OS_ROOT/var/log/$log"
     done
+
+    # Repo-root log (used by update.sh and bootloader)
+    [ -f "$REPO_ROOT/var/log/aios.log" ] || touch "$REPO_ROOT/var/log/aios.log"
 
     # Proc state
     if [ ! -f "$OS_ROOT/proc/os.state" ]; then

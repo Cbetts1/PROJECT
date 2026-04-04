@@ -1,0 +1,112 @@
+2026-04-04T13:44:44Z  INFO      Log file: logs/controller_20260404T134444Z.log
+2026-04-04T13:44:44Z  INFO      AIOS Controller starting
+2026-04-04T13:44:44Z  INFO        Repository root : /home/runner/work/PROJECT/PROJECT
+2026-04-04T13:44:44Z  INFO        Cycles          : 2
+2026-04-04T13:44:44Z  INFO        Dry-run         : True
+2026-04-04T13:44:44Z  INFO        LLM model       : gpt-4o
+2026-04-04T13:44:44Z  INFO        Agents loaded   : 5
+2026-04-04T13:44:44Z  INFO          [1] Architect Agent  scope=['.']
+2026-04-04T13:44:44Z  INFO          [2] Core Engine Agent  scope=['bin', 'OS']
+2026-04-04T13:44:44Z  INFO          [3] AI Shell Agent  scope=['ai']
+2026-04-04T13:44:44Z  INFO          [4] DevOps Agent  scope=['scripts', 'install.sh', 'run.sh', 'update.sh']
+2026-04-04T13:44:44Z  INFO          [5] Docs Agent  scope=['README.md', 'CHANGELOG.md']
+2026-04-04T13:44:44Z  INFO      
+2026-04-04T13:44:44Z  INFO      ╔══════════════════════════════════════════╗
+2026-04-04T13:44:44Z  INFO      ║  CYCLE 1  started at 13:44:44Z  ║
+2026-04-04T13:44:44Z  INFO      ╚══════════════════════════════════════════╝
+2026-04-04T13:44:44Z  INFO      ══ Starting: Architect Agent
+2026-04-04T13:44:44Z  DEBUG       Scope: ['.']
+2026-04-04T13:44:44Z  DEBUG       Prompt: You are the Architect Agent for the AIOS repository. Review the overall file tree and module separation. Propose or appl…
+2026-04-04T13:44:44Z  INFO        LLM response (50 chars): [DRY-RUN] Would send prompt (272 chars) to gpt-4o.
+2026-04-04T13:44:44Z  DEBUG       Proposed files: []
+2026-04-04T13:44:44Z  INFO        Done in 0.00s  status=ok  violations=0  conflicts=0
+2026-04-04T13:44:44Z  INFO      ══ Starting: Core Engine Agent
+2026-04-04T13:44:44Z  DEBUG       Scope: ['bin', 'OS']
+2026-04-04T13:44:44Z  DEBUG       Prompt: You are the Core Engine Agent for the AIOS repository. Your scope is bin/ and OS/. Fix and improve the launcher (bin/aio…
+2026-04-04T13:44:44Z  INFO        LLM response (50 chars): [DRY-RUN] Would send prompt (217 chars) to gpt-4o.
+2026-04-04T13:44:44Z  DEBUG       Proposed files: []
+2026-04-04T13:44:44Z  INFO        Done in 0.00s  status=ok  violations=0  conflicts=0
+2026-04-04T13:44:44Z  INFO      ══ Starting: AI Shell Agent
+2026-04-04T13:44:44Z  DEBUG       Scope: ['ai']
+2026-04-04T13:44:44Z  DEBUG       Prompt: You are the AI Shell Agent for the AIOS repository. Your scope is ai/. Build and improve the interactive AI shell, comma…
+2026-04-04T13:44:44Z  INFO        LLM response (50 chars): [DRY-RUN] Would send prompt (199 chars) to gpt-4o.
+2026-04-04T13:44:44Z  DEBUG       Proposed files: []
+2026-04-04T13:44:44Z  INFO        Done in 0.00s  status=ok  violations=0  conflicts=0
+2026-04-04T13:44:44Z  INFO      ══ Starting: DevOps Agent
+2026-04-04T13:44:44Z  DEBUG       Scope: ['scripts', 'install.sh', 'run.sh', 'update.sh']
+2026-04-04T13:44:44Z  DEBUG       Prompt: You are the DevOps Agent for the AIOS repository. Your scope is scripts/, install.sh, run.sh, and update.sh. Ensure inst…
+2026-04-04T13:44:44Z  INFO        LLM response (50 chars): [DRY-RUN] Would send prompt (255 chars) to gpt-4o.
+2026-04-04T13:44:44Z  DEBUG       Proposed files: []
+2026-04-04T13:44:44Z  INFO        Done in 0.00s  status=ok  violations=0  conflicts=0
+2026-04-04T13:44:44Z  INFO      ══ Starting: Docs Agent
+2026-04-04T13:44:44Z  DEBUG       Scope: ['README.md', 'CHANGELOG.md']
+2026-04-04T13:44:44Z  DEBUG       Prompt: You are the Docs Agent for the AIOS repository. Your scope is README.md and CHANGELOG.md. Update documentation to accura…
+2026-04-04T13:44:44Z  INFO        LLM response (50 chars): [DRY-RUN] Would send prompt (224 chars) to gpt-4o.
+2026-04-04T13:44:44Z  DEBUG       Proposed files: []
+2026-04-04T13:44:44Z  INFO        Done in 0.00s  status=ok  violations=0  conflicts=0
+2026-04-04T13:44:44Z  INFO      
+2026-04-04T13:44:44Z  INFO      ┌─ CYCLE 1 SUMMARY ─────────────────────────────────────────┐
+2026-04-04T13:44:44Z  INFO      │  Agents run        : 5
+2026-04-04T13:44:44Z  INFO      │  Files proposed    : 0
+2026-04-04T13:44:44Z  INFO      │  Scope violations  : 0
+2026-04-04T13:44:44Z  INFO      │  File conflicts    : 0
+2026-04-04T13:44:44Z  INFO      │  Total duration    : 0.00s
+2026-04-04T13:44:44Z  INFO      │
+2026-04-04T13:44:44Z  INFO      │  Architect Agent         status=ok        files=0  viol=0  conf=0
+2026-04-04T13:44:44Z  INFO      │  Core Engine Agent       status=ok        files=0  viol=0  conf=0
+2026-04-04T13:44:44Z  INFO      │  AI Shell Agent          status=ok        files=0  viol=0  conf=0
+2026-04-04T13:44:44Z  INFO      │  DevOps Agent            status=ok        files=0  viol=0  conf=0
+2026-04-04T13:44:44Z  INFO      │  Docs Agent              status=ok        files=0  viol=0  conf=0
+2026-04-04T13:44:44Z  INFO      └──────────────────────────────────────────────────────────────┘
+2026-04-04T13:44:44Z  INFO      Cycle 1 summary saved to logs/cycle_1_20260404T134444Z.json
+2026-04-04T13:44:44Z  INFO      
+2026-04-04T13:44:44Z  INFO      ╔══════════════════════════════════════════╗
+2026-04-04T13:44:44Z  INFO      ║  CYCLE 2  started at 13:44:44Z  ║
+2026-04-04T13:44:44Z  INFO      ╚══════════════════════════════════════════╝
+2026-04-04T13:44:44Z  INFO      ══ Starting: Architect Agent
+2026-04-04T13:44:44Z  DEBUG       Scope: ['.']
+2026-04-04T13:44:44Z  DEBUG       Prompt: You are the Architect Agent for the AIOS repository. Review the overall file tree and module separation. Propose or appl…
+2026-04-04T13:44:44Z  INFO        LLM response (50 chars): [DRY-RUN] Would send prompt (272 chars) to gpt-4o.
+2026-04-04T13:44:44Z  DEBUG       Proposed files: []
+2026-04-04T13:44:44Z  INFO        Done in 0.00s  status=ok  violations=0  conflicts=0
+2026-04-04T13:44:44Z  INFO      ══ Starting: Core Engine Agent
+2026-04-04T13:44:44Z  DEBUG       Scope: ['bin', 'OS']
+2026-04-04T13:44:44Z  DEBUG       Prompt: You are the Core Engine Agent for the AIOS repository. Your scope is bin/ and OS/. Fix and improve the launcher (bin/aio…
+2026-04-04T13:44:44Z  INFO        LLM response (50 chars): [DRY-RUN] Would send prompt (217 chars) to gpt-4o.
+2026-04-04T13:44:44Z  DEBUG       Proposed files: []
+2026-04-04T13:44:44Z  INFO        Done in 0.00s  status=ok  violations=0  conflicts=0
+2026-04-04T13:44:44Z  INFO      ══ Starting: AI Shell Agent
+2026-04-04T13:44:44Z  DEBUG       Scope: ['ai']
+2026-04-04T13:44:44Z  DEBUG       Prompt: You are the AI Shell Agent for the AIOS repository. Your scope is ai/. Build and improve the interactive AI shell, comma…
+2026-04-04T13:44:44Z  INFO        LLM response (50 chars): [DRY-RUN] Would send prompt (199 chars) to gpt-4o.
+2026-04-04T13:44:44Z  DEBUG       Proposed files: []
+2026-04-04T13:44:44Z  INFO        Done in 0.00s  status=ok  violations=0  conflicts=0
+2026-04-04T13:44:44Z  INFO      ══ Starting: DevOps Agent
+2026-04-04T13:44:44Z  DEBUG       Scope: ['scripts', 'install.sh', 'run.sh', 'update.sh']
+2026-04-04T13:44:44Z  DEBUG       Prompt: You are the DevOps Agent for the AIOS repository. Your scope is scripts/, install.sh, run.sh, and update.sh. Ensure inst…
+2026-04-04T13:44:44Z  INFO        LLM response (50 chars): [DRY-RUN] Would send prompt (255 chars) to gpt-4o.
+2026-04-04T13:44:44Z  DEBUG       Proposed files: []
+2026-04-04T13:44:44Z  INFO        Done in 0.00s  status=ok  violations=0  conflicts=0
+2026-04-04T13:44:44Z  INFO      ══ Starting: Docs Agent
+2026-04-04T13:44:44Z  DEBUG       Scope: ['README.md', 'CHANGELOG.md']
+2026-04-04T13:44:44Z  DEBUG       Prompt: You are the Docs Agent for the AIOS repository. Your scope is README.md and CHANGELOG.md. Update documentation to accura…
+2026-04-04T13:44:44Z  INFO        LLM response (50 chars): [DRY-RUN] Would send prompt (224 chars) to gpt-4o.
+2026-04-04T13:44:44Z  DEBUG       Proposed files: []
+2026-04-04T13:44:44Z  INFO        Done in 0.00s  status=ok  violations=0  conflicts=0
+2026-04-04T13:44:44Z  INFO      
+2026-04-04T13:44:44Z  INFO      ┌─ CYCLE 2 SUMMARY ─────────────────────────────────────────┐
+2026-04-04T13:44:44Z  INFO      │  Agents run        : 5
+2026-04-04T13:44:44Z  INFO      │  Files proposed    : 0
+2026-04-04T13:44:44Z  INFO      │  Scope violations  : 0
+2026-04-04T13:44:44Z  INFO      │  File conflicts    : 0
+2026-04-04T13:44:44Z  INFO      │  Total duration    : 0.00s
+2026-04-04T13:44:44Z  INFO      │
+2026-04-04T13:44:44Z  INFO      │  Architect Agent         status=ok        files=0  viol=0  conf=0
+2026-04-04T13:44:44Z  INFO      │  Core Engine Agent       status=ok        files=0  viol=0  conf=0
+2026-04-04T13:44:44Z  INFO      │  AI Shell Agent          status=ok        files=0  viol=0  conf=0
+2026-04-04T13:44:44Z  INFO      │  DevOps Agent            status=ok        files=0  viol=0  conf=0
+2026-04-04T13:44:44Z  INFO      │  Docs Agent              status=ok        files=0  viol=0  conf=0
+2026-04-04T13:44:44Z  INFO      └──────────────────────────────────────────────────────────────┘
+2026-04-04T13:44:44Z  INFO      Cycle 2 summary saved to logs/cycle_2_20260404T134444Z.json
+2026-04-04T13:44:44Z  INFO      
+2026-04-04T13:44:44Z  INFO      All 2 cycle(s) complete.
