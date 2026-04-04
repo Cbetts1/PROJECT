@@ -104,14 +104,51 @@ common commands and natural-language questions.
 ## How to Run
 
 ```sh
-# Option 1: launcher script (recommended)
+# Option 1: full boot sequence + AI shell (recommended)
 ./run.sh
 
-# Option 2: direct
+# Option 2: skip boot animation
+./run.sh --no-boot
+
+# Option 3: direct shell
 ./bin/aios
 
-# Option 3: explicit bash
+# Option 4: explicit bash
 bash bin/aios
+```
+
+### Boot Sequence
+
+`./run.sh` runs the full 5-stage boot pipeline before opening the shell:
+
+```
+[BOOT] Stage 0 — Environment Detection
+  ✓ Host environment : linux
+  ✓ Bash 5.2 / Python 3.12
+
+[BOOT] Stage 1 — Filesystem Initialisation
+  ✓ Runtime directories ready
+
+[BOOT] Stage 2 — Permission Check
+  ✓ Executable permissions set
+
+[BOOT] Stage 3 — Service Health Pre-Check
+  ✓ Python AI backend importable
+  ⚠ No llama binary — AI uses built-in rule-based backend
+
+[BOOT] Stage 4 — Kernel State Write
+  ✓ Kernel state written (OS/proc/os.state)
+
+[BOOT] Stage 5 — Boot Complete
+  AIOS boot completed in ~230 ms — launching AI shell
+```
+
+### Updating
+
+```sh
+./update.sh               # pull latest + re-install
+./update.sh --check       # check for updates without applying
+./update.sh --self-test   # update + run full test suite
 ```
 
 ### Example Session
@@ -163,11 +200,16 @@ Goodbye.
 | `proc.kill <pid>` | Kill process by PID |
 | `net.ping [host]` | Ping a host |
 | `net.ifconfig` | Show network interfaces |
+| `status` | Live system status (uptime, backend, PIDs) |
+| `sysinfo` | Host OS, memory, disk, Bash/Python versions |
+| `version` | Print AIOS version and paths |
+| `log.tail [n]` | Show last N lines of `var/log/aios.log` |
+| `clear` | Clear terminal screen |
 | `sys` | Enter real host shell |
 | `sys -- <cmd>` | Run one host command |
 | `help` | Show command reference |
 | `exit` / `quit` | Exit AIOS |
-| *(anything else)* | Routed to AI backend |
+| *(anything else)* | Routed to AI backend (natural language) |
 
 ---
 

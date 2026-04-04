@@ -8,6 +8,46 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.5.0] — 2026-04-04
+
+### Fixed
+- **Critical boot regression**: `config/aios.conf` referenced bare `$AIOS_HOME`
+  inside a `${OS_ROOT:-$AIOS_HOME/OS}` fallback expression. With `set -o nounset`
+  active in `lib/aura-core.sh`, this caused the shell to exit immediately on
+  startup. Fixed by using `${AIOS_HOME:-${AIOS_ROOT:-$PWD}}` throughout
+  `config/aios.conf` and by pre-setting `AIOS_HOME` in `etc/aios.conf` before
+  the OS-level config is sourced.
+
+### Added
+- **`run.sh`** — clean top-level launcher. Runs the boot sequence then execs
+  `bin/aios`. Accepts `--no-boot` to skip the boot animation.
+- **`boot/bootloader.sh`** — five-stage visual boot pipeline:
+  - Stage 0: environment detection (Termux / Linux / macOS)
+  - Stage 1: filesystem initialisation (creates all required runtime dirs/files)
+  - Stage 2: executable permission check (auto-fixes missing +x bits)
+  - Stage 3: service health pre-check (Python AI backend, aura modules, LLM)
+  - Stage 4: kernel state write (`OS/proc/os.state`)
+  - Stage 5: boot-complete banner with elapsed time
+- **`update.sh`** — git pull + re-install + optional self-test. Supports
+  `--check` (show pending commits), `--self-test` (run test suite after update).
+- **`bin/aios` enhancements**:
+  - Readline command history with `read -e -p`; persisted to `var/run/aios_history`
+  - `status` command — live kernel/AI state (uptime, log lines, backend, PIDs)
+  - `sysinfo` command — host OS, memory, disk, Bash/Python versions
+  - `version` command — print AIOS version and paths
+  - `clear` command — clear terminal
+  - `log.tail [n]` command — show last N lines of `var/log/aios.log`
+  - All dispatched commands now logged to `var/log/aios.log`
+
+### Changed
+- `README.md` — full rewrite: What Is AIOS, Requirements table (per platform),
+  Installation steps, How to Run (all three methods), Example Session,
+  Available Commands table, Architecture diagram, Troubleshooting section,
+  Running Tests, Documentation Index.
+- `bin/aios` version string updated to `v1.0 (Aurora)`.
+
+---
+
 ## [Unreleased]
 
 ### Added
