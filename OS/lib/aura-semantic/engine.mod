@@ -33,7 +33,7 @@ semantic_search() {
         case "$key" in ""|\#*) continue ;; esac
         dist=$(embed_distance "$qemb" "$emb")
         echo "$dist | $key | $file"
-    done < "$SEMINDEX" | sort -n | head -10
+    done < "$SEMINDEX" | sort -n | head -20
 }
 
 semantic_delete() {

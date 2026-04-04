@@ -1,35 +1,9 @@
-sysinfo
-netinfo
-diskinfo
-logread aura
-echo test_passthrough_11406
-sysinf
-sysinfo
-help
-sysinfo
-netinfo
-diskinfo
-logread aura
-echo test_passthrough_4665
-sysinf
-sysinfo
-help
-sysinfo
-netinfo
-diskinfo
-logread aura
-echo test_passthrough_6302
-sysinf
-sysinfo
-help
-help
-sysinfo
 uptime
 disk
 ls
-mem.set test.key.8297 integration_value
-mem.get test.key.8297
-sem.set sem.test.8297 hello semantic world
+mem.set test.key.21444 integration_value
+mem.get test.key.21444
+sem.set sem.test.21444 hello semantic world
 sem.search hello
 sysinf
 sysinfo
@@ -45,6 +19,32 @@ sysinfo
 netinfo
 diskinfo
 logread aura
-echo test_passthrough_8297
+echo test_passthrough_21444
+sysinf
+sysinfo
+help
+sysinfo
+uptime
+disk
+ls
+mem.set test.key.4052 integration_value
+mem.get test.key.4052
+sem.set sem.test.4052 hello semantic world
+sem.search hello
+sysinf
+sysinfo
+ask hello
+ai: Hello! I am AIOS-Lite, your AI operating system. How can I assist you today?
+mode system
+mode operator
+write integration-test-file.txt hello_integration
+read integration-test-file.txt
+services
+help
+sysinfo
+netinfo
+diskinfo
+logread aura
+echo test_passthrough_4052
 sysinf
 sysinfo
