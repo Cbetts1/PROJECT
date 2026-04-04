@@ -240,8 +240,9 @@ self_test() {
     verify_modules
     detect_deps
 
-    info "Running unit tests..."
     export AIOS_HOME="$REPO_ROOT" OS_ROOT="$OS_ROOT"
+
+    info "Running unit tests..."
     if bash "$REPO_ROOT/tests/unit-tests.sh" 2>&1; then
         success "Unit tests: PASS"
     else
