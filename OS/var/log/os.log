@@ -387,34 +387,104 @@
 [2026-04-04T01:06:50Z] [recover] recovery mode complete
 [2026-04-04T01:06:50Z] [recover] backup created: 20260404-010650
 [os-kernel] heartbeat 5480
-[os-kernel] heartbeat 5422
-[2026-04-04T13:38:59Z] [sched] add pid=4628 pri=5
-[2026-04-04T13:38:59Z] [sched] remove pid=4628
-[2026-04-04T13:39:00Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
-[2026-04-04T13:39:00Z] [perms] ALLOW principal=aura cap=fs.read
-[2026-04-04T13:39:00Z] [perms] DENY principal=aura cap=proc.kill
-[2026-04-04T13:39:00Z] [perms] GRANT principal=test-principal-4628 cap=test.cap
-[2026-04-04T13:39:00Z] [perms] ALLOW principal=test-principal-4628 cap=test.cap
-[2026-04-04T13:39:00Z] [perms] REVOKE principal=test-principal-4628 cap=test.cap
-[2026-04-04T13:39:00Z] [perms] DENY principal=test-principal-4628 cap=test.cap
-[2026-04-04T13:39:00Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-4628.txt
-[2026-04-04T13:39:00Z] [recover] recovery mode started
-[2026-04-04T13:39:00Z] [recover] created dir: var/pkg
-[2026-04-04T13:39:00Z] [recover] created dir: mirror/ios
-[2026-04-04T13:39:00Z] [recover] created dir: mirror/android
-[2026-04-04T13:39:00Z] [recover] recovery mode complete
-[2026-04-04T13:39:00Z] [recover] backup created: 20260404-133900
-[os-kernel] heartbeat 8269
-[2026-04-04T13:42:06Z] [sched] add pid=7471 pri=5
-[2026-04-04T13:42:06Z] [sched] remove pid=7471
-[2026-04-04T13:42:06Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
-[2026-04-04T13:42:06Z] [perms] ALLOW principal=aura cap=fs.read
-[2026-04-04T13:42:06Z] [perms] DENY principal=aura cap=proc.kill
-[2026-04-04T13:42:06Z] [perms] GRANT principal=test-principal-7471 cap=test.cap
-[2026-04-04T13:42:06Z] [perms] ALLOW principal=test-principal-7471 cap=test.cap
-[2026-04-04T13:42:06Z] [perms] REVOKE principal=test-principal-7471 cap=test.cap
-[2026-04-04T13:42:06Z] [perms] DENY principal=test-principal-7471 cap=test.cap
-[2026-04-04T13:42:06Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-7471.txt
-[2026-04-04T13:42:06Z] [recover] recovery mode started
-[2026-04-04T13:42:06Z] [recover] recovery mode complete
-[2026-04-04T13:42:06Z] [recover] backup created: 20260404-134206
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 4973
+[os-kernel] heartbeat 17988
+[os-kernel] heartbeat 17988
+[os-kernel] heartbeat 17988
+[os-kernel] heartbeat 17988
+[os-kernel] heartbeat 17988
+[os-kernel] heartbeat 17988
+[os-kernel] heartbeat 19388
+[os-kernel] heartbeat 19388
+[os-kernel] heartbeat 19388
+[os-kernel] heartbeat 19388
+[os-kernel] heartbeat 19388
+[os-kernel] heartbeat 19388
+[os-kernel] heartbeat 20486
+[os-kernel] heartbeat 20486
+[os-kernel] heartbeat 20486
+[os-kernel] heartbeat 20486
+[os-kernel] heartbeat 20486
+[os-kernel] heartbeat 20486
+[os-kernel] heartbeat 20486
+[os-kernel] heartbeat 20486
+[os-kernel] heartbeat 20486
+[os-kernel] heartbeat 20486
+[os-kernel] heartbeat 20486
+[os-kernel] heartbeat 20486
+[os-kernel] heartbeat 20486
+[os-kernel] heartbeat 20486

@@ -1,0 +1,7 @@
+# Service registry — updated by os-service at runtime
+banner=stopped
+os-kernel=stopped
+aura-bridge=stopped
+aura-agents=stopped
+aura-tasks=stopped
+devices=stopped

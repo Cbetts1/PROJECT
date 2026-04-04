@@ -30,4 +30,4 @@ if [ ! -x "$INIT_SCRIPT" ]; then
 fi
 
 # Delegate to sbin/init for the full boot sequence
-exec sh "$OS_ROOT/sbin/init" "$@"
+exec "$OS_ROOT/sbin/init" "$@"
