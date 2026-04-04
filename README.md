@@ -104,16 +104,19 @@ common commands and natural-language questions.
 ## How to Run
 
 ```sh
-# Option 1: full boot sequence + AI shell (recommended)
+# Option 1: AIOS-Lite OS boot (canonical — starts rc2.d services then drops into shell)
+./run-os.sh
+
+# Option 2: full boot sequence + AI shell (bin/aios front-end)
 ./run.sh
 
-# Option 2: skip boot animation
+# Option 3: skip boot animation
 ./run.sh --no-boot
 
-# Option 3: direct shell
+# Option 4: direct AI shell
 ./bin/aios
 
-# Option 4: explicit bash
+# Option 5: explicit bash
 bash bin/aios
 
 # Option 5: boot AIOS-Lite virtual OS (init + rc2.d services + shell)
@@ -587,7 +590,7 @@ If the problem persists, check that `etc/aios.conf` exists and that `AIOS_ROOT` 
 ### `Permission denied` when running `./bin/aios` or `./run.sh`
 
 ```sh
-chmod +x bin/aios bin/aios-sys bin/aios-heartbeat run.sh install.sh
+chmod +x bin/aios bin/aios-sys bin/aios-heartbeat run.sh run-os.sh install.sh
 ```
 
 ### Python not found / AI backend fails

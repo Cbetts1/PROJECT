@@ -108,6 +108,18 @@ EOF
 fi
 
 # ---------------------------------------------------------------------------
+# Boot target / runlevel — read BEFORE kernel surface is initialised so
+# that the correct runlevel is recorded in proc/os/state.
+# ---------------------------------------------------------------------------
+if [ -f "$BOOT_TARGET" ]; then
+    TARGET=$(cat "$BOOT_TARGET")
+    echo "[BOOT] Target  : $TARGET"
+else
+    TARGET="2"
+    echo "[BOOT] No boot.target found, defaulting to runlevel 2"
+fi
+
+# ---------------------------------------------------------------------------
 # Initialise proc/os kernel surface (write defaults only if files absent)
 # ---------------------------------------------------------------------------
 _PROC_OS="$OS_ROOT/proc/os"
@@ -176,17 +188,6 @@ events_log=var/log/events.log
 syscall_log=var/log/syscall.log
 recover_log=var/log/recover.log
 EOF
-fi
-
-# ---------------------------------------------------------------------------
-# Boot target / runlevel
-# ---------------------------------------------------------------------------
-if [ -f "$BOOT_TARGET" ]; then
-    TARGET=$(cat "$BOOT_TARGET")
-    echo "[BOOT] Target  : $TARGET"
-else
-    TARGET="2"
-    echo "[BOOT] No boot.target found, defaulting to runlevel 2"
 fi
 
 # ---------------------------------------------------------------------------

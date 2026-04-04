@@ -67,17 +67,21 @@ _aios_setup_status() {
         printf "  AI mode  : %s\n" "${backend}"
     fi
 
-    # LLM model file
+    # LLM model file — check OS_ROOT/llama_model/ first (autodetect path),
+    # then AIOS_ROOT/llama_model/ as a secondary location.
     local model_found=0
-    if [[ -d "${AIOS_ROOT}/llama_model" ]]; then
-        while IFS= read -r -d '' f; do
-            model_found=1
-            printf "  Model    : %s\n" "$(basename "${f}")"
-            break
-        done < <(find "${AIOS_ROOT}/llama_model" -name "*.gguf" -print0 2>/dev/null)
-    fi
+    for _mdir in "${OS_ROOT}/llama_model" "${AIOS_ROOT}/llama_model"; do
+        if [[ -d "${_mdir}" ]]; then
+            while IFS= read -r -d '' f; do
+                model_found=1
+                printf "  Model    : %s\n" "$(basename "${f}")"
+                break
+            done < <(find "${_mdir}" -maxdepth 1 -name "*.gguf" -print0 2>/dev/null)
+        fi
+        [[ "${model_found}" -eq 1 ]] && break
+    done
     if [[ "${model_found}" -eq 0 ]]; then
-        printf "  Model    : not found (see docs/AI_MODEL_SETUP.md)\n"
+        printf "  Model    : AI offline, fallback mode (see docs/AI_MODEL_SETUP.md)\n"
         ok=0
     fi
 
