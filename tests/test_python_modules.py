@@ -611,6 +611,126 @@ class TestRepairBotExtended(TestBotsBase):
 
 
 # ===========================================================================
+# bots.py — UpgradeBot
+# ===========================================================================
+
+class TestUpgradeBot(TestBotsBase):
+    def test_can_handle(self):
+        bot = bots.UpgradeBot(os_root=self.tmpdir)
+        i = self._intent("upgrade", "pkg.check")
+        self.assertTrue(bot.can_handle(i))
+
+    def test_cannot_handle_health(self):
+        bot = bots.UpgradeBot(os_root=self.tmpdir)
+        i = self._intent("health", "check")
+        self.assertFalse(bot.can_handle(i))
+
+    def test_check_updates_missing_script(self):
+        bot = bots.UpgradeBot(os_root=self.tmpdir)
+        i = self._intent("upgrade", "pkg.check")
+        out = bot.handle(i)
+        self.assertIn("update-check.sh not found", out)
+
+    def test_apply_update_missing_script(self):
+        bot = bots.UpgradeBot(os_root=self.tmpdir)
+        i = self._intent("upgrade", "pkg.apply")
+        out = bot.handle(i)
+        self.assertIn("apply-update.sh not found", out)
+
+    def test_upgrade_pkg_no_os_install(self):
+        bot = bots.UpgradeBot(os_root=self.tmpdir)
+        i = self._intent("upgrade", "pkg.upgrade", {"target": "mypkg"})
+        out = bot.handle(i)
+        self.assertIn("os-install not found", out)
+
+    def test_upgrade_all_no_os_install(self):
+        bot = bots.UpgradeBot(os_root=self.tmpdir)
+        i = self._intent("upgrade", "pkg.upgrade-all")
+        out = bot.handle(i)
+        self.assertIn("os-install not found", out)
+
+    def test_upgrade_pkg_missing_target(self):
+        bot = bots.UpgradeBot(os_root=self.tmpdir)
+        i = self._intent("upgrade", "pkg.upgrade", {"target": ""})
+        out = bot.handle(i)
+        self.assertIn("Usage:", out)
+
+    def test_upgrade_pkg_with_os_install(self):
+        """UpgradeBot delegates to os-install when it exists."""
+        bin_dir = os.path.join(self.tmpdir, "bin")
+        os.makedirs(bin_dir, exist_ok=True)
+        os_install = os.path.join(bin_dir, "os-install")
+        # Write a minimal stub that echoes the subcommand
+        with open(os_install, "w") as fh:
+            fh.write('#!/bin/sh\necho "stub: $1 $2"\n')
+        os.chmod(os_install, 0o755)
+
+        bot = bots.UpgradeBot(os_root=self.tmpdir)
+        i = self._intent("upgrade", "pkg.upgrade", {"target": "testpkg"})
+        out = bot.handle(i)
+        self.assertIn("stub: upgrade testpkg", out)
+
+    def test_upgrade_all_with_os_install(self):
+        """UpgradeBot upgrade-all delegates to os-install upgrade-all."""
+        bin_dir = os.path.join(self.tmpdir, "bin")
+        os.makedirs(bin_dir, exist_ok=True)
+        os_install = os.path.join(bin_dir, "os-install")
+        with open(os_install, "w") as fh:
+            fh.write('#!/bin/sh\necho "stub: $1"\n')
+        os.chmod(os_install, 0o755)
+
+        bot = bots.UpgradeBot(os_root=self.tmpdir)
+        i = self._intent("upgrade", "pkg.upgrade-all")
+        out = bot.handle(i)
+        self.assertIn("stub: upgrade-all", out)
+
+
+class TestIntentEngineUpgrade(unittest.TestCase):
+    def setUp(self):
+        self.ie = intent_engine.IntentEngine()
+
+    def _c(self, text):
+        return self.ie.classify(text)
+
+    def test_upgrade_pkg_intent(self):
+        i = self._c("upgrade mypkg")
+        self.assertEqual(i.category, "upgrade")
+        self.assertEqual(i.action, "pkg.upgrade")
+        self.assertEqual(i.entities.get("target"), "mypkg")
+
+    def test_update_pkg_intent(self):
+        i = self._c("update mypkg")
+        self.assertEqual(i.category, "upgrade")
+        self.assertEqual(i.action, "pkg.upgrade")
+        self.assertEqual(i.entities.get("target"), "mypkg")
+
+    def test_upgrade_all_intent(self):
+        i = self._c("upgrade all")
+        self.assertEqual(i.category, "upgrade")
+        self.assertEqual(i.action, "pkg.upgrade-all")
+
+    def test_upgrade_all_variant(self):
+        i = self._c("upgrade-all")
+        self.assertEqual(i.category, "upgrade")
+        self.assertEqual(i.action, "pkg.upgrade-all")
+
+    def test_check_updates_intent(self):
+        i = self._c("check updates")
+        self.assertEqual(i.category, "upgrade")
+        self.assertEqual(i.action, "pkg.check")
+
+    def test_update_check_hyphen(self):
+        i = self._c("update-check")
+        self.assertEqual(i.category, "upgrade")
+        self.assertEqual(i.action, "pkg.check")
+
+    def test_apply_update_intent(self):
+        i = self._c("apply update")
+        self.assertEqual(i.category, "upgrade")
+        self.assertEqual(i.action, "pkg.apply")
+
+
+# ===========================================================================
 # router.py — extended coverage
 # ===========================================================================
 
@@ -632,7 +752,7 @@ class TestRouterExtended(unittest.TestCase):
 
     def test_init_bots_creates_three_bots(self):
         r = router.Router(os_root=self.tmpdir, aios_root=self.tmpdir)
-        self.assertEqual(len(r._bots), 3)
+        self.assertEqual(len(r._bots), 4)
 
     def test_registered_bot_has_highest_priority(self):
         class AlwaysBot(bots.BaseBot):
