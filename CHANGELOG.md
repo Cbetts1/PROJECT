@@ -14,6 +14,71 @@ No unreleased changes at this time.
 
 ---
 
+## [1.6.0] — 2026-04-04
+
+### Verified / Audited (Multi-Agent OS Engineering Integration Pass)
+
+Full multi-agent OS engineering audit confirmed the following components are
+complete, functional, and consistent with documentation:
+
+#### Boot Flow
+- `run.sh` → `boot/bootloader.sh` (6 stages) → `bin/aios` — verified end-to-end
+- `OS/sbin/init` — PID-1 bootstrap with runlevel 2 service orchestration
+- `OS/etc/init.d/` — services: `os-kernel`, `aura-agents`, `aura-bridge`,
+  `aura-llm`, `aura-tasks`, `banner`, `devices`
+- Boot stages: 0 (Env Detection) → 1 (FS Init) → 2 (Permissions) →
+  3 (Service Health) → 4 (Kernel State) → 5 (Boot Complete)
+
+#### OS Shell & AI
+- `OS/bin/os-shell` — full interactive shell with personality engine (operator/
+  system/talk modes), AURA memory, event logging, all OS commands
+- `OS/bin/os-ai` — interactive AI assistant with LLM backend + rule-based fallback
+- `bin/aios` — AI shell with readline history, `status`, `sysinfo`, `version`,
+  `log.tail`, `clear` built-ins, full AI dispatch pipeline
+- `bin/aios-sys` — raw OS shell bypass
+- `bin/aios-heartbeat` — background health daemon
+
+#### AI Integration Pipeline
+- `ai/core/intent_engine.py` → `router.py` → `bots.py` — intent classification
+  and dispatch to `HealthBot`, `LogBot`, `RepairBot`, `UpgradeBot`, plus 3
+  additional bots (`ProcessBot`, `NetworkBot`, `MemoryBot`) in `router.py`
+- `ai/core/llama_client.py` — llama.cpp subprocess client + mock fallback
+- `lib/aura-llama.sh` — shell-level LLM wrapper calling the Python client
+- `build/build.sh` — llama.cpp build script (hosted/termux/arm64)
+
+#### OS Services
+- `OS/bin/os-log`, `os-state`, `os-ps`, `os-event`, `os-emit`,
+  `os-resource`, `os-recover`, `os-netconf`, `os-service`, `os-kernelctl`
+- `OS/lib/filesystem.py` — OS_ROOT-isolated file operations (read/write/list)
+- `OS/lib/aura-memory/`, `aura-semantic/`, `aura-hybrid/`, `aura-llm/`,
+  `aura-policy/`, `aura-bridge/`, `aura-mods/` — all AURA subsystem modules
+
+#### DevOps Scripts
+- `install.sh` — full installer: permissions, dirs, files, module verify,
+  dep detection, unit tests; accepts `--build-llama`, `--start`, `--self-test`
+- `run.sh` — first-run bootstrap + boot pipeline + exec `bin/aios`
+- `update.sh` — git pull + re-install + optional test suite
+- `scripts/install.sh`, `scripts/run.sh`, `scripts/update.sh` — thin wrappers
+  delegating to root-level scripts; all work on Termux and Linux
+
+#### Documentation
+- `README.md` (670 lines) — accurate, complete, matches real system
+- `CHANGELOG.md` — full version history from v1.0.0 to v1.6.0
+- `docs/architecture.md` — 6-layer architecture blueprint
+- `docs/development.md` (877 lines) — developer guide with 18 sections
+- 30+ spec documents in `docs/`
+
+#### Test Suite
+- **264 total tests passing**: 27 shell unit + 150 Python unit + 87 integration
+- `tests/unit-tests.sh` — filesystem.py, os-shell, os-real-shell, os-kernelctl,
+  os-service, os-bridge, os-mirror, os-emit, os-event, os-state, os-sched,
+  os-resource, os-recover, os-netconf, os-httpd, AI pipeline
+- `tests/integration-tests.sh` — 87 end-to-end integration scenarios
+- `tests/test_python_modules.py` — 150 Python unit tests (AI core)
+- `install.sh --self-test` — full self-test: modules, deps, unit + integration
+
+---
+
 ## [1.5.0] — 2026-04-04
 
 ### Fixed
@@ -169,7 +234,8 @@ No unreleased changes at this time.
 
 ---
 
-[Unreleased]: https://github.com/Cbetts1/PROJECT/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/Cbetts1/PROJECT/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/Cbetts1/PROJECT/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/Cbetts1/PROJECT/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/Cbetts1/PROJECT/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Cbetts1/PROJECT/compare/v1.2.0...v1.3.0

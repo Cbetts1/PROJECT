@@ -519,3 +519,17 @@
 [2026-04-04T14:00:40Z] [recover] recovery mode started
 [2026-04-04T14:00:40Z] [recover] recovery mode complete
 [2026-04-04T14:00:41Z] [recover] backup created: 20260404-140040
+[os-kernel] heartbeat 12161
+[2026-04-04T14:03:10Z] [sched] add pid=11361 pri=5
+[2026-04-04T14:03:11Z] [sched] remove pid=11361
+[2026-04-04T14:03:11Z] [perms] ALLOW principal=operator cap=fs.read (wildcard fs.*)
+[2026-04-04T14:03:11Z] [perms] ALLOW principal=aura cap=fs.read
+[2026-04-04T14:03:11Z] [perms] DENY principal=aura cap=proc.kill
+[2026-04-04T14:03:11Z] [perms] GRANT principal=test-principal-11361 cap=test.cap
+[2026-04-04T14:03:11Z] [perms] ALLOW principal=test-principal-11361 cap=test.cap
+[2026-04-04T14:03:11Z] [perms] REVOKE principal=test-principal-11361 cap=test.cap
+[2026-04-04T14:03:11Z] [perms] DENY principal=test-principal-11361 cap=test.cap
+[2026-04-04T14:03:11Z] [resource] snapshot saved path=/home/runner/work/PROJECT/PROJECT/OS/var/resource/test-snap-11361.txt
+[2026-04-04T14:03:11Z] [recover] recovery mode started
+[2026-04-04T14:03:11Z] [recover] recovery mode complete
+[2026-04-04T14:03:11Z] [recover] backup created: 20260404-140311
