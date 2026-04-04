@@ -19,10 +19,10 @@ from typing import List, Optional
 
 try:
     from .intent_engine import Intent              # type: ignore  (package)
-    from .bots import BaseBot, HealthBot, LogBot, RepairBot  # type: ignore
+    from .bots import BaseBot, HealthBot, LogBot, RepairBot, UpgradeBot  # type: ignore
 except ImportError:
     from intent_engine import Intent               # type: ignore  (standalone)
-    from bots import BaseBot, HealthBot, LogBot, RepairBot   # type: ignore
+    from bots import BaseBot, HealthBot, LogBot, RepairBot, UpgradeBot   # type: ignore
 
 
 class Router:
@@ -46,6 +46,7 @@ class Router:
         """Instantiate all registered bots in priority order."""
         return [
             RepairBot(os_root=self.os_root),
+            UpgradeBot(os_root=self.os_root),
             HealthBot(os_root=self.os_root),
             LogBot(os_root=self.os_root),
         ]

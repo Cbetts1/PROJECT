@@ -1,0 +1,71 @@
+#!/bin/sh
+# OS/bin/os-checkpoint — Create a quick checkpoint
+# © 2026 Chris Betts | AIOSCPU Official
+#
+# Creates a minimal recovery point with just critical files.
+# Faster than full backup for quick snapshots.
+#
+# Usage:
+#   os-checkpoint [label]
+#
+# Example:
+#   os-checkpoint before-test
+#   os-checkpoint
+
+_SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+OS_ROOT="${OS_ROOT:-$(cd "$_SCRIPT_DIR/.." 2>/dev/null && pwd)}"
+AIOS_HOME="${AIOS_HOME:-$(cd "$OS_ROOT/.." 2>/dev/null && pwd)}"
+
+CHECKPOINT_DIR="$OS_ROOT/var/backup/checkpoints"
+LOG_FILE="$OS_ROOT/var/log/recover.log"
+
+mkdir -p "$CHECKPOINT_DIR" "$(dirname "$LOG_FILE")" 2>/dev/null
+
+LABEL="${1:-quick}"
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+CHECKPOINT="$CHECKPOINT_DIR/$TIMESTAMP"
+
+echo "[checkpoint] Creating checkpoint: $TIMESTAMP"
+
+mkdir -p "$CHECKPOINT"
+
+# Save label and timestamp
+echo "$LABEL" > "$CHECKPOINT/label"
+date > "$CHECKPOINT/created"
+
+# Backup only critical files (minimal set)
+# config/aios.conf
+if [ -f "$AIOS_HOME/config/aios.conf" ]; then
+    cp "$AIOS_HOME/config/aios.conf" "$CHECKPOINT/"
+    echo "[checkpoint] Saved: config/aios.conf"
+fi
+
+# etc/aios.conf
+if [ -f "$AIOS_HOME/etc/aios.conf" ]; then
+    cp "$AIOS_HOME/etc/aios.conf" "$CHECKPOINT/"
+    echo "[checkpoint] Saved: etc/aios.conf"
+fi
+
+# OS/sbin/init
+if [ -f "$OS_ROOT/sbin/init" ]; then
+    mkdir -p "$CHECKPOINT/OS/sbin"
+    cp "$OS_ROOT/sbin/init" "$CHECKPOINT/OS/sbin/"
+    echo "[checkpoint] Saved: OS/sbin/init"
+fi
+
+# OS/proc/os.state
+if [ -f "$OS_ROOT/proc/os.state" ]; then
+    mkdir -p "$CHECKPOINT/OS/proc"
+    cp "$OS_ROOT/proc/os.state" "$CHECKPOINT/OS/proc/"
+    echo "[checkpoint] Saved: OS/proc/os.state"
+fi
+
+# Record size
+SIZE=$(du -sh "$CHECKPOINT" 2>/dev/null | cut -f1)
+echo "$SIZE" > "$CHECKPOINT/size"
+
+# Log
+echo "[$(date '+%Y-%m-%dT%H:%M:%SZ')] [checkpoint] Created: $TIMESTAMP ($LABEL)" >> "$LOG_FILE"
+
+echo "[checkpoint] Complete: $TIMESTAMP ($SIZE)"
+echo "$TIMESTAMP"

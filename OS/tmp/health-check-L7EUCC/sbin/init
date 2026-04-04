@@ -1,0 +1,277 @@
+#!/bin/sh
+# OS/sbin/init — AIOS-Lite Primary Boot Script
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# Bootstraps the AIOS-Lite virtual OS:
+#   1. Derives OS_ROOT from script location
+#   2. Creates all required runtime directories / files
+#   3. Loads config/aios.conf if present (from repo root)
+#   4. Starts all rc2.d services in order
+#   5. Optionally exec's into a login shell
+#
+# Usage:
+#   OS_ROOT=/path/to/AIOS/OS sh OS/sbin/init [--no-shell] [--shell os-real-shell]
+
+# ---------------------------------------------------------------------------
+# Resolve OS_ROOT
+# ---------------------------------------------------------------------------
+_SELF="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
+if [ -z "$_SELF" ]; then
+    echo "[BOOT] ERROR: Could not determine OS_ROOT from script path. Set OS_ROOT manually." >&2
+    exit 1
+fi
+OS_ROOT="${OS_ROOT:-$_SELF}"
+AIOS_HOME="${AIOS_HOME:-$(cd "$OS_ROOT/.." 2>/dev/null && pwd)}"
+export OS_ROOT AIOS_HOME
+
+# ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
+BOOT_SHELL="os-shell"
+NO_SHELL=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --no-shell)   NO_SHELL=1 ;;
+        --shell=*)    BOOT_SHELL="${1#--shell=}" ;;
+        --shell)      shift; BOOT_SHELL="${1:-os-shell}" ;;
+    esac
+    shift
+done
+
+# ---------------------------------------------------------------------------
+# Load aios.conf (repo-level config)
+# ---------------------------------------------------------------------------
+AIOS_CONF="$AIOS_HOME/config/aios.conf"
+[ -f "$AIOS_CONF" ] && . "$AIOS_CONF" 2>/dev/null
+
+# ---------------------------------------------------------------------------
+# Environment detection (Level 12)
+# ---------------------------------------------------------------------------
+DETECT_ENV="$AIOS_HOME/tools/detect-env.sh"
+if [ -f "$DETECT_ENV" ]; then
+    . "$DETECT_ENV" 2>/dev/null || true
+fi
+AIOS_ENV="${AIOS_ENV:-linux}"
+export AIOS_ENV
+
+BOOT_TARGET="$OS_ROOT/etc/boot.target"
+RUNLEVEL_DIR="$OS_ROOT/etc/rc2.d"
+BOOT_LOG="$OS_ROOT/var/boot.time"
+AURA_LOG="$OS_ROOT/var/log/aura.log"
+
+# ---------------------------------------------------------------------------
+# Banner
+# ---------------------------------------------------------------------------
+echo "================================"
+echo "  ${AIOS_NAME:-AIOS-Lite} v${AIOS_VERSION:-0.1}"
+echo "  AI-Augmented Operating System"
+echo "  Environment: ${AIOS_ENV:-unknown}"
+echo "================================"
+echo "[BOOT] OS_ROOT : $OS_ROOT"
+echo "[BOOT] AIOS_HOME: $AIOS_HOME"
+
+# ---------------------------------------------------------------------------
+# Create runtime layout
+# ---------------------------------------------------------------------------
+mkdir -p \
+    "$OS_ROOT/var/log" \
+    "$OS_ROOT/var/service" \
+    "$OS_ROOT/var/events" \
+    "$OS_ROOT/var/pkg" \
+    "$OS_ROOT/proc" \
+    "$OS_ROOT/proc/aura/context" \
+    "$OS_ROOT/proc/aura/memory" \
+    "$OS_ROOT/proc/aura/semantic" \
+    "$OS_ROOT/proc/aura/bridge" \
+    "$OS_ROOT/proc/os" \
+    "$OS_ROOT/mirror/ios" \
+    "$OS_ROOT/mirror/android" \
+    "$OS_ROOT/mirror/linux" \
+    "$OS_ROOT/tmp" \
+    2>/dev/null
+
+date +%s > "$BOOT_LOG"
+
+# Initialise files that must exist before services start
+[ -f "$OS_ROOT/proc/aura/context/window" ] || touch "$OS_ROOT/proc/aura/context/window"
+[ -f "$OS_ROOT/proc/os.messages" ]         || touch "$OS_ROOT/proc/os.messages"
+[ -f "$OS_ROOT/var/log/os.log" ]           || touch "$OS_ROOT/var/log/os.log"
+[ -f "$OS_ROOT/var/log/aura.log" ]         || touch "$OS_ROOT/var/log/aura.log"
+[ -f "$OS_ROOT/var/log/events.log" ]       || touch "$OS_ROOT/var/log/events.log"
+
+# Write initial os.state if absent
+if [ ! -f "$OS_ROOT/proc/os.state" ]; then
+    cat > "$OS_ROOT/proc/os.state" << EOF
+boot_time=$(date +%s)
+kernel_pid=0
+os_version=${AIOS_VERSION:-0.1}
+runlevel=2
+last_heartbeat=$(date +%s)
+EOF
+fi
+
+# ---------------------------------------------------------------------------
+# Initialise proc/os kernel surface (write defaults only if files absent)
+# ---------------------------------------------------------------------------
+_PROC_OS="$OS_ROOT/proc/os"
+_BOOT_TS=$(date +%s)
+
+if [ ! -f "$_PROC_OS/state" ]; then
+    cat > "$_PROC_OS/state" << EOF
+OS_NAME="${AIOS_NAME:-AIOS-Lite}"
+OS_VERSION="${AIOS_VERSION:-0.1}"
+OS_VENDOR="${AIOS_VENDOR:-Chris}"
+boot_time=$_BOOT_TS
+runlevel=${TARGET:-2}
+kernel_pid=0
+EOF
+fi
+
+if [ ! -f "$_PROC_OS/services" ]; then
+    cat > "$_PROC_OS/services" << 'EOF'
+# Service registry — updated by os-service at runtime
+banner=stopped
+os-kernel=stopped
+aura-bridge=stopped
+aura-agents=stopped
+aura-tasks=stopped
+devices=stopped
+EOF
+fi
+
+if [ ! -f "$_PROC_OS/ai" ]; then
+    cat > "$_PROC_OS/ai" << 'EOF'
+# AI subsystem state — updated by os-ai at runtime
+ai_status=offline
+llm_backend=none
+model_loaded=false
+last_query=0
+EOF
+fi
+
+if [ ! -f "$_PROC_OS/bridge" ]; then
+    cat > "$_PROC_OS/bridge" << 'EOF'
+# Bridge subsystem state — updated by os-bridge at runtime
+bridge_status=offline
+ios=disconnected
+android=disconnected
+linux=disconnected
+EOF
+fi
+
+if [ ! -f "$_PROC_OS/health" ]; then
+    cat > "$_PROC_OS/health" << EOF
+# Health metrics — updated by os-selftest and os-kernel at runtime
+cpu_ok=unknown
+mem_ok=unknown
+disk_ok=unknown
+thermal_ok=unknown
+last_check=$_BOOT_TS
+EOF
+fi
+
+if [ ! -f "$_PROC_OS/logs" ]; then
+    cat > "$_PROC_OS/logs" << 'EOF'
+# Log manifest — paths relative to OS_ROOT
+os_log=var/log/os.log
+aura_log=var/log/aura.log
+events_log=var/log/events.log
+syscall_log=var/log/syscall.log
+recover_log=var/log/recover.log
+EOF
+fi
+
+# ---------------------------------------------------------------------------
+# Boot target / runlevel
+# ---------------------------------------------------------------------------
+if [ -f "$BOOT_TARGET" ]; then
+    TARGET=$(cat "$BOOT_TARGET")
+    echo "[BOOT] Target  : $TARGET"
+else
+    TARGET="2"
+    echo "[BOOT] No boot.target found, defaulting to runlevel 2"
+fi
+
+# ---------------------------------------------------------------------------
+# Ensure PATH includes our bin/sbin dirs
+# ---------------------------------------------------------------------------
+export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+
+# ---------------------------------------------------------------------------
+# Start rc2.d services
+# ---------------------------------------------------------------------------
+_started=0
+_failed=0
+
+# Check that RUNLEVEL_DIR has at least one S* script before looping
+_has_services=0
+for _check in "$RUNLEVEL_DIR"/S*; do
+    if [ -f "$_check" ] || [ -L "$_check" ]; then
+        _has_services=1
+        break
+    fi
+done
+
+if [ "$_has_services" -eq 0 ]; then
+    echo "[BOOT] WARNING: No S* service scripts found in $RUNLEVEL_DIR" >&2
+else
+    for script in "$RUNLEVEL_DIR"/S*; do
+        [ -f "$script" ] || [ -L "$script" ] || continue
+        svc=$(basename "$script")
+        echo "[BOOT] Starting $svc ..."
+        if sh "$script" start; then
+            _started=$((_started+1))
+        else
+            echo "[BOOT] WARNING: $svc failed to start (exit $?)" >&2
+            _failed=$((_failed+1))
+        fi
+    done
+fi
+
+echo "[BOOT] Services: $_started started, $_failed failed."
+
+# Record boot-complete timestamp in os.state
+_boot_complete_ts=$(date +%s)
+if [ -f "$OS_ROOT/proc/os.state" ]; then
+    # Remove existing last_boot_complete line if present, then append new one
+    grep -v "^last_boot_complete=" "$OS_ROOT/proc/os.state" > "$OS_ROOT/proc/os.state.tmp" 2>/dev/null || true
+    echo "last_boot_complete=$_boot_complete_ts" >> "$OS_ROOT/proc/os.state.tmp"
+    mv "$OS_ROOT/proc/os.state.tmp" "$OS_ROOT/proc/os.state"
+else
+    echo "last_boot_complete=$_boot_complete_ts" >> "$OS_ROOT/proc/os.state"
+fi
+
+# Audit log
+ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
+echo "[$ts] [init] boot complete runlevel=$TARGET started=$_started failed=$_failed" >> "$AURA_LOG"
+
+# Emit boot.complete event (Level 17)
+if [ -x "$OS_ROOT/bin/os-emit" ]; then
+    "$OS_ROOT/bin/os-emit" "boot.complete" "runlevel=$TARGET started=$_started failed=$_failed"
+else
+    # Fallback: write event file directly
+    _event_dir="$OS_ROOT/var/events"
+    mkdir -p "$_event_dir" 2>/dev/null
+    _event_ts=$(date +%s%N 2>/dev/null || echo "$(date +%s)000000000")
+    echo "[$ts] boot.complete: runlevel=$TARGET started=$_started failed=$_failed" > "$_event_dir/${_event_ts}.event"
+fi
+
+echo "[BOOT] AIOS-Lite boot complete."
+echo "================================"
+
+# ---------------------------------------------------------------------------
+# Launch login shell (unless suppressed)
+# ---------------------------------------------------------------------------
+if [ "$NO_SHELL" -eq 1 ]; then
+    echo "[BOOT] --no-shell: exiting init."
+    exit 0
+fi
+
+SHELL_BIN="$OS_ROOT/bin/$BOOT_SHELL"
+if [ -x "$SHELL_BIN" ]; then
+    echo "[BOOT] Launching $BOOT_SHELL ..."
+    exec sh "$SHELL_BIN"
+else
+    echo "[BOOT] Shell '$BOOT_SHELL' not found at $SHELL_BIN, falling back to /bin/sh"
+    exec /bin/sh
+fi

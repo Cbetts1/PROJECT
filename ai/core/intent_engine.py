@@ -72,6 +72,11 @@ _RULES: List[tuple] = [
     ("system", "reboot",    ("reboot", "restart system"),    None),
     ("system", "shutdown",  ("shutdown", "halt", "poweroff"), None),
     ("system", "services",  ("services", "service list"),    None),
+    # --- upgrade / update ---
+    ("upgrade", "pkg.check",       ("check updates", "update-check", "update check"), None),
+    ("upgrade", "pkg.apply",       ("apply update", "apply-update"),                  None),
+    ("upgrade", "pkg.upgrade-all", ("upgrade-all", "upgrade all", "update all"),      None),
+    ("upgrade", "pkg.upgrade",     ("upgrade ", "update "),                           "target"),
     # --- ai ---
     ("ai",     "ask",       ("ask ", "query ai ", "ai "),    "query"),
 ]

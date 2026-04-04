@@ -38,6 +38,31 @@ log() {
     printf '[%s] [%s] %s\n' "${ts}" "${level}" "$*" | tee -a "${AIOS_LOG_FILE}"
 }
 
+# Structured JSON logging for telemetry and analysis
+# Usage: log_structured "INFO" "aura-core" "message here" ["optional_extra_json"]
+log_structured() {
+    local level="$1"
+    local component="$2"
+    local msg="$3"
+    local extra="${4:-}"
+    local ts
+    ts="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+    
+    # Escape special characters in message for JSON
+    local escaped_msg
+    escaped_msg=$(printf '%s' "$msg" | sed 's/\\/\\\\/g; s/"/\\"/g; s/	/\\t/g' | tr '\n' ' ')
+    
+    local json="{\"ts\":\"${ts}\",\"level\":\"${level}\",\"component\":\"${component}\",\"msg\":\"${escaped_msg}\""
+    
+    if [ -n "$extra" ]; then
+        json="${json},${extra}"
+    fi
+    
+    json="${json}}"
+    
+    echo "$json" >> "${AIOS_LOG_FILE}"
+}
+
 die() {
     log "ERROR" "$*"
     exit 1

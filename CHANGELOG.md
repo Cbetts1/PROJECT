@@ -11,8 +11,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- `.github/workflows/ci.yml` — GitHub Actions CI pipeline with four jobs:
+  shellcheck (all shell scripts), pytest with coverage (Python 3.10/3.11/3.12),
+  unit-tests, and integration-tests
+- Coverage XML artifact uploaded per Python version
 - Complete documentation suite: CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md,
   ROADMAP.md, INSTALL.md, USAGE.md
+
+### Changed
+- ROADMAP.md Milestone 3 marked complete (✅)
 - OS-level specification documents: BOOT-SEQUENCE.md, SYSCALL-LIST.md,
   PROCESS-MODEL.md, SCHEDULER.md, RESOURCE-MANAGER.md, PERMISSIONS-MODEL.md,
   SERVICE-REGISTRY.md, NETWORKING-MODEL.md

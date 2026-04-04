@@ -7,9 +7,10 @@ response string.
 
 Registered bots
 ---------------
-HealthBot  — system health checks and status reporting
-LogBot     — log inspection and log-writing
-RepairBot  — self-repair, reinstall, and recovery triggers
+HealthBot   — system health checks and status reporting
+LogBot      — log inspection and log-writing
+RepairBot   — self-repair, reinstall, and recovery triggers
+UpgradeBot  — package and system upgrade/update management
 """
 from __future__ import annotations
 
@@ -250,3 +251,83 @@ class RepairBot(BaseBot):
             env = dict(os.environ, OS_ROOT=self.os_root)
             return self._run(["sh", install_sh, "--repair", target])
         return f"[RepairBot] install.sh not found; cannot reinstall '{target}'"
+
+
+# ---------------------------------------------------------------------------
+# UpgradeBot
+# ---------------------------------------------------------------------------
+
+class UpgradeBot(BaseBot):
+    """Handles package and system upgrade/update operations.
+
+    Dispatches to OS/bin/os-install for package-level upgrades and to
+    tools/update-check.sh / tools/apply-update.sh for system-level updates.
+    """
+
+    name = "UpgradeBot"
+    _CATEGORIES = {"upgrade"}
+
+    def can_handle(self, intent: Intent) -> bool:
+        return intent.category in self._CATEGORIES
+
+    def handle(self, intent: Intent) -> str:
+        action = intent.action
+        if action == "pkg.check":
+            return self._check_updates()
+        if action == "pkg.apply":
+            return self._apply_update()
+        if action == "pkg.upgrade-all":
+            return self._upgrade_all()
+        if action == "pkg.upgrade":
+            target = intent.entities.get("target", "").strip()
+            if not target:
+                return "[UpgradeBot] Usage: upgrade <package-name>"
+            return self._upgrade_pkg(target)
+        return self._check_updates()
+
+    # ------------------------------------------------------------------
+
+    def _aios_root(self) -> str:
+        """Resolve the AIOS project root from os_root (one level up)."""
+        return os.environ.get("AIOS_ROOT", "") or os.path.abspath(
+            os.path.join(self.os_root, "..")
+        )
+
+    def _check_updates(self) -> str:
+        script = os.path.join(self._aios_root(), "tools", "update-check.sh")
+        if os.path.isfile(script):
+            return self._run(["bash", script])
+        return "[UpgradeBot] update-check.sh not found"
+
+    def _apply_update(self) -> str:
+        script = os.path.join(self._aios_root(), "tools", "apply-update.sh")
+        if os.path.isfile(script):
+            return self._run(["bash", script])
+        return "[UpgradeBot] apply-update.sh not found"
+
+    def _upgrade_pkg(self, package: str) -> str:
+        os_install = os.path.join(self.os_root, "bin", "os-install")
+        if os.path.isfile(os_install):
+            env = dict(os.environ, OS_ROOT=self.os_root)
+            try:
+                return subprocess.check_output(
+                    ["sh", os_install, "upgrade", package],
+                    stderr=subprocess.STDOUT, text=True, env=env, timeout=30
+                ).strip()
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+                return f"[UpgradeBot] upgrade failed: {exc}"
+        return f"[UpgradeBot] os-install not found; cannot upgrade '{package}'"
+
+    def _upgrade_all(self) -> str:
+        os_install = os.path.join(self.os_root, "bin", "os-install")
+        if os.path.isfile(os_install):
+            env = dict(os.environ, OS_ROOT=self.os_root)
+            try:
+                return subprocess.check_output(
+                    ["sh", os_install, "upgrade-all"],
+                    stderr=subprocess.STDOUT, text=True, env=env, timeout=60
+                ).strip()
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+                return f"[UpgradeBot] upgrade-all failed: {exc}"
+        return "[UpgradeBot] os-install not found; cannot upgrade packages"
+

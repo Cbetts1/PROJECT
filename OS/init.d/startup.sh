@@ -17,5 +17,17 @@ export OS_ROOT AIOS_HOME
 echo "[startup] AIOS_HOME: $AIOS_HOME"
 echo "[startup] OS_ROOT  : $OS_ROOT"
 
+# Verify that sbin/init is executable before exec'ing
+INIT_SCRIPT="$OS_ROOT/sbin/init"
+if [ ! -f "$INIT_SCRIPT" ]; then
+    echo "[startup] ERROR: $INIT_SCRIPT not found" >&2
+    exit 1
+fi
+if [ ! -x "$INIT_SCRIPT" ]; then
+    echo "[startup] ERROR: $INIT_SCRIPT is not executable" >&2
+    echo "[startup] Try running: chmod +x $INIT_SCRIPT" >&2
+    exit 1
+fi
+
 # Delegate to sbin/init for the full boot sequence
 exec sh "$OS_ROOT/sbin/init" "$@"

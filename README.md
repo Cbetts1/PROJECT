@@ -21,6 +21,31 @@
 
 ---
 
+## Quick Start
+
+```bash
+# 1. Clone the repository
+git clone <repo-url> aios && cd aios
+
+# 2. Set permissions
+chmod +x bin/* tools/* OS/bin/* OS/sbin/*
+
+# 3. Verify installation
+bash tools/health_check.sh
+
+# 4. Start AIOS
+./bin/aios
+```
+
+**Key documentation:**
+- [Operator Runbook](docs/OPERATOR-RUNBOOK.md) — Complete operations guide
+- [Installation Guide](docs/INSTALL.md) — Detailed setup instructions
+- [AI Model Setup](docs/AI_MODEL_SETUP.md) — LLM configuration
+- [Portability Matrix](docs/PORTABILITY-MATRIX.md) — Supported environments
+- [Offline Behavior](docs/OFFLINE-BEHAVIOR.md) — Offline-first operation
+
+---
+
 ## Overview
 
 **AIOS-Lite** is a complete, self-contained AI operating system written in POSIX shell and Python. It runs on top of any Unix-like environment — your Android phone (Termux), a Raspberry Pi, a Linux desktop, or a macOS machine — without modifying the host OS.
