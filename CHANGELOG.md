@@ -15,9 +15,9 @@ This project uses [Semantic Versioning](https://semver.org/).
   for all bot operations (default: 10 s); useful for long-running repair jobs.
 
 ### Fixed
-- **Python 3.9/3.10 compatibility**: replaced `str | None` union-type syntax in
+- **Python 3.10 compatibility**: replaced `str | None` union-type syntax in
   `ai/core/llama_client.py` with `Optional[str]` from `typing` so the codebase
-  runs on Python ≥ 3.10 rather than requiring 3.10+.
+  runs on Python 3.10 and later.
 - **install.sh**: corrected Python version comment from "3.13+" to "3.10+" to
   match the actual minimum required by the codebase; updated advisory message
   from "3.9 required" to "3.10 required".
