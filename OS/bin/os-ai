@@ -1,39 +1,6 @@
 #!/bin/sh
 # os-ai — Interactive AI assistant powered by Aura LLM module
 
-OS_ROOT="${OS_ROOT:-/}"
-AIOS_HOME="${AIOS_HOME:-$(cd "$OS_ROOT/.." 2>/dev/null && pwd)}"
-export OS_ROOT AIOS_HOME
-export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
-
-# ---------------------------------------------------------------------------
-# LLaMA model autodetect: look in $AIOS_HOME/llama_model first, then OS_ROOT
-# ---------------------------------------------------------------------------
-_llama_dir=""
-for _d in "$AIOS_HOME/llama_model" "$OS_ROOT/llama_model"; do
-    if [ -d "$_d" ]; then
-        for _f in "$_d"/*.gguf; do
-            if [ -f "$_f" ]; then
-                _llama_dir="$_d"
-                break 2
-            fi
-        done
-    fi
-done
-
-# Override LLM_MODEL_DIR so llm.mod picks up the correct location
-LLM_MODEL_DIR="${_llama_dir:-$AIOS_HOME/llama_model}"
-export LLM_MODEL_DIR
-
-# ---------------------------------------------------------------------------
-# Load AURA modules (guard each to avoid hard failures)
-# ---------------------------------------------------------------------------
-_load() { [ -f "$1" ] && . "$1" 2>/dev/null || true; }
-_load "$OS_ROOT/lib/aura-memory/engine.mod"
-_load "$OS_ROOT/lib/aura-semantic/embed.mod"
-_load "$OS_ROOT/lib/aura-semantic/engine.mod"
-_load "$OS_ROOT/lib/aura-hybrid/engine.mod"
-_load "$OS_ROOT/lib/aura-llm/llm.mod"
 # ---------------------------------------------------------------------------
 # Resolve OS_ROOT and AIOS_HOME from script location if not already set
 # ---------------------------------------------------------------------------
@@ -120,6 +87,7 @@ if command -v llm_available >/dev/null 2>&1 && command -v llm_model >/dev/null 2
 fi
 if [ "$_ai_online" -eq 0 ]; then
     echo "AI offline, fallback mode"
+fi
 _llm_bin=""
 _llm_model=""
 _llm_bin=$(llm_available 2>/dev/null) || true

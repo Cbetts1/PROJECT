@@ -219,7 +219,8 @@ detect_deps() {
 # ---------------------------------------------------------------------------
 run_tests() {
     info "Running unit tests..."
-    if AIOS_HOME="$REPO_ROOT" OS_ROOT="$OS_ROOT" bash "$REPO_ROOT/tests/unit-tests.sh" 2>&1; then
+    export AIOS_HOME="$REPO_ROOT" OS_ROOT="$OS_ROOT"
+    if bash "$REPO_ROOT/tests/unit-tests.sh" 2>&1; then
         success "All unit tests passed."
     else
         warn "Some unit tests failed. See output above."
@@ -240,7 +241,8 @@ self_test() {
     detect_deps
 
     info "Running unit tests..."
-    if AIOS_HOME="$REPO_ROOT" OS_ROOT="$OS_ROOT" bash "$REPO_ROOT/tests/unit-tests.sh" 2>&1; then
+    export AIOS_HOME="$REPO_ROOT" OS_ROOT="$OS_ROOT"
+    if bash "$REPO_ROOT/tests/unit-tests.sh" 2>&1; then
         success "Unit tests: PASS"
     else
         warn "Unit tests: FAIL"
@@ -249,7 +251,7 @@ self_test() {
 
     if [[ -f "$REPO_ROOT/tests/integration-tests.sh" ]]; then
         info "Running integration tests..."
-        if AIOS_HOME="$REPO_ROOT" OS_ROOT="$OS_ROOT" bash "$REPO_ROOT/tests/integration-tests.sh" 2>&1; then
+        if bash "$REPO_ROOT/tests/integration-tests.sh" 2>&1; then
             success "Integration tests: PASS"
         else
             warn "Integration tests: FAIL"
