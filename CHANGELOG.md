@@ -30,7 +30,7 @@ No unreleased changes at this time.
 ### Added
 - **`run.sh`** — clean top-level launcher. Runs the boot sequence then execs
   `bin/aios`. Accepts `--no-boot` to skip the boot animation.
-- **`boot/bootloader.sh`** — five-stage visual boot pipeline:
+- **`boot/bootloader.sh`** — six-stage visual boot pipeline:
   - Stage 0: environment detection (Termux / Linux / macOS)
   - Stage 1: filesystem initialisation (creates all required runtime dirs/files)
   - Stage 2: executable permission check (auto-fixes missing +x bits)
