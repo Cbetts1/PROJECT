@@ -32,12 +32,72 @@ export AIOS_ROOT
 
 prompt="aios> "
 
-log "INFO" "AIOS AI shell started. OS_ROOT=${OS_ROOT}"
-echo "AIOS — AI Operating System Shell"
-echo "OS jail : ${OS_ROOT}"
-echo "AI mode : ${AI_BACKEND:-mock}"
-echo "Type 'help' for commands, 'exit' to quit."
-echo
+# ---------------------------------------------------------------------------
+# Setup status check — shown once at startup to help users get configured
+# ---------------------------------------------------------------------------
+_aios_setup_status() {
+    local ok=1
+
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  AIOS — AI Operating System Shell"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    # OS jail
+    printf "  OS jail  : %s\n" "${OS_ROOT}"
+
+    # AI backend
+    local backend="${AI_BACKEND:-mock}"
+    if [[ "${backend}" == "mock" ]]; then
+        printf "  AI mode  : built-in (rule-based) — no LLM loaded\n"
+        ok=0
+    else
+        printf "  AI mode  : %s\n" "${backend}"
+    fi
+
+    # LLM model file
+    local model_found=0
+    if [[ -d "${AIOS_ROOT}/llama_model" ]]; then
+        while IFS= read -r -d '' f; do
+            model_found=1
+            printf "  Model    : %s\n" "$(basename "${f}")"
+            break
+        done < <(find "${AIOS_ROOT}/llama_model" -name "*.gguf" -print0 2>/dev/null)
+    fi
+    if [[ "${model_found}" -eq 0 ]]; then
+        printf "  Model    : not found (see docs/AI_MODEL_SETUP.md)\n"
+        ok=0
+    fi
+
+    # llama binary
+    local llama_bin=""
+    for _b in llama-cli llama llama.cpp main; do
+        if command -v "${_b}" &>/dev/null || \
+           [[ -x "${AIOS_ROOT}/build/llama.cpp/build/bin/${_b}" ]]; then
+            llama_bin="${_b}"
+            break
+        fi
+    done
+    if [[ -z "${llama_bin}" ]]; then
+        printf "  llama    : not built (run: bash build/build.sh --target hosted)\n"
+        ok=0
+    else
+        printf "  llama    : %s\n" "${llama_bin}"
+    fi
+
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    if [[ "${ok}" -eq 0 ]]; then
+        echo "  💡 Setup tip: type  'ask how do I set up the AI'  to get"
+        echo "                guided instructions, or see docs/AI_MODEL_SETUP.md"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    fi
+
+    echo "  Type 'help' for commands, 'exit' to quit."
+    echo
+}
+
+_aios_setup_status
+log "INFO" "AIOS AI shell started. OS_ROOT=${OS_ROOT} AI_BACKEND=${AI_BACKEND:-mock}"
 
 # ---------------------------------------------------------------------------
 # Main REPL
