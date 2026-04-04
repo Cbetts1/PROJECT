@@ -434,8 +434,54 @@ class TestLlamaClientExtended(unittest.TestCase):
 
 
 # ===========================================================================
-# bots.py — BaseBot helpers and extended bot tests
+# llama_client.autodetect_model
 # ===========================================================================
+
+class TestLlamaAutodetect(unittest.TestCase):
+    """Tests for autodetect_model() — looks for *.gguf in os_root/llama_model/."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.model_dir = os.path.join(self.tmpdir, "llama_model")
+        os.makedirs(self.model_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_returns_none_when_directory_empty(self):
+        result = llama_client.autodetect_model(self.tmpdir)
+        self.assertIsNone(result)
+
+    def test_returns_none_when_directory_missing(self):
+        result = llama_client.autodetect_model("/nonexistent/os_root")
+        self.assertIsNone(result)
+
+    def test_finds_gguf_model(self):
+        model_path = os.path.join(self.model_dir, "test-7b-q4.gguf")
+        open(model_path, "w").close()
+        result = llama_client.autodetect_model(self.tmpdir)
+        self.assertEqual(result, model_path)
+
+    def test_returns_first_sorted_when_multiple_models(self):
+        for name in ("model-b.gguf", "model-a.gguf", "model-c.gguf"):
+            open(os.path.join(self.model_dir, name), "w").close()
+        result = llama_client.autodetect_model(self.tmpdir)
+        self.assertEqual(os.path.basename(result), "model-a.gguf")
+
+    def test_ignores_non_gguf_files(self):
+        open(os.path.join(self.model_dir, "readme.txt"), "w").close()
+        open(os.path.join(self.model_dir, "model.bin"), "w").close()
+        result = llama_client.autodetect_model(self.tmpdir)
+        self.assertIsNone(result)
+
+    def test_returns_string_path(self):
+        model_path = os.path.join(self.model_dir, "llama-3b-q4.gguf")
+        open(model_path, "w").close()
+        result = llama_client.autodetect_model(self.tmpdir)
+        self.assertIsInstance(result, str)
+        self.assertTrue(result.endswith(".gguf"))
+
+
 
 class TestBaseBotHelpers(TestBotsBase):
     """Tests for BaseBot utility methods."""
