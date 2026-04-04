@@ -110,6 +110,10 @@ start() {
             sleep 0.1 2>/dev/null || true; _i=$((_i+1))
         done
         _mypid=$(cat "$PIDFILE" 2>/dev/null)
+        if [ -z "$_mypid" ]; then
+            aura_log "agent daemon: parent did not write PID in time; using self PID ($$)"
+            _mypid=$$
+        fi
         aura_log "agent daemon started pid=$_mypid"
         write_health "running" "${loaded# }"
         touch "$MSGFILE" "$EVENTLOG" 2>/dev/null

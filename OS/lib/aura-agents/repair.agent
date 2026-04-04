@@ -1,0 +1,70 @@
+agent_name="repair"
+agent_help="AURA self-repair agent: watches the AURA log for ERROR lines and triggers repairs."
+
+# Cursor tracking so we never re-process the same error line
+_repair_cursor_file="${OS_ROOT}/var/service/repair_agent.cursor"
+
+# Path to the Python AI backend (tries AIOS_HOME first, then relative to OS_ROOT)
+_repair_ai_backend() {
+    _aios="${AIOS_HOME:-$(cd "$OS_ROOT/.." 2>/dev/null && pwd)}"
+    _py="$_aios/ai/core/ai_backend.py"
+    [ -f "$_py" ] && echo "$_py" && return 0
+    return 1
+}
+
+# Called by the agent runtime on every heartbeat tick
+agent_heartbeat() {
+    _alog="${OS_ROOT}/var/log/aura.log"
+    [ -f "$_alog" ] || return 0
+
+    [ -f "$_repair_cursor_file" ] || echo "0" > "$_repair_cursor_file"
+    _cur=$(cat "$_repair_cursor_file" 2>/dev/null); _cur="${_cur:-0}"
+    _total=$(wc -l < "$_alog" 2>/dev/null | awk '{print $1}'); _total="${_total:-0}"
+
+    [ "$_total" -le "$_cur" ] && return 0
+
+    _start=$((_cur + 1))
+    _errors=$(awk -v s="$_start" 'NR>=s && /\[ERROR\]/' "$_alog" 2>/dev/null)
+    echo "$_total" > "$_repair_cursor_file"
+
+    [ -z "$_errors" ] && return 0
+
+    # Log the detected errors for visibility
+    _ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
+    echo "[$_ts] [repair-agent] Detected new ERROR lines — triggering repair" >> "$_alog"
+    echo "$_errors" | while IFS= read -r _eline; do
+        echo "[$_ts] [repair-agent] ERR: $_eline" >> "$_alog"
+    done
+
+    # Attempt Python-level self-repair if the AI backend is available
+    if command -v python3 >/dev/null 2>&1; then
+        _backend=$(_repair_ai_backend)
+        if [ -n "$_backend" ]; then
+            OS_ROOT="$OS_ROOT" python3 "$_backend" "repair self" \
+                >> "$_alog" 2>&1 &
+        fi
+    fi
+
+    # Also fire a system event so other agents can react
+    command -v os-event >/dev/null 2>&1 && \
+        os-event "aura: repair triggered by error log" 2>/dev/null
+}
+
+# Called when a "repair" message is placed on the bus
+agent_message() {
+    _msg="$*"
+    case "$_msg" in
+        *repair*|*fix*|*error*|*crash*)
+            _ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
+            _alog="${OS_ROOT}/var/log/aura.log"
+            echo "[$_ts] [repair-agent] Message-triggered repair: $_msg" >> "$_alog"
+            if command -v python3 >/dev/null 2>&1; then
+                _backend=$(_repair_ai_backend)
+                if [ -n "$_backend" ]; then
+                    OS_ROOT="$OS_ROOT" python3 "$_backend" "repair self" \
+                        >> "$_alog" 2>&1
+                fi
+            fi
+            ;;
+    esac
+}

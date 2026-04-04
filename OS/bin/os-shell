@@ -85,9 +85,18 @@ aura_log() {
 . "$BRIDGEDIR/mirror.mod"
 . "$MODDIR/sysinfo.mod"
 
+# === Termux API helpers (only active on android-termux) ===
+_IS_TERMUX=0
+if [ -n "${TERMUX_VERSION:-}" ] || [ -d "/data/data/com.termux" ]; then
+    _IS_TERMUX=1
+    # Prefer Termux's own prefix for tools
+    TERMUX_PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
+    export PATH="$TERMUX_PREFIX/bin:$PATH"
+fi
+
 # === Fuzzy Command Matching (awk Levenshtein) ===
 # All known commands — used for typo suggestion / intent correction.
-KNOWN_CMDS="ask recall recall.best ctx.show ctx.add sem.set sem.get sem.search sem.delete sem.list mem.set mem.get mem.search mem.delete mem.tag mem.list bridge bridge.detect bridge.ios bridge.android mirror mirror.mount mirror.unmount mirror.ls msg event mode status services ps info help exit quit sysinfo uptime disk ls cd read write start stop restart kill upgrade history jobs bg fg"
+KNOWN_CMDS="ask recall recall.best ctx.show ctx.add sem.set sem.get sem.search sem.delete sem.list mem.set mem.get mem.search mem.delete mem.tag mem.list bridge bridge.detect bridge.ios bridge.android mirror mirror.mount mirror.unmount mirror.ls msg event mode status services ps info help exit quit sysinfo uptime disk ls cd read write start stop restart kill upgrade history jobs bg fg repair termux termux.info termux.notify termux.vibrate termux.clipboard termux.battery termux.shell"
 
 cmd_fuzzy_match() {
     input="$1"
@@ -151,6 +160,10 @@ banner() {
     echo "Memories: symbolic + semantic + context"
     echo "Type 'help' for commands."
     echo "================================"
+    echo "  Powered by AURA | Built on Termux, llama.cpp, Python"
+    echo "  Thanks: OpenAI/ChatGPT · Microsoft/Copilot · Google"
+    echo "          Meta AI/LLaMA · Termux Project · Open Source"
+    echo "================================"
 }
 
 help_cmd() {
@@ -203,6 +216,17 @@ System:
   ps                   List processes
   info                 System information
   exit                 Exit shell
+
+Termux (Android only — available when running inside Termux):
+  termux.info          Show Termux environment details
+  termux.notify <msg>  Send a system notification (needs termux-api)
+  termux.vibrate       Vibrate the device (needs termux-api)
+  termux.clipboard     Get/set clipboard (needs termux-api)
+  termux.battery       Show battery status (needs termux-api)
+  termux.shell         Drop to a full Termux/bash shell (type 'exit' to return)
+
+AURA Self-Repair:
+  repair               Run AURA self-repair (fixes missing dirs, logs, configs)
 
 Files (OS_ROOT isolated):
   ls [path]            List files/directories
@@ -297,6 +321,15 @@ _job_fg() {
 banner
 _hist_load
 aura_log "shell started (mode=$AURA_MODE)"
+
+# === AURA startup self-check ===
+# Run the Python repair bot once at startup so AURA can patch any missing dirs/files.
+_aios_home="${AIOS_HOME:-$(cd "$OS_ROOT/.." 2>/dev/null && pwd)}"
+if command -v python3 >/dev/null 2>&1 && [ -f "$_aios_home/ai/core/ai_backend.py" ]; then
+    _repair_out=$(OS_ROOT="$OS_ROOT" python3 "$_aios_home/ai/core/ai_backend.py" "repair self" 2>/dev/null)
+    [ -n "$_repair_out" ] && aura_log "startup repair: $_repair_out"
+fi
+unset _aios_home _repair_out
 
 _pending=""   # holds a corrected command to re-dispatch without re-reading stdin
 
@@ -552,6 +585,101 @@ while true; do
 
         help)
             help_cmd ;;
+        repair)
+            aura_log "CMD: repair"
+            aura_say "Running AURA self-repair..."
+            _aios_home="${AIOS_HOME:-$(cd "$OS_ROOT/.." 2>/dev/null && pwd)}"
+            if command -v python3 >/dev/null 2>&1 && [ -f "$_aios_home/ai/core/ai_backend.py" ]; then
+                _rout=$(OS_ROOT="$OS_ROOT" python3 "$_aios_home/ai/core/ai_backend.py" "repair self" 2>/dev/null)
+                [ -n "$_rout" ] && echo "$_rout" || aura_say "Self-repair complete."
+                aura_log "repair result: ${_rout:-ok}"
+            else
+                aura_say "AURA Python backend not available; running shell-level repair..."
+                mkdir -p "$OS_ROOT/var/log" "$OS_ROOT/var/service" \
+                         "$OS_ROOT/proc/aura/context" "$OS_ROOT/proc/aura/memory" \
+                         "$OS_ROOT/proc/aura/semantic" "$OS_ROOT/proc/aura/bridge"
+                for _lf in os.log aura.log events.log; do
+                    [ -f "$OS_ROOT/var/log/$_lf" ] || touch "$OS_ROOT/var/log/$_lf"
+                done
+                [ -f "$OS_ROOT/proc/os.messages" ] || touch "$OS_ROOT/proc/os.messages"
+                aura_say "Shell-level repair complete."
+            fi
+            ;;
+        termux|termux.info)
+            if [ "$_IS_TERMUX" -eq 0 ]; then
+                aura_say "Termux commands are only available inside Termux on Android."
+            else
+                echo "=== Termux Environment ==="
+                echo "TERMUX_VERSION : ${TERMUX_VERSION:-unknown}"
+                echo "PREFIX         : ${TERMUX_PREFIX:-unknown}"
+                echo "HOME           : $HOME"
+                echo "ANDROID_ROOT   : ${ANDROID_ROOT:-/system}"
+                uname -a
+                echo "=========================="
+            fi
+            ;;
+        termux.notify)
+            shift
+            if [ "$_IS_TERMUX" -eq 0 ]; then
+                aura_say "Termux commands are only available inside Termux."
+            elif [ -z "$*" ]; then
+                aura_say "Usage: termux.notify <message>"
+            elif command -v termux-notification >/dev/null 2>&1; then
+                termux-notification --title "AIOS" --content "$*"
+                aura_say "Notification sent."
+                aura_log "termux.notify: $*"
+            else
+                aura_say "termux-notification not available. Install: pkg install termux-api"
+            fi
+            ;;
+        termux.vibrate)
+            if [ "$_IS_TERMUX" -eq 0 ]; then
+                aura_say "Termux commands are only available inside Termux."
+            elif command -v termux-vibrate >/dev/null 2>&1; then
+                termux-vibrate -d 300
+                aura_say "Vibrated."
+            else
+                aura_say "termux-vibrate not available. Install: pkg install termux-api"
+            fi
+            ;;
+        termux.clipboard)
+            shift
+            if [ "$_IS_TERMUX" -eq 0 ]; then
+                aura_say "Termux commands are only available inside Termux."
+            elif [ -z "$*" ]; then
+                if command -v termux-clipboard-get >/dev/null 2>&1; then
+                    termux-clipboard-get
+                else
+                    aura_say "termux-clipboard-get not available. Install: pkg install termux-api"
+                fi
+            else
+                if command -v termux-clipboard-set >/dev/null 2>&1; then
+                    echo "$*" | termux-clipboard-set
+                    aura_say "Copied to clipboard."
+                else
+                    aura_say "termux-clipboard-set not available. Install: pkg install termux-api"
+                fi
+            fi
+            ;;
+        termux.battery)
+            if [ "$_IS_TERMUX" -eq 0 ]; then
+                aura_say "Termux commands are only available inside Termux."
+            elif command -v termux-battery-status >/dev/null 2>&1; then
+                termux-battery-status
+            else
+                aura_say "termux-battery-status not available. Install: pkg install termux-api"
+            fi
+            ;;
+        termux.shell)
+            if [ "$_IS_TERMUX" -eq 0 ]; then
+                aura_say "Termux commands are only available inside Termux."
+            else
+                aura_say "Dropping to Termux shell. Type 'exit' to return to AIOS."
+                aura_log "termux.shell: dropping to Termux"
+                "${SHELL:-/data/data/com.termux/files/usr/bin/bash}" || true
+                aura_say "Returned from Termux shell."
+            fi
+            ;;
         upgrade)
             aura_log "CMD: upgrade $*"
             shift

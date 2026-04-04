@@ -73,8 +73,15 @@ EOP
 
     # Start kernel daemon in background, capture its PID
     (
-        # Update STATEFILE with our actual PID (written by parent after &)
-        while [ ! -f "$PIDFILE" ] || [ "$(cat "$PIDFILE")" = "" ]; do sleep 0; done
+        # Update STATEFILE with our actual PID (written by parent after &).
+        # Poll with a 10 ms sleep to avoid a 100 % CPU busy-spin; give up
+        # after 5 s (50 × 0.1 s) so a stalled parent does not block forever.
+        _wait=0
+        while [ ! -f "$PIDFILE" ] || [ "$(cat "$PIDFILE")" = "" ]; do
+            sleep 0.1 2>/dev/null || true
+            _wait=$((_wait + 1))
+            [ "$_wait" -ge 50 ] && break
+        done
         _mypid=$(cat "$PIDFILE")
         echo "boot_time=$(date +%s)
 kernel_pid=$_mypid

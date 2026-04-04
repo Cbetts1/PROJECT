@@ -394,4 +394,23 @@ $ _
 
 ---
 
+## Acknowledgements & Thanks
+
+AIOSCPU stands on the shoulders of giants. Deep thanks to the following
+organisations and open-source communities whose pioneering work makes this
+project possible:
+
+| Contributor | Contribution |
+|---|---|
+| **OpenAI / ChatGPT** | Large-language-model research, GPT architecture, AI assistant design patterns |
+| **Microsoft / GitHub Copilot** | AI-assisted development tooling, GitHub infrastructure, VS Code ecosystem |
+| **Google** | Android platform, TensorFlow/JAX foundations, open-source Linux kernel contributions |
+| **Meta AI** | LLaMA model family (the on-device LLM backbone of AURA), research into efficient inference |
+| **Termux Project** | The Android terminal emulator and package ecosystem that makes mobile Linux possible |
+| **Open Source Community** | llama.cpp (Georgi Gerganov), Bash, Python, SQLite, POSIX shell toolchain, and every library we depend on |
+
+> *"If I have seen further, it is by standing on the shoulders of giants."* — Newton
+
+---
+
 **© 2026 Chris Betts — AIOSCPU Project**
