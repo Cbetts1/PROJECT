@@ -206,8 +206,8 @@ def run_shell(os_root: str, aios_root: str) -> None:
     try:
         os.makedirs(os.path.dirname(hist_path), exist_ok=True)
         readline.read_history_file(hist_path)
-    except OSError:
-        pass
+    except OSError as exc:
+        _log(aios_root, "WARN", f"Could not read history file {hist_path}: {exc}")
     readline.set_history_length(500)
 
     prompt = "aios-py> "

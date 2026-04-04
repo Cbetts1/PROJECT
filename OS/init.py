@@ -120,7 +120,7 @@ def main() -> None:
     parser.add_argument("--os-root",   default=None, help="Override OS_ROOT")
     parser.add_argument("--aios-root", default=None, help="Override AIOS_HOME")
     parser.add_argument("--no-kernel", action="store_true",
-                        help="Initialise environment only; do not launch kernel.py")
+                        help="Initialize environment only; do not launch kernel.py")
     args = parser.parse_args()
 
     os_root, aios_root = _resolve_roots(args.os_root, args.aios_root)
