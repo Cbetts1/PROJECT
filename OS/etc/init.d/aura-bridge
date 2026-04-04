@@ -7,15 +7,16 @@ HEALTH="$OS_ROOT/var/service/aura-bridge.health"
 LOG="$OS_ROOT/var/log/bridge.log"
 
 health() { mkdir -p "$(dirname "$HEALTH")"; echo "$1" > "$HEALTH"; }
+_load_mod() { [ -f "$1" ] && . "$1" 2>/dev/null; }
 
-. "$OS_ROOT/lib/aura-bridge/detect.mod"
+_load_mod "$OS_ROOT/lib/aura-bridge/detect.mod"
 
 case "$1" in
     start)
         echo "[aura-bridge] Starting bridge detection..."
         mkdir -p "$OS_ROOT/mirror" "$OS_ROOT/proc/aura/bridge"
-        bridge_write_status
-        host=$(detect_host_os)
+        { type bridge_write_status >/dev/null 2>&1 && bridge_write_status; } || true
+        host=$(type detect_host_os >/dev/null 2>&1 && detect_host_os || echo "unknown")
         echo "[aura-bridge] Host OS: $host"
         health "status=running
 host_os=$host

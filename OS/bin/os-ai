@@ -1,14 +1,16 @@
 #!/bin/sh
 # os-ai — Interactive AI assistant powered by Aura LLM module
 
-OS_ROOT="${OS_ROOT:-/}"
+_SELF="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
+OS_ROOT="${OS_ROOT:-$_SELF}"
 export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
 
-. "$OS_ROOT/lib/aura-memory/engine.mod"
-. "$OS_ROOT/lib/aura-semantic/embed.mod"
-. "$OS_ROOT/lib/aura-semantic/engine.mod"
-. "$OS_ROOT/lib/aura-hybrid/engine.mod"
-. "$OS_ROOT/lib/aura-llm/llm.mod"
+_load_mod() { [ -f "$1" ] && . "$1" 2>/dev/null; }
+_load_mod "$OS_ROOT/lib/aura-memory/engine.mod"
+_load_mod "$OS_ROOT/lib/aura-semantic/embed.mod"
+_load_mod "$OS_ROOT/lib/aura-semantic/engine.mod"
+_load_mod "$OS_ROOT/lib/aura-hybrid/engine.mod"
+_load_mod "$OS_ROOT/lib/aura-llm/llm.mod"
 
 MEMROOT="$OS_ROOT/proc/aura/memory"
 SEMROOT="$OS_ROOT/proc/aura/semantic"

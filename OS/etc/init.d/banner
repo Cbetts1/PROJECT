@@ -7,13 +7,13 @@ health() { mkdir -p "$(dirname "$HEALTH")"; echo "$1" > "$HEALTH"; }
 
 case "$1" in
   start)
-    echo "================================"
-    echo "       AIOS-Lite v0.1"
-    echo "  AI-Augmented Operating System"
-    echo "================================"
     if [ -f "$OS_ROOT/etc/os-release" ]; then
       . "$OS_ROOT/etc/os-release"
     fi
+    echo "================================"
+    echo "  ${NAME:-AIOS-Lite} v${VERSION_ID:-0.1}"
+    echo "  AI-Augmented Operating System"
+    echo "================================"
     echo "Name:    ${PRETTY_NAME:-AIOS-Lite}"
     echo "Version: ${VERSION_ID:-0.1}"
     echo "Kernel:  $(uname -r 2>/dev/null || echo unknown)"

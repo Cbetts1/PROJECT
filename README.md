@@ -115,6 +115,12 @@ common commands and natural-language questions.
 
 # Option 4: explicit bash
 bash bin/aios
+
+# Option 5: boot the virtual OS layer only (POSIX sh, no Bash required)
+sh run-os.sh
+
+# Option 6: boot virtual OS without launching a login shell
+sh run-os.sh --no-shell
 ```
 
 ### Boot Sequence

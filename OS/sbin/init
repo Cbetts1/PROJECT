@@ -44,6 +44,10 @@ done
 AIOS_CONF="$AIOS_HOME/config/aios.conf"
 [ -f "$AIOS_CONF" ] && . "$AIOS_CONF" 2>/dev/null
 
+# Align AIOS_VERSION with os-release so the banner is self-consistent
+[ -f "$OS_ROOT/etc/os-release" ] && . "$OS_ROOT/etc/os-release" 2>/dev/null
+AIOS_VERSION="${VERSION_ID:-${AIOS_VERSION:-0.1}}"
+
 # ---------------------------------------------------------------------------
 # Environment detection (Level 12)
 # Note: detect-env.sh is bash-specific; AIOS_ENV is set by config/aios.conf
