@@ -583,26 +583,26 @@ class TestRepairBotExtended(TestBotsBase):
         self.assertIn("install.sh not found", out)
 
     def test_self_repair_creates_required_files(self):
-        tmpdir2 = tempfile.mkdtemp()
-        os.makedirs(os.path.join(tmpdir2, "var", "log"), exist_ok=True)
+        repair_bot_test_dir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(repair_bot_test_dir, "var", "log"), exist_ok=True)
         try:
-            bot = bots.RepairBot(os_root=tmpdir2)
+            bot = bots.RepairBot(os_root=repair_bot_test_dir)
             i = self._intent("repair", "self-repair")
             bot.handle(i)
-            self.assertTrue(os.path.isfile(os.path.join(tmpdir2, "var", "log", "os.log")))
-            self.assertTrue(os.path.isfile(os.path.join(tmpdir2, "var", "log", "aura.log")))
+            self.assertTrue(os.path.isfile(os.path.join(repair_bot_test_dir, "var", "log", "os.log")))
+            self.assertTrue(os.path.isfile(os.path.join(repair_bot_test_dir, "var", "log", "aura.log")))
         finally:
-            shutil.rmtree(tmpdir2, ignore_errors=True)
+            shutil.rmtree(repair_bot_test_dir, ignore_errors=True)
 
     def test_self_repair_reports_repaired_count(self):
-        tmpdir3 = tempfile.mkdtemp()
+        repair_test_dir = tempfile.mkdtemp()
         try:
-            bot = bots.RepairBot(os_root=tmpdir3)
+            bot = bots.RepairBot(os_root=repair_test_dir)
             i = self._intent("repair", "self-repair")
             out = bot.handle(i)
             self.assertIn("Repaired", out)
         finally:
-            shutil.rmtree(tmpdir3, ignore_errors=True)
+            shutil.rmtree(repair_test_dir, ignore_errors=True)
 
     def test_cannot_handle_log(self):
         bot = bots.RepairBot(os_root=self.tmpdir)
