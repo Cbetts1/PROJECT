@@ -267,7 +267,7 @@ fi
 SHELL_BIN="$OS_ROOT/bin/$BOOT_SHELL"
 if [ -x "$SHELL_BIN" ]; then
     echo "[BOOT] Launching $BOOT_SHELL ..."
-    exec sh "$SHELL_BIN"
+    exec "$SHELL_BIN"
 else
     echo "[BOOT] Shell '$BOOT_SHELL' not found at $SHELL_BIN, falling back to /bin/sh"
     exec /bin/sh

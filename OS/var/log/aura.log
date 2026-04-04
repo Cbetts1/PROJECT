@@ -140,3 +140,88 @@ cat: write error: Input/output error
 [2026-04-04T13:45:53Z] [tasks] task ran: healthcheck
 [2026-04-04T13:45:58Z] [kernel] heartbeat 68 pid=4973
 [2026-04-04T13:46:03Z] [kernel] heartbeat 69 pid=4973
+[2026-04-04T13:46:08Z] [kernel] heartbeat 70 pid=4973
+[2026-04-04T13:46:13Z] [kernel] heartbeat 71 pid=4973
+[2026-04-04T13:46:18Z] [kernel] task ran: autosave
+[2026-04-04T13:46:18Z] [kernel] task ran: bridge-monitor
+[2026-04-04T13:46:18Z] [kernel] task ran: healthcheck
+[2026-04-04T13:46:18Z] [kernel] task ran: logwatch
+[2026-04-04T13:46:18Z] [kernel] heartbeat 72 pid=4973
+[2026-04-04T13:46:23Z] [kernel] heartbeat 73 pid=4973
+/home/runner/work/PROJECT/PROJECT/OS/etc/rc2.d/S70-aura-tasks: 5: echo: echo: I/O error
+/home/runner/work/PROJECT/PROJECT/OS/etc/rc2.d/S70-aura-tasks: 7: echo: echo: I/O error
+[2026-04-04T13:46:23Z] [tasks] task ran: healthcheck
+/home/runner/work/PROJECT/PROJECT/OS/etc/rc2.d/S70-aura-tasks: 6: echo: echo: I/O error
+[2026-04-04T13:46:23Z] [tasks] task ran: autosave
+/home/runner/work/PROJECT/PROJECT/OS/etc/rc2.d/S70-aura-tasks: 5: echo: echo: I/O error
+cat: write error: Input/output error
+[2026-04-04T13:46:23Z] [tasks] task ran: bridge-monitor
+[2026-04-04T13:46:25Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-04T13:46:25Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-17115.txt
+[2026-04-04T13:46:25Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-17115.txt
+[2026-04-04T13:46:25Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-17115.txt
+[2026-04-04T13:46:25Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-17115.txt
+[2026-04-04T13:46:25Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-17115.txt
+[2026-04-04T13:46:25Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T13:46:25Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T13:46:25Z] unit-test marker 17115
+[2026-04-04T13:46:25Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T13:46:25Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T13:46:25Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-04T13:46:28Z] [kernel] heartbeat 74 pid=4973
+[2026-04-04T13:46:33Z] [kernel] heartbeat 75 pid=4973
+[2026-04-04T13:46:33Z] [kernel] kernel stopped pid=4973
+[2026-04-04T13:46:33Z] [kernel] kernel started pid=17988
+[2026-04-04T13:46:33Z] [aura-llm] LLM subsystem started with mock backend
+[2026-04-04T13:46:33Z] [kernel] heartbeat 1 pid=17988
+[2026-04-04T13:46:33Z] [init] boot complete runlevel=2 started=7 failed=0
+[2026-04-04T13:46:38Z] [kernel] heartbeat 2 pid=17988
+[2026-04-04T13:46:43Z] [kernel] heartbeat 3 pid=17988
+[2026-04-04T13:46:48Z] [kernel] heartbeat 4 pid=17988
+[2026-04-04T13:46:53Z] [kernel] heartbeat 5 pid=17988
+/home/runner/work/PROJECT/PROJECT/OS/etc/rc2.d/S70-aura-tasks: 5: echo: echo: I/O error
+/home/runner/work/PROJECT/PROJECT/OS/etc/rc2.d/S70-aura-tasks: 7: echo: echo: I/O error
+[2026-04-04T13:46:53Z] [tasks] task ran: healthcheck
+[2026-04-04T13:46:58Z] [kernel] heartbeat 6 pid=17988
+[2026-04-04T13:47:08Z] [kernel] kernel started pid=19388
+[2026-04-04T13:47:08Z] [kernel] heartbeat 1 pid=19388
+[2026-04-04T13:47:08Z] [aura-llm] LLM subsystem started with mock backend
+[2026-04-04T13:47:08Z] [init] boot complete runlevel=2 started=7 failed=0
+[2026-04-04T13:47:13Z] [kernel] heartbeat 2 pid=19388
+[2026-04-04T13:47:18Z] [kernel] heartbeat 3 pid=19388
+[2026-04-04T13:47:23Z] [kernel] heartbeat 4 pid=19388
+/home/runner/work/PROJECT/PROJECT/OS/etc/rc2.d/S70-aura-tasks: 5: echo: echo: I/O error
+/home/runner/work/PROJECT/PROJECT/OS/etc/rc2.d/S70-aura-tasks: 7: echo: echo: I/O error
+[2026-04-04T13:47:24Z] [tasks] task ran: healthcheck
+/home/runner/work/PROJECT/PROJECT/OS/etc/rc2.d/S70-aura-tasks: 6: echo: echo: I/O error
+[2026-04-04T13:47:24Z] [tasks] task ran: autosave
+/home/runner/work/PROJECT/PROJECT/OS/etc/rc2.d/S70-aura-tasks: 5: echo: echo: I/O error
+cat: write error: Input/output error
+[2026-04-04T13:47:24Z] [tasks] task ran: bridge-monitor
+[2026-04-04T13:47:28Z] [kernel] heartbeat 5 pid=19388
+[2026-04-04T13:47:33Z] [kernel] heartbeat 6 pid=19388
+[2026-04-04T13:47:34Z] [kernel] kernel stopped pid=19388
+[2026-04-04T13:47:35Z] [kernel] kernel started pid=20486
+[2026-04-04T13:47:35Z] [kernel] heartbeat 1 pid=20486
+[2026-04-04T13:47:40Z] [kernel] heartbeat 2 pid=20486
+[2026-04-04T13:47:42Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-04T13:47:42Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-21025.txt
+[2026-04-04T13:47:42Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-21025.txt
+[2026-04-04T13:47:42Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-21025.txt
+[2026-04-04T13:47:42Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-21025.txt
+[2026-04-04T13:47:42Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-21025.txt
+[2026-04-04T13:47:42Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T13:47:42Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T13:47:42Z] unit-test marker 21025
+[2026-04-04T13:47:42Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T13:47:42Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T13:47:42Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-04T13:47:45Z] [kernel] heartbeat 3 pid=20486
+[2026-04-04T13:47:50Z] [kernel] heartbeat 4 pid=20486
+/home/runner/work/PROJECT/PROJECT/OS/etc/rc2.d/S70-aura-tasks: 5: echo: echo: I/O error
+/home/runner/work/PROJECT/PROJECT/OS/etc/rc2.d/S70-aura-tasks: 7: echo: echo: I/O error
+[2026-04-04T13:47:54Z] [tasks] task ran: healthcheck
+[2026-04-04T13:47:55Z] [kernel] heartbeat 5 pid=20486
+[2026-04-04T13:48:00Z] [kernel] heartbeat 6 pid=20486
+[2026-04-04T13:48:05Z] [kernel] heartbeat 7 pid=20486
+[2026-04-04T13:48:10Z] [kernel] heartbeat 8 pid=20486
