@@ -1,6 +1,6 @@
-# AI-OS
+# AIOS — AI Operating System Shell
 
-**The Official AI-Native Operating System**
+**An AI-native interactive OS shell for Linux, macOS, and Termux (Android)**
 
 ```
    ___  ___ ___  ___ ___ ___  _   _
@@ -28,21 +28,24 @@
 
 ---
 
-## What Is AI-OS?
+## What Is AIOS?
 
-**AI-OS** is a complete, standalone, AI-native operating system. It is not a
-wrapper, not a chatbot, and not a shell script. AI-OS is a full OS that uses
-the host POSIX environment (Termux, Linux, macOS, Darwin) only as a hidden
-firmware layer — the same way a real OS uses bare-metal firmware.
+**AIOS** (AI Operating System) is a portable, AI-augmented interactive shell
+environment. It runs on any POSIX host (Linux, macOS, Android via Termux) and
+provides:
 
-From the user's perspective, AI-OS owns the shell, the services, the filesystem,
-the networking, and the identity. The host kernel is invisible.
+- A **confined virtual filesystem** (`fs.*` commands) rooted at `OS/`
+- A **natural-language AI backend** — type plain English and AIOS interprets it
+- A **fuzzy typo-correction** engine for command names
+- **Process and network utilities** (`proc.*`, `net.*`)
+- An **escape hatch** (`sys`) to the real host shell when needed
+- Optional **LLaMA LLM integration** via [llama.cpp](https://github.com/ggerganov/llama.cpp)
 
 ### OS Identity
 
 | Property | Value |
 |---|---|
-| **Name** | AI-OS |
+| **Name** | AIOS (AI Operating System) |
 | **Edition** | Aurora v1.0 |
 | **Codename** | AIOSCPU |
 | **Cognitive Layer** | AURA |
@@ -53,10 +56,122 @@ the networking, and the identity. The host kernel is invisible.
 
 ---
 
-## System Architecture
+## Requirements
 
-AI-OS is organized as six layers. Every layer is fully implemented and every
-interface is defined. The host kernel is hidden behind the Bridge/Mirror layer.
+| Requirement | Notes |
+|---|---|
+| **Bash 4.0+** | Required for associative arrays. macOS ships Bash 3 — install via Homebrew: `brew install bash` and run `bash bin/aios` explicitly |
+| **Python 3.9+** | Required for AI backend and filesystem module |
+| **Git** | Required to clone the repository |
+| **cmake + make** | Optional — only needed to build llama.cpp for LLM support |
+| **A `.gguf` model file** | Optional — enables full LLM responses (see [AI Model Setup](docs/AI_MODEL_SETUP.md)) |
+
+**Termux (Android):** install dependencies with:
+```sh
+pkg install bash python git
+```
+
+---
+
+## Installation
+
+```sh
+# 1. Clone the repository
+git clone https://github.com/Cbetts1/PROJECT.git
+cd PROJECT
+
+# 2. Run the installer (sets permissions, creates runtime dirs)
+bash install.sh
+```
+
+That's it. The installer is non-destructive and safe to re-run.
+
+### Optional: Enable Full AI (LLM)
+
+1. Download a `.gguf` model file (e.g. [Llama-3.2-3B-Instruct-GGUF](https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF)) and place it in `llama_model/`
+2. Build llama.cpp: `bash build/build.sh --target hosted`
+3. Edit `etc/aios.conf`:
+   ```sh
+   AI_BACKEND=llama
+   LLAMA_MODEL_PATH=/path/to/your/model.gguf
+   ```
+
+Without a model, AIOS uses its built-in rule-based AI backend, which handles
+common commands and natural-language questions.
+
+---
+
+## How to Run
+
+```sh
+# Option 1: launcher script (recommended)
+./run.sh
+
+# Option 2: direct
+./bin/aios
+
+# Option 3: explicit bash
+bash bin/aios
+```
+
+### Example Session
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  AIOS — AI Operating System Shell
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  OS jail  : /path/to/PROJECT/OS
+  AI mode  : built-in (rule-based) — no LLM loaded
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Type 'help' for commands, 'exit' to quit.
+
+aios> fs.ls /
+bin  dev  etc  proc  sbin  tmp  var
+
+aios> fs.mkdir /home/mydir
+aios> fs.write /home/mydir/hello.txt Hello from AIOS!
+aios> fs.cat /home/mydir/hello.txt
+Hello from AIOS!
+
+aios> proc.ps
+...
+
+aios> sys
+[AIOS] Entering OS shell. Type 'exit' to return.
+$ exit
+[AIOS] Returned from OS shell.
+
+aios> exit
+Goodbye.
+```
+
+---
+
+## Available Commands
+
+| Command | Description |
+|---|---|
+| `fs.ls [path]` | List directory (confined to `OS/`) |
+| `fs.cat <path>` | Show file contents |
+| `fs.write <path> <text>` | Write text to file |
+| `fs.mkdir <path>` | Create directory |
+| `fs.rm <path>` | Remove path |
+| `fs.cp <src> <dest>` | Copy file or directory |
+| `fs.mv <src> <dest>` | Move/rename |
+| `fs.find [path] [args]` | Find files |
+| `proc.ps` | List running processes |
+| `proc.kill <pid>` | Kill process by PID |
+| `net.ping [host]` | Ping a host |
+| `net.ifconfig` | Show network interfaces |
+| `sys` | Enter real host shell |
+| `sys -- <cmd>` | Run one host command |
+| `help` | Show command reference |
+| `exit` / `quit` | Exit AIOS |
+| *(anything else)* | Routed to AI backend |
+
+---
+
+## System Architecture
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
@@ -79,54 +194,6 @@ interface is defined. The host kernel is hidden behind the Bridge/Mirror layer.
 ║          Linux / Android (Termux) / macOS / Darwin          ║
 ╚══════════════════════════════════════════════════════════════╝
 ```
-
-Full architecture specification: [`docs/architecture.md`](docs/architecture.md)
-
----
-
-## Quick Start
-
-### Requirements
-
-- Android (Termux), Linux (Debian/Ubuntu/Arch), macOS, or any POSIX system
-- Python 3.8+
-- `git`, `bash` or `sh`
-- Optional: llama.cpp binary + model file for full AI CPU
-
-### Install and Boot
-
-```bash
-# 1. Clone
-git clone https://github.com/Cbetts1/PROJECT.git aios
-cd aios
-
-# 2. Permissions
-chmod +x bin/* tools/* OS/bin/* OS/sbin/*
-
-# 3. Verify
-bash tools/health_check.sh
-
-# 4. Boot AI-OS
-./bin/aios
-```
-
-### Termux (Android)
-
-```sh
-pkg update && pkg upgrade
-pkg install git python openssh android-tools
-
-git clone https://github.com/Cbetts1/PROJECT.git aios
-cd aios
-chmod +x bin/* OS/bin/* OS/sbin/*
-./bin/aios
-```
-
-See full install guide: [`docs/INSTALL.md`](docs/INSTALL.md)
-
----
-
-## Key Features
 
 | Feature | Description |
 |---|---|
@@ -449,6 +516,57 @@ PROJECT/
     ├── BRAND-IDENTITY.md
     ├── LOGO_ASCII.txt
     └── WATERMARK.txt
+```
+
+---
+
+## Troubleshooting
+
+### `./bin/aios` exits immediately with no output
+
+**Cause:** A configuration file references an unbound variable while `set -o nounset` is active.
+
+**Fix:** Run the installer first to ensure the environment is initialized:
+```sh
+bash install.sh
+```
+If the problem persists, check that `etc/aios.conf` exists and that `AIOS_ROOT` can be derived from the script location.
+
+### `Permission denied` when running `./bin/aios` or `./run.sh`
+
+```sh
+chmod +x bin/aios bin/aios-sys bin/aios-heartbeat run.sh install.sh
+```
+
+### Python not found / AI backend fails
+
+Install Python 3.9+ and verify it is on your PATH:
+```sh
+python3 --version
+```
+On Termux: `pkg install python`  
+On Debian/Ubuntu: `sudo apt install python3`
+
+### macOS: `bash: syntax error` or old Bash
+
+macOS ships Bash 3. Install Bash 4+ via Homebrew:
+```sh
+brew install bash
+/usr/local/bin/bash bin/aios
+```
+
+### LLM / AI responses are basic or rule-based
+
+AIOS works without a model, but uses rule-based responses. To enable full AI:
+1. Download a `.gguf` model to `llama_model/`
+2. Build llama.cpp: `bash build/build.sh --target hosted`
+3. Set `AI_BACKEND=llama` in `etc/aios.conf`
+
+### Logs
+
+All boot and session events are logged to `var/log/aios.log`:
+```sh
+tail -f var/log/aios.log
 ```
 
 ---
