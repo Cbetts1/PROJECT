@@ -14,7 +14,7 @@ detect_host_os() {
     case "$kernel" in
         linux)
             # Check for Android/Termux
-            if [ -n "$TERMUX_VERSION" ] || [ -d "/data/data/com.termux" ]; then
+            if [ -n "${TERMUX_VERSION:-}" ] || [ -d "/data/data/com.termux" ]; then
                 echo "android-termux"
             elif grep -qi "android" /proc/version 2>/dev/null; then
                 echo "android"
@@ -39,6 +39,8 @@ detect_devices() {
             found="${found}ios:$ios_udid "
             bridge_log "iOS device detected: $ios_udid"
         fi
+    else
+        bridge_log "WARNING: ideviceinfo not found — iOS detection skipped"
     fi
 
     # Android: check for ADB
@@ -48,14 +50,18 @@ detect_devices() {
             found="${found}android:$dev "
             bridge_log "Android device detected: $dev"
         done
+    else
+        bridge_log "WARNING: adb not found — Android detection skipped"
     fi
 
     # SSH hosts from known_hosts
-    if [ -f "$HOME/.ssh/known_hosts" ]; then
+    if command -v ssh >/dev/null 2>&1 && [ -f "$HOME/.ssh/known_hosts" ]; then
         hosts=$(awk '{print $1}' "$HOME/.ssh/known_hosts" 2>/dev/null | head -5)
         for h in $hosts; do
             found="${found}ssh:$h "
         done
+    else
+        command -v ssh >/dev/null 2>&1 || bridge_log "WARNING: ssh not found — SSH host detection skipped"
     fi
 
     echo "$found"

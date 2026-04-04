@@ -4,6 +4,7 @@
 #
 # Initializes the LLM subsystem based on ENABLE_LLM config flag.
 # Checks for llama-cli availability and model presence.
+set -eu
 
 OS_ROOT="${OS_ROOT:-/}"
 AIOS_HOME="${AIOS_HOME:-$(cd "$OS_ROOT/.." 2>/dev/null && pwd)}"

@@ -1,4 +1,5 @@
 #!/bin/sh
+set -eu
 
 OS_ROOT="${OS_ROOT:-/}"
 HEALTH="$OS_ROOT/var/service/devices.health"
