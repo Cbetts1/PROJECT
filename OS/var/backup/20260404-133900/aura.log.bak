@@ -1,0 +1,18 @@
+[2026-04-04T13:38:56Z] [tasks] task ran: logwatch
+[2026-04-04T13:38:59Z] [tasks] task scheduler stopped pid=5998
+[2026-04-04T13:38:59Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/inttest-py-4628.txt
+[2026-04-04T13:38:59Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/inttest-py-4628.txt
+[2026-04-04T13:38:59Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T13:38:59Z] inttest log entry 4628
+[2026-04-04T13:38:59Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T13:38:59Z] [syscall] invoke syscall=getpid caller_pid=6242 args=
+[2026-04-04T13:38:59Z] [syscall] invoke syscall=uptime caller_pid=6252 args=
+[2026-04-04T13:38:59Z] [syscall] invoke syscall=write caller_pid=6260 args=tmp/syscall-test-4628.txt syscall_test_value_4628
+[2026-04-04T13:38:59Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/syscall-test-4628.txt
+[2026-04-04T13:38:59Z] [syscall] invoke syscall=read caller_pid=6269 args=tmp/syscall-test-4628.txt
+[2026-04-04T13:38:59Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/syscall-test-4628.txt
+[2026-04-04T13:38:59Z] [syscall] invoke syscall=exists caller_pid=6280 args=tmp/syscall-test-4628.txt
+[2026-04-04T13:38:59Z] [syscall] invoke syscall=read caller_pid=6289 args=../../etc/passwd
+[2026-04-04T13:38:59Z] [syscall] invoke syscall=sysinfo caller_pid=6300 args=
+[2026-04-04T13:38:59Z] [syscall] invoke syscall=log caller_pid=6311 args=integration-test-marker-4628
+[2026-04-04T13:38:59Z] [syscall] integration-test-marker-4628

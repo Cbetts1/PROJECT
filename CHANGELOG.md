@@ -8,6 +8,12 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+No unreleased changes at this time.
+
+---
+
 ## [1.5.0] — 2026-04-04
 
 ### Fixed
@@ -17,11 +23,14 @@ This project uses [Semantic Versioning](https://semver.org/).
   startup. Fixed by using `${AIOS_HOME:-${AIOS_ROOT:-$PWD}}` throughout
   `config/aios.conf` and by pre-setting `AIOS_HOME` in `etc/aios.conf` before
   the OS-level config is sourced.
+- **Typo correction coverage**: `lib/aura-typo.sh` `aura_known_commands()` was
+  missing the REPL built-ins (`status`, `sysinfo`, `version`, `log.tail`,
+  `clear`). Fuzzy correction now covers the full command set.
 
 ### Added
 - **`run.sh`** — clean top-level launcher. Runs the boot sequence then execs
   `bin/aios`. Accepts `--no-boot` to skip the boot animation.
-- **`boot/bootloader.sh`** — five-stage visual boot pipeline:
+- **`boot/bootloader.sh`** — six-stage visual boot pipeline:
   - Stage 0: environment detection (Termux / Linux / macOS)
   - Stage 1: filesystem initialisation (creates all required runtime dirs/files)
   - Stage 2: executable permission check (auto-fixes missing +x bits)
@@ -38,6 +47,23 @@ This project uses [Semantic Versioning](https://semver.org/).
   - `clear` command — clear terminal
   - `log.tail [n]` command — show last N lines of `var/log/aios.log`
   - All dispatched commands now logged to `var/log/aios.log`
+- **`ai/core/bots.py` — `UpgradeBot`**: new bot handling upgrade/update intents
+  (`check updates`, `apply update`, `upgrade-all`, `upgrade <pkg>`). Registered
+  in `router.py` before HealthBot and LogBot.
+- **`ai/core/intent_engine.py`**: upgrade category with four actions:
+  `pkg.check`, `pkg.apply`, `pkg.upgrade-all`, `pkg.upgrade`.
+- **`.github/workflows/ci.yml`** — GitHub Actions CI pipeline: shellcheck,
+  pytest with coverage (Python 3.10/3.11/3.12), unit-tests, integration-tests.
+- Complete documentation suite: CONTRIBUTING.md, CODE_OF_CONDUCT.md,
+  SECURITY.md, ROADMAP.md, INSTALL.md.
+- OS-level specification documents: BOOT-SEQUENCE.md, SYSCALL-LIST.md,
+  PROCESS-MODEL.md, SCHEDULER.md, RESOURCE-MANAGER.md, PERMISSIONS-MODEL.md,
+  SERVICE-REGISTRY.md, NETWORKING-MODEL.md.
+- Legal documents: TERMS-OF-USE.md, PRIVACY-NOTICE.md, DISCLAIMER.md,
+  COPYRIGHT.md, AI-DISCLOSURE.md.
+- System configuration templates: services.conf, module-registry.conf,
+  api-endpoints.conf, network.conf, system-manifest.conf.
+- INSTRUCTION-MANUAL.md — complete operator and developer reference.
 
 ### Changed
 - `README.md` — full rewrite: What Is AIOS, Requirements table (per platform),
@@ -45,29 +71,9 @@ This project uses [Semantic Versioning](https://semver.org/).
   Available Commands table, Architecture diagram, Troubleshooting section,
   Running Tests, Documentation Index.
 - `bin/aios` version string updated to `v1.0 (Aurora)`.
-
----
-
-## [Unreleased]
-
-### Added
-- `.github/workflows/ci.yml` — GitHub Actions CI pipeline with four jobs:
-  shellcheck (all shell scripts), pytest with coverage (Python 3.10/3.11/3.12),
-  unit-tests, and integration-tests
-- Coverage XML artifact uploaded per Python version
-- Complete documentation suite: CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md,
-  ROADMAP.md, INSTALL.md, USAGE.md
-
-### Changed
-- ROADMAP.md Milestone 3 marked complete (✅)
-- OS-level specification documents: BOOT-SEQUENCE.md, SYSCALL-LIST.md,
-  PROCESS-MODEL.md, SCHEDULER.md, RESOURCE-MANAGER.md, PERMISSIONS-MODEL.md,
-  SERVICE-REGISTRY.md, NETWORKING-MODEL.md
-- Legal documents: TERMS-OF-USE.md, PRIVACY-NOTICE.md, DISCLAIMER.md,
-  COPYRIGHT.md, AI-DISCLOSURE.md
-- System configuration templates: services.conf, module-registry.conf,
-  api-endpoints.conf, network.conf, system-manifest.conf
-- INSTRUCTION-MANUAL.md — complete operator and developer reference
+- ROADMAP.md Milestone 3 marked complete (✅).
+- Test suite expanded to 27 shell + 150 Python unit tests + 87 integration tests
+  (264 total).
 
 ---
 
@@ -163,7 +169,8 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/Cbetts1/PROJECT/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/Cbetts1/PROJECT/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/Cbetts1/PROJECT/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/Cbetts1/PROJECT/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Cbetts1/PROJECT/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Cbetts1/PROJECT/compare/v1.1.0...v1.2.0

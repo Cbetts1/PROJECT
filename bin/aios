@@ -302,6 +302,7 @@ EOF
         # 'sys -- <cmd> [args]' → run a single AIOS command via aios-sys
         sys\ --\ *)
             rest="${line#sys -- }"
+            # shellcheck disable=SC2086
             set -- ${rest}
             "${AIOS_ROOT}/bin/aios-sys" -- "$@"
             continue
