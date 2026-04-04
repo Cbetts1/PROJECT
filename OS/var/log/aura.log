@@ -929,3 +929,27 @@
 [2026-04-04T01:06:49Z] [syscall] invoke syscall=sysinfo caller_pid=5729 args=
 [2026-04-04T01:06:49Z] [syscall] invoke syscall=log caller_pid=5740 args=integration-test-marker-4052
 [2026-04-04T01:06:49Z] [syscall] integration-test-marker-4052
+[2026-04-04T02:08:55Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-04T02:08:55Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4007.txt
+[2026-04-04T02:08:55Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4007.txt
+[2026-04-04T02:08:55Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4007.txt
+[2026-04-04T02:08:55Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4007.txt
+[2026-04-04T02:08:55Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4007.txt
+[2026-04-04T02:08:55Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T02:08:55Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T02:08:55Z] unit-test marker 4007
+[2026-04-04T02:08:55Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T02:08:55Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T02:08:55Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-04T02:11:55Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-04T02:11:55Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4386.txt
+[2026-04-04T02:11:55Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4386.txt
+[2026-04-04T02:11:55Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4386.txt
+[2026-04-04T02:11:55Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4386.txt
+[2026-04-04T02:11:55Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4386.txt
+[2026-04-04T02:11:55Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T02:11:55Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T02:11:55Z] unit-test marker 4386
+[2026-04-04T02:11:55Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T02:11:55Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-04T02:11:55Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
