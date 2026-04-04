@@ -1,34 +1,66 @@
 # Aura LLM Module - llama.cpp wrapper with rule-based fallback
 # Source this file to get: llm_query, llm_available, llm_prompt_build
 
-LLM_MODEL_DIR="${OS_ROOT}/llama_model"
+# Primary model directory; runtime code also searches AIOS_HOME/llama_model
+# and AIOS_HOME/models as fallbacks (see llm_model() below).
+LLM_MODEL_DIR="${LLM_MODEL_DIR:-${OS_ROOT}/llama_model}"
 LLM_CONTEXT_FILE="${OS_ROOT}/proc/aura/context/window"
 LLM_HISTORY_FILE="${OS_ROOT}/var/log/llm.history"
 LLM_MAX_TOKENS="${LLM_MAX_TOKENS:-256}"
 
 # Check if a LLaMA binary is available
 llm_available() {
-    for bin in llama-cli llama.cpp llama main; do
+    # Standard PATH binaries (covers Termux pkg, brew, pip installs)
+    for bin in llama-cli llama-server llama.cpp llama main; do
         if command -v "$bin" >/dev/null 2>&1; then
             echo "$bin"
             return 0
         fi
     done
-    # Check OS_ROOT bin dir
-    for bin in "$OS_ROOT/bin/llama-cli" "$OS_ROOT/bin/llama" "$OS_ROOT/bin/llama.cpp"; do
+    # Check OS_ROOT, AIOS_HOME, and build output dirs
+    for bin in \
+        "$OS_ROOT/bin/llama-cli" "$OS_ROOT/bin/llama" "$OS_ROOT/bin/llama.cpp" \
+        "${AIOS_HOME:-}/bin/llama-cli" "${AIOS_HOME:-}/bin/llama" \
+        "${AIOS_HOME:-}/build/bin/llama-cli" "${AIOS_HOME:-}/build/bin/main"
+    do
         if [ -x "$bin" ]; then
             echo "$bin"
             return 0
         fi
+    # Binaries installed inside OS_ROOT
+    for bin in \
+        "$OS_ROOT/bin/llama-cli" \
+        "$OS_ROOT/bin/llama-server" \
+        "$OS_ROOT/bin/llama" \
+        "$OS_ROOT/bin/llama.cpp"
+    do
+        [ -x "$bin" ] && { echo "$bin"; return 0; }
+    done
+    # Build-tree locations (repo root relative to OS_ROOT)
+    _aios_home="${AIOS_HOME:-$(cd "$OS_ROOT/.." 2>/dev/null && pwd)}"
+    for bin in \
+        "$_aios_home/build/llama.cpp/llama-cli" \
+        "$_aios_home/build/llama.cpp/main" \
+        "$_aios_home/build/bin/llama-cli" \
+        "$_aios_home/build/bin/main"
+    do
+        [ -x "$bin" ] && { echo "$bin"; return 0; }
     done
     return 1
 }
 
-# Find first available model file
+# Find first available model file — searches multiple standard locations
 llm_model() {
-    for ext in gguf bin; do
-        model=$(find "$LLM_MODEL_DIR" -maxdepth 2 -name "*.$ext" 2>/dev/null | head -1)
-        [ -n "$model" ] && { echo "$model"; return 0; }
+    for d in \
+        "${LLM_MODEL_DIR:-$OS_ROOT/llama_model}" \
+        "${AIOS_HOME:-}/llama_model" \
+        "${AIOS_HOME:-}/models"
+    do
+        [ -z "$d" ] && continue
+        for ext in gguf bin; do
+            m=$(find "$d" -maxdepth 2 -name "*.$ext" 2>/dev/null | head -1)
+            [ -n "$m" ] && { echo "$m"; return 0; }
+        done
     done
     return 1
 }

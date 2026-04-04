@@ -29,7 +29,7 @@ export OS_ROOT
 # ---------------------------------------------------------------------------
 section "os-shell — command dispatch"
 
-_shell() { echo "$1" | OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-shell" 2>/dev/null; }
+_shell() { echo "$1" | sh "$OS_ROOT/bin/os-shell" 2>/dev/null; }
 
 out=$(_shell "help")
 echo "$out" | grep -q "AI / LLM" \
@@ -58,43 +58,43 @@ out=$(_shell "ls")
 
 # mem.set / mem.get roundtrip
 _tmk="test.key.$$"
-echo -e "mem.set $_tmk integration_value\nmem.get $_tmk\nexit" | OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-shell" 2>/dev/null | grep -q "integration_value" \
+echo -e "mem.set $_tmk integration_value\nmem.get $_tmk\nexit" | sh "$OS_ROOT/bin/os-shell" 2>/dev/null | grep -q "integration_value" \
     && pass "os-shell: mem.set/get roundtrip" \
     || fail "os-shell: mem.set/get roundtrip failed"
 
 # sem.set / sem.search
 _semk="sem.test.$$"
-echo -e "sem.set $_semk hello semantic world\nsem.search hello\nexit" | OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-shell" 2>/dev/null | grep -q "$_semk" \
+echo -e "sem.set $_semk hello semantic world\nsem.search hello\nexit" | sh "$OS_ROOT/bin/os-shell" 2>/dev/null | grep -q "$_semk" \
     && pass "os-shell: sem.set/search roundtrip" \
     || fail "os-shell: sem.set/search failed"
 
 # Fuzzy correction: typing "sysinf" should output sysinfo result
-out=$(echo "sysinf" | OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-shell" 2>/dev/null)
+out=$(echo "sysinf" | sh "$OS_ROOT/bin/os-shell" 2>/dev/null)
 echo "$out" | grep -qi "auto-correcting\|name\|version\|host" \
     && pass "os-shell: fuzzy 'sysinf' corrects to sysinfo" \
     || fail "os-shell: fuzzy correction for 'sysinf' failed"
 
 # AI fallback (no model — rule-based)
-out=$(echo "ask hello" | OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-shell" 2>/dev/null)
+out=$(echo "ask hello" | sh "$OS_ROOT/bin/os-shell" 2>/dev/null)
 echo "$out" | grep -qi "hello\|AIOS\|assist" \
     && pass "os-shell: ask/AI fallback returns a response" \
     || fail "os-shell: ask/AI fallback should return a response"
 
 # mode command
-out=$(printf 'mode system\nmode operator\nexit' | OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-shell" 2>/dev/null)
+out=$(printf 'mode system\nmode operator\nexit' | sh "$OS_ROOT/bin/os-shell" 2>/dev/null)
 echo "$out" | grep -q "system" \
     && pass "os-shell: mode command accepted" \
     || fail "os-shell: mode command should be accepted"
 
 # write + read (via fs module)
-out=$(printf 'write integration-test-file.txt hello_integration\nread integration-test-file.txt\nexit' | OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-shell" 2>/dev/null)
+out=$(printf 'write integration-test-file.txt hello_integration\nread integration-test-file.txt\nexit' | sh "$OS_ROOT/bin/os-shell" 2>/dev/null)
 echo "$out" | grep -q "hello_integration" \
     && pass "os-shell: write/read roundtrip" \
     || fail "os-shell: write/read roundtrip failed"
 rm -f "$OS_ROOT/integration-test-file.txt"
 
 # service start/stop/status
-out=$(printf 'services\nexit' | OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-shell" 2>/dev/null)
+out=$(printf 'services\nexit' | sh "$OS_ROOT/bin/os-shell" 2>/dev/null)
 echo "$out" | grep -q "Service Status" \
     && pass "os-shell: services command shows Service Status" \
     || fail "os-shell: services command should show Service Status"
@@ -104,7 +104,7 @@ echo "$out" | grep -q "Service Status" \
 # ---------------------------------------------------------------------------
 section "os-real-shell — command dispatch"
 
-_rshell() { echo "$1" | OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-real-shell" 2>/dev/null; }
+_rshell() { echo "$1" | sh "$OS_ROOT/bin/os-real-shell" 2>/dev/null; }
 
 out=$(_rshell "help")
 echo "$out" | grep -q "AI / Memory" \
@@ -132,13 +132,13 @@ echo "$out" | grep -qi "log\|aura\|filesystem\|shell\|install" \
     || fail "os-real-shell: logread aura should show log content"
 
 # Real shell passthrough: test that 'echo test_passthrough' works
-out=$(echo "echo test_passthrough_$$" | OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-real-shell" 2>/dev/null)
+out=$(echo "echo test_passthrough_$$" | sh "$OS_ROOT/bin/os-real-shell" 2>/dev/null)
 echo "$out" | grep -q "test_passthrough_$$" \
     && pass "os-real-shell: passthrough real shell command (echo)" \
     || fail "os-real-shell: passthrough should execute real shell commands"
 
 # Fuzzy in real shell: "sysinf" -> sysinfo
-out=$(echo "sysinf" | OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-real-shell" 2>/dev/null)
+out=$(echo "sysinf" | sh "$OS_ROOT/bin/os-real-shell" 2>/dev/null)
 echo "$out" | grep -qi "auto-correcting\|host\|cpu\|linux" \
     && pass "os-real-shell: fuzzy 'sysinf' auto-corrects or falls through" \
     || fail "os-real-shell: fuzzy should auto-correct or pass 'sysinf' to real shell"
@@ -149,7 +149,7 @@ echo "$out" | grep -qi "auto-correcting\|host\|cpu\|linux" \
 section "os-kernel — init.d service"
 
 # Start kernel
-OS_ROOT="$OS_ROOT" sh "$OS_ROOT/etc/init.d/os-kernel" start >/dev/null 2>&1
+sh "$OS_ROOT/etc/init.d/os-kernel" start >/dev/null 2>&1
 sleep 2
 
 # Check pidfile created
@@ -172,7 +172,7 @@ HEALTH="$OS_ROOT/var/service/os-kernel.health"
     && pass "os-kernel: health file exists" \
     || fail "os-kernel: health file should exist"
 
-status_out=$(OS_ROOT="$OS_ROOT" sh "$OS_ROOT/etc/init.d/os-kernel" status 2>/dev/null)
+status_out=$(sh "$OS_ROOT/etc/init.d/os-kernel" status 2>/dev/null)
 echo "$status_out" | grep -q "running" \
     && pass "os-kernel: status reports running" \
     || fail "os-kernel: status should report running"
@@ -195,7 +195,7 @@ state_hb=$(grep "last_heartbeat" "$OS_ROOT/proc/os.state" 2>/dev/null | head -1)
     || fail "os-kernel: state file should have last_heartbeat"
 
 # Stop kernel
-OS_ROOT="$OS_ROOT" sh "$OS_ROOT/etc/init.d/os-kernel" stop >/dev/null 2>&1
+sh "$OS_ROOT/etc/init.d/os-kernel" stop >/dev/null 2>&1
 sleep 1
 
 [ ! -f "$PIDFILE" ] \
@@ -207,7 +207,7 @@ sleep 1
 # ---------------------------------------------------------------------------
 section "aura-bridge — init.d service"
 
-OS_ROOT="$OS_ROOT" sh "$OS_ROOT/etc/init.d/aura-bridge" start >/dev/null 2>&1
+sh "$OS_ROOT/etc/init.d/aura-bridge" start >/dev/null 2>&1
 sleep 1
 
 BRIDGE_HEALTH="$OS_ROOT/var/service/aura-bridge.health"
@@ -228,14 +228,14 @@ cat "$BRIDGE_STATUS" 2>/dev/null | grep -q "host_os" \
     && pass "aura-bridge: status file contains host_os" \
     || fail "aura-bridge: status file should contain host_os"
 
-OS_ROOT="$OS_ROOT" sh "$OS_ROOT/etc/init.d/aura-bridge" stop >/dev/null 2>&1
+sh "$OS_ROOT/etc/init.d/aura-bridge" stop >/dev/null 2>&1
 
 # ---------------------------------------------------------------------------
 # aura-agents init.d service
 # ---------------------------------------------------------------------------
 section "aura-agents — init.d service"
 
-OS_ROOT="$OS_ROOT" sh "$OS_ROOT/etc/init.d/aura-agents" start >/dev/null 2>&1
+sh "$OS_ROOT/etc/init.d/aura-agents" start >/dev/null 2>&1
 sleep 2
 
 AGENTS_PID="$OS_ROOT/var/service/aura-agents.pid"
@@ -244,7 +244,7 @@ AGENTS_PID="$OS_ROOT/var/service/aura-agents.pid"
     || fail "aura-agents: daemon should be running"
 
 # Send an event and check agents process it
-OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-event" "test:integration:event:$$" >/dev/null 2>&1
+sh "$OS_ROOT/bin/os-event" "test:integration:event:$$" >/dev/null 2>&1
 sleep 2
 
 # Agents log should have entries after events
@@ -252,14 +252,14 @@ grep -q "agents" "$OS_ROOT/var/log/aura.log" 2>/dev/null \
     && pass "aura-agents: log has agent entries" \
     || fail "aura-agents: log should have agent entries"
 
-OS_ROOT="$OS_ROOT" sh "$OS_ROOT/etc/init.d/aura-agents" stop >/dev/null 2>&1
+sh "$OS_ROOT/etc/init.d/aura-agents" stop >/dev/null 2>&1
 
 # ---------------------------------------------------------------------------
 # aura-tasks init.d service
 # ---------------------------------------------------------------------------
 section "aura-tasks — init.d service"
 
-OS_ROOT="$OS_ROOT" sh "$OS_ROOT/etc/init.d/aura-tasks" start >/dev/null 2>&1
+sh "$OS_ROOT/etc/init.d/aura-tasks" start >/dev/null 2>&1
 sleep 2
 
 TASKS_PID="$OS_ROOT/var/service/aura-tasks.pid"
@@ -272,23 +272,23 @@ grep -q "tasks" "$OS_ROOT/var/log/aura.log" 2>/dev/null \
     || fail "aura-tasks: log should have task entries"
 
 # logwatch task triggers on alert message
-OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-msg" "alert: integration test message $$" >/dev/null 2>&1
+sh "$OS_ROOT/bin/os-msg" "alert: integration test message $$" >/dev/null 2>&1
 sleep 6  # wait for 5s polling cycle
 grep -q "logwatch\|alert" "$OS_ROOT/var/log/aura.log" 2>/dev/null \
     && pass "aura-tasks: logwatch task fires on alert message" \
     || fail "aura-tasks: logwatch task should fire on alert message"
 
-OS_ROOT="$OS_ROOT" sh "$OS_ROOT/etc/init.d/aura-tasks" stop >/dev/null 2>&1
+sh "$OS_ROOT/etc/init.d/aura-tasks" stop >/dev/null 2>&1
 
 # ---------------------------------------------------------------------------
 # os-kernelctl
 # ---------------------------------------------------------------------------
 section "os-kernelctl"
 
-out=$(OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-kernelctl" status 2>/dev/null)
+out=$(sh "$OS_ROOT/bin/os-kernelctl" status 2>/dev/null)
 [ -n "$out" ] && pass "os-kernelctl: status returns output" || fail "os-kernelctl: status should return output"
 
-out=$(OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-kernelctl" info 2>/dev/null)
+out=$(sh "$OS_ROOT/bin/os-kernelctl" info 2>/dev/null)
 echo "$out" | grep -qi "kernel\|personality\|name\|version" \
     && pass "os-kernelctl: info shows personality" \
     || fail "os-kernelctl: info should show kernel personality"
@@ -299,7 +299,7 @@ echo "$out" | grep -qi "kernel\|personality\|name\|version" \
 section "os-event and os-msg"
 
 TS=$(date +%s%N)
-OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-event" "unit:test:event:$TS" >/dev/null 2>&1
+sh "$OS_ROOT/bin/os-event" "unit:test:event:$TS" >/dev/null 2>&1
 
 # Event file created in var/events/
 ls "$OS_ROOT/var/events/"*.event 2>/dev/null | head -1 | grep -q ".event" \
@@ -312,7 +312,7 @@ grep -q "unit:test:event:$TS" "$OS_ROOT/var/log/events.log" 2>/dev/null \
     || fail "os-event: event should appear in events.log"
 
 # os-msg
-OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-msg" "integration-test-message-$TS" >/dev/null 2>&1
+sh "$OS_ROOT/bin/os-msg" "integration-test-message-$TS" >/dev/null 2>&1
 grep -q "integration-test-message-$TS" "$OS_ROOT/proc/os.messages" 2>/dev/null \
     && pass "os-msg: message written to os.messages" \
     || fail "os-msg: message should be written to os.messages"
@@ -322,23 +322,23 @@ grep -q "integration-test-message-$TS" "$OS_ROOT/proc/os.messages" 2>/dev/null \
 # ---------------------------------------------------------------------------
 section "LLM module — rule-based fallback"
 
-out=$(OS_ROOT="$OS_ROOT" sh -c '. "$OS_ROOT/lib/aura-llm/llm.mod"; llm_fallback "hello there"' 2>/dev/null)
+out=$(sh -c '. "$OS_ROOT/lib/aura-llm/llm.mod"; llm_fallback "hello there"' 2>/dev/null)
 echo "$out" | grep -qi "hello\|AIOS\|assist" \
     && pass "llm_fallback: hello triggers greeting" \
     || fail "llm_fallback: hello should trigger greeting response"
 
-out=$(OS_ROOT="$OS_ROOT" sh -c '. "$OS_ROOT/lib/aura-llm/llm.mod"; llm_fallback "what is the time"' 2>/dev/null)
+out=$(sh -c '. "$OS_ROOT/lib/aura-llm/llm.mod"; llm_fallback "what is the time"' 2>/dev/null)
 echo "$out" | grep -qE "[0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{2}:[0-9]{2}:[0-9]{2}" \
     && pass "llm_fallback: time query returns a timestamp" \
     || fail "llm_fallback: time query should return a timestamp"
 
-out=$(OS_ROOT="$OS_ROOT" sh -c '. "$OS_ROOT/lib/aura-llm/llm.mod"; llm_fallback "how is your status"' 2>/dev/null)
+out=$(sh -c '. "$OS_ROOT/lib/aura-llm/llm.mod"; llm_fallback "how is your status"' 2>/dev/null)
 echo "$out" | grep -qi "status\|operational\|running" \
     && pass "llm_fallback: status query returns status response" \
     || fail "llm_fallback: status query should return a status response"
 
 # llm_available returns non-zero when no binary present (rule-based path)
-out=$(OS_ROOT="$OS_ROOT" sh -c '. "$OS_ROOT/lib/aura-llm/llm.mod"; llm_available 2>/dev/null; echo $?' 2>/dev/null | tail -1)
+out=$(sh -c '. "$OS_ROOT/lib/aura-llm/llm.mod"; llm_available 2>/dev/null; echo $?' 2>/dev/null | tail -1)
 [ "$out" = "0" ] || [ "$out" = "1" ] \
     && pass "llm_available: returns 0 (found) or 1 (not found)" \
     || fail "llm_available: should return 0 or 1"
@@ -348,7 +348,7 @@ out=$(OS_ROOT="$OS_ROOT" sh -c '. "$OS_ROOT/lib/aura-llm/llm.mod"; llm_available
 # ---------------------------------------------------------------------------
 section "Hybrid memory (symbolic + semantic + context)"
 
-out=$(OS_ROOT="$OS_ROOT" sh -c '
+out=$(sh -c '
 . "$OS_ROOT/lib/aura-memory/engine.mod"
 . "$OS_ROOT/lib/aura-semantic/embed.mod"
 . "$OS_ROOT/lib/aura-semantic/engine.mod"
@@ -362,7 +362,7 @@ echo "$out" | grep -q "integration_symbolic_value" \
     && pass "hybrid: mem_set/get symbolic roundtrip" \
     || fail "hybrid: mem_set/get should work"
 
-out=$(OS_ROOT="$OS_ROOT" sh -c '
+out=$(sh -c '
 . "$OS_ROOT/lib/aura-semantic/embed.mod"
 . "$OS_ROOT/lib/aura-semantic/engine.mod"
 semantic_store "inttest.sem" "quick brown fox jumps"
@@ -393,13 +393,13 @@ PYEOF
 
 # Use CLI instead (simpler)
 _tmp="tmp/inttest-py-$$.txt"
-OS_ROOT="$OS_ROOT" python3 "$FS_PY" write "$_tmp" "py_api_value_$$" 2>/dev/null
-result=$(OS_ROOT="$OS_ROOT" python3 "$FS_PY" read "$_tmp" 2>/dev/null)
+python3 "$FS_PY" write "$_tmp" "py_api_value_$$" 2>/dev/null
+result=$(python3 "$FS_PY" read "$_tmp" 2>/dev/null)
 echo "$result" | grep -q "py_api_value_$$" \
     && pass "filesystem.py: Python write/read via CLI" \
     || fail "filesystem.py: Python write/read should work"
-OS_ROOT="$OS_ROOT" python3 "$FS_PY" log var/log/aura.log "inttest log entry $$" 2>/dev/null
-OS_ROOT="$OS_ROOT" python3 "$FS_PY" read var/log/aura.log 2>/dev/null | grep -q "inttest log entry $$" \
+python3 "$FS_PY" log var/log/aura.log "inttest log entry $$" 2>/dev/null
+python3 "$FS_PY" read var/log/aura.log 2>/dev/null | grep -q "inttest log entry $$" \
     && pass "filesystem.py: log entry appears in aura.log" \
     || fail "filesystem.py: log entry should appear in aura.log"
 rm -f "$OS_ROOT/$_tmp"
@@ -409,7 +409,7 @@ rm -f "$OS_ROOT/$_tmp"
 # ---------------------------------------------------------------------------
 section "os-syscall — system call interface"
 
-_syscall() { OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-syscall" "$@" 2>/dev/null; }
+_syscall() { sh "$OS_ROOT/bin/os-syscall" "$@" 2>/dev/null; }
 
 # getpid returns a number
 out=$(_syscall getpid)
@@ -438,7 +438,7 @@ out=$(_syscall exists "$_sc_path")
     || fail "os-syscall: exists should return true"
 
 # traversal blocked
-out=$(OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-syscall" read "../../etc/passwd" 2>&1)
+out=$(sh "$OS_ROOT/bin/os-syscall" read "../../etc/passwd" 2>&1)
 echo "$out" | grep -qi "denied\|error\|blocked" \
     && pass "os-syscall: path traversal blocked" \
     || fail "os-syscall: path traversal should be blocked"
@@ -462,7 +462,7 @@ rm -f "$OS_ROOT/$_sc_path"
 # ---------------------------------------------------------------------------
 section "os-sched — process scheduler"
 
-_sched() { OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-sched" "$@" 2>/dev/null; }
+_sched() { sh "$OS_ROOT/bin/os-sched" "$@" 2>/dev/null; }
 
 # status (no crash)
 out=$(_sched status)
@@ -496,7 +496,7 @@ echo "$out" | grep -qi "algorithm\|priority\|round" \
 # ---------------------------------------------------------------------------
 section "os-perms — permissions model"
 
-_perms() { OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-perms" "$@" 2>/dev/null; }
+_perms() { sh "$OS_ROOT/bin/os-perms" "$@" 2>/dev/null; }
 
 # init creates default caps files
 _perms init >/dev/null
@@ -532,7 +532,7 @@ rm -f "$OS_ROOT/etc/perms.d/test-principal-$$.caps"
 # ---------------------------------------------------------------------------
 section "os-resource — resource manager"
 
-_res() { OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-resource" "$@" 2>/dev/null; }
+_res() { sh "$OS_ROOT/bin/os-resource" "$@" 2>/dev/null; }
 
 out=$(_res status)
 [ -n "$out" ] \
@@ -567,7 +567,7 @@ rm -f "$_snap_file"
 # ---------------------------------------------------------------------------
 section "os-recover — recovery mode"
 
-_rec() { OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-recover" "$@" 2>/dev/null; }
+_rec() { sh "$OS_ROOT/bin/os-recover" "$@" 2>/dev/null; }
 
 # check completes without error
 out=$(_rec check)
@@ -599,7 +599,7 @@ echo "$out" | grep -qi "python3\|sh\|awk" \
 # ---------------------------------------------------------------------------
 section "os-netconf — network configuration"
 
-_net() { OS_ROOT="$OS_ROOT" sh "$OS_ROOT/bin/os-netconf" "$@" 2>/dev/null; }
+_net() { sh "$OS_ROOT/bin/os-netconf" "$@" 2>/dev/null; }
 
 out=$(_net interfaces)
 [ -n "$out" ] \
@@ -632,7 +632,7 @@ _HTTP_PORT=18080
 _HTTP_PID_FILE="$OS_ROOT/var/service/test-httpd-$$.pid"
 
 # Start the server in background (no-auth for test simplicity)
-OS_ROOT="$OS_ROOT" AIOS_HOME="$REPO_ROOT" python3 "$OS_ROOT/bin/os-httpd" \
+AIOS_HOME="$REPO_ROOT" python3 "$OS_ROOT/bin/os-httpd" \
     --port "$_HTTP_PORT" --no-auth &
 _http_pid=$!
 echo "$_http_pid" > "$_HTTP_PID_FILE"

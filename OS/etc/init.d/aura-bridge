@@ -17,6 +17,22 @@ else
     mkdir -p "$(dirname "$LOG")"
     echo "$(date '+%Y-%m-%dT%H:%M:%SZ') WARNING: detect.mod not found" >> "$LOG"
     detect_host_os()     { echo "unknown"; }
+_MOD="$OS_ROOT/lib/aura-bridge/detect.mod"
+if [ ! -f "$_MOD" ]; then
+    echo "[aura-bridge] WARNING: detect.mod not found at $_MOD — bridge detection skipped" >&2
+    health "status=degraded
+reason=detect.mod_missing
+time=$(date +%s)"
+    exit 0
+fi
+. "$_MOD"
+# Guard: source detect.mod only when present; define no-op stubs otherwise
+# so that bridge start never aborts the boot sequence.
+if [ -f "$OS_ROOT/lib/aura-bridge/detect.mod" ]; then
+    . "$OS_ROOT/lib/aura-bridge/detect.mod"
+else
+    echo "[aura-bridge] WARNING: detect.mod not found — bridge running in stub mode." >&2
+    detect_host_os()    { echo "unknown"; }
     bridge_write_status() { :; }
 fi
 
