@@ -19,10 +19,10 @@ from typing import List, Optional
 
 try:
     from .intent_engine import Intent              # type: ignore  (package)
-    from .bots import BaseBot, HealthBot, LogBot, RepairBot, UpgradeBot  # type: ignore
+    from .bots import BaseBot, HealthBot, LogBot, RepairBot, UpgradeBot, ProcessBot, NetworkBot, MemoryBot  # type: ignore
 except ImportError:
     from intent_engine import Intent               # type: ignore  (standalone)
-    from bots import BaseBot, HealthBot, LogBot, RepairBot, UpgradeBot   # type: ignore
+    from bots import BaseBot, HealthBot, LogBot, RepairBot, UpgradeBot, ProcessBot, NetworkBot, MemoryBot   # type: ignore
 
 
 class Router:
@@ -49,6 +49,9 @@ class Router:
             UpgradeBot(os_root=self.os_root),
             HealthBot(os_root=self.os_root),
             LogBot(os_root=self.os_root),
+            ProcessBot(os_root=self.os_root),
+            NetworkBot(os_root=self.os_root),
+            MemoryBot(os_root=self.os_root),
         ]
 
     def register_bot(self, bot: BaseBot) -> None:

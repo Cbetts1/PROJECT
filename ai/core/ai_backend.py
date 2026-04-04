@@ -10,6 +10,13 @@ Pipeline:
     user input
         → IntentEngine.classify()
         → Router.dispatch(intent)          ← primary (bot-based) path
+            HealthBot  — health / system status
+            LogBot     — log reading / writing
+            RepairBot  — self-repair / reinstall
+            UpgradeBot — package / system upgrades
+            ProcessBot — process listing / termination
+            NetworkBot — ping / ifconfig / discover
+            MemoryBot  — key-value and semantic memory
         → [fallback] parse_natural_language()  ← legacy structured commands
         → [fallback] run_mock()            ← chat / LLaMA
 
