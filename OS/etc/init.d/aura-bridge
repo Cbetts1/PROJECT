@@ -8,6 +8,15 @@ LOG="$OS_ROOT/var/log/bridge.log"
 
 health() { mkdir -p "$(dirname "$HEALTH")"; echo "$1" > "$HEALTH"; }
 
+_MOD="$OS_ROOT/lib/aura-bridge/detect.mod"
+if [ ! -f "$_MOD" ]; then
+    echo "[aura-bridge] WARNING: detect.mod not found at $_MOD — bridge detection skipped" >&2
+    health "status=degraded
+reason=detect.mod_missing
+time=$(date +%s)"
+    exit 0
+fi
+. "$_MOD"
 # Guard: source detect.mod only when present; define no-op stubs otherwise
 # so that bridge start never aborts the boot sequence.
 if [ -f "$OS_ROOT/lib/aura-bridge/detect.mod" ]; then

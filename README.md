@@ -118,6 +118,12 @@ common commands and natural-language questions.
 
 # Option 5: explicit bash
 bash bin/aios
+
+# Option 5: boot AIOS-Lite virtual OS (init + rc2.d services + shell)
+./run-os.sh
+
+# Option 6: boot services only, no interactive shell (CI / automation)
+./run-os.sh --no-shell
 ```
 
 ### Boot Sequence

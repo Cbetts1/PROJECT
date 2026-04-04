@@ -1,6 +1,27 @@
 #!/bin/sh
 # os-ai — Interactive AI assistant powered by Aura LLM module
 
+# ---------------------------------------------------------------------------
+# Resolve OS_ROOT and AIOS_HOME from script location if not already set
+# ---------------------------------------------------------------------------
+if [ -z "${OS_ROOT:-}" ]; then
+    _SCRIPT_DIR="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
+    OS_ROOT="${_SCRIPT_DIR:-/}"
+fi
+export OS_ROOT
+AIOS_HOME="${AIOS_HOME:-$(cd "$OS_ROOT/.." 2>/dev/null && pwd)}"
+export AIOS_HOME
+export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+
+# ---------------------------------------------------------------------------
+# Load AURA modules (best-effort; missing modules degrade gracefully)
+# ---------------------------------------------------------------------------
+_load_mod() { [ -f "$1" ] && . "$1" 2>/dev/null || true; }
+_load_mod "$OS_ROOT/lib/aura-memory/engine.mod"
+_load_mod "$OS_ROOT/lib/aura-semantic/embed.mod"
+_load_mod "$OS_ROOT/lib/aura-semantic/engine.mod"
+_load_mod "$OS_ROOT/lib/aura-hybrid/engine.mod"
+_load_mod "$OS_ROOT/lib/aura-llm/llm.mod"
 # Derive OS_ROOT from this script's location ($0 lives at $OS_ROOT/bin/os-ai)
 _SCRIPT_DIR="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
 OS_ROOT="${OS_ROOT:-$_SCRIPT_DIR}"
@@ -18,10 +39,48 @@ do
     [ -f "$_mod" ] && . "$_mod"
 done
 
+# Ensure runtime dirs exist
 MEMROOT="$OS_ROOT/proc/aura/memory"
 SEMROOT="$OS_ROOT/proc/aura/semantic"
-mkdir -p "$MEMROOT" "$SEMROOT"
+mkdir -p "$MEMROOT" "$SEMROOT" "$OS_ROOT/proc/aura/context" "$OS_ROOT/var/log"
 
+# Provide a no-op ctx_add if the hybrid module was not loaded
+if ! command -v ctx_add >/dev/null 2>&1; then
+    ctx_add() { :; }
+fi
+
+# ---------------------------------------------------------------------------
+# LLaMA model autodetect — searches multiple standard locations
+# ---------------------------------------------------------------------------
+_detect_model() {
+    for d in \
+        "${LLM_MODEL_DIR:-}" \
+        "$OS_ROOT/llama_model" \
+        "$AIOS_HOME/llama_model" \
+        "$AIOS_HOME/models" \
+        "$HOME/.aios/models"
+    do
+        [ -z "$d" ] && continue
+        m=$(find "$d" -maxdepth 2 \( -name "*.gguf" -o -name "*.bin" \) 2>/dev/null | head -1)
+        [ -n "$m" ] && { echo "$m"; return 0; }
+    done
+    return 1
+}
+
+# Override llm_model (from llm.mod) with our multi-path search
+llm_model() { _detect_model; }
+
+# If llm.mod was not loaded, provide minimal stubs so the REPL works
+if ! command -v llm_query >/dev/null 2>&1; then
+    llm_available() { return 1; }
+    llm_query() {
+        echo "I don't have a specific answer for that. Install a .gguf model in $AIOS_HOME/llama_model/ to enable full AI."
+    }
+fi
+
+# ---------------------------------------------------------------------------
+# Main — single-shot command or interactive REPL
+# ---------------------------------------------------------------------------
 if [ "$1" = "-c" ] || [ "$1" = "--cmd" ]; then
     shift
     llm_query "$*"
@@ -29,11 +88,16 @@ if [ "$1" = "-c" ] || [ "$1" = "--cmd" ]; then
 fi
 
 echo "AIOS-Lite AI Assistant"
-if bin=$(llm_available) && model=$(llm_model); then
-    echo "LLM: $bin | Model: $(basename "$model")"
+_llm_bin=""
+_llm_model=""
+_llm_bin=$(llm_available 2>/dev/null) || true
+_llm_model=$(_detect_model 2>/dev/null) || true
+
+if [ -n "$_llm_bin" ] && [ -n "$_llm_model" ]; then
+    echo "LLM: $_llm_bin | Model: $(basename "$_llm_model")"
 else
     echo "LLM: rule-based fallback (no llama model found)"
-    echo "Place a .gguf model in $OS_ROOT/llama_model/ to enable full AI"
+    echo "Place a .gguf model in $AIOS_HOME/llama_model/ to enable full AI"
 fi
 echo "Type 'exit' to quit."
 echo
@@ -49,3 +113,4 @@ while true; do
     echo "$response"
     echo
 done
+
