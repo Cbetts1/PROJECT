@@ -8,6 +8,7 @@
 #
 # Usage:
 #   ./bin/aios
+#   ./run.sh
 
 AIOS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export AIOS_ROOT
@@ -32,6 +33,16 @@ export AIOS_ROOT
 # shellcheck source=lib/aura-ai.sh
 . "${AIOS_ROOT}/lib/aura-ai.sh"
 
+# ---------------------------------------------------------------------------
+# Readline history
+# ---------------------------------------------------------------------------
+AIOS_HISTFILE="${AIOS_HISTFILE:-${AIOS_ROOT}/var/run/aios_history}"
+mkdir -p "$(dirname "${AIOS_HISTFILE}")"
+HISTFILE="${AIOS_HISTFILE}"
+HISTSIZE=500
+HISTFILESIZE=1000
+set -o history 2>/dev/null || true   # enable history in non-interactive mode
+
 prompt="aios> "
 
 # ---------------------------------------------------------------------------
@@ -41,7 +52,7 @@ _aios_setup_status() {
     local ok=1
 
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  AIOS — AI Operating System Shell"
+    echo "  AIOS — AI Operating System Shell  v1.0 (Aurora)"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     # OS jail
@@ -98,6 +109,74 @@ _aios_setup_status() {
     echo
 }
 
+# ---------------------------------------------------------------------------
+# Built-in: status — show live kernel/AI state
+# ---------------------------------------------------------------------------
+_aios_status() {
+    local state_file="${OS_ROOT}/proc/os.state"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  AIOS System Status"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    printf "  AI backend : %s\n" "${AI_BACKEND:-mock}"
+    printf "  OS jail    : %s\n" "${OS_ROOT}"
+    printf "  AIOS root  : %s\n" "${AIOS_ROOT}"
+    printf "  Log file   : %s\n" "${AIOS_LOG_FILE}"
+    if [[ -f "${state_file}" ]]; then
+        local bt
+        bt=$(grep -m1 "^boot_time=" "${state_file}" 2>/dev/null | cut -d= -f2 || echo "unknown")
+        if [[ "${bt}" =~ ^[0-9]+$ ]]; then
+            local now; now=$(date +%s)
+            local uptime=$(( now - bt ))
+            printf "  Uptime     : %ds\n" "${uptime}"
+        fi
+        local kpid
+        kpid=$(grep -m1 "^kernel_pid=" "${state_file}" 2>/dev/null | cut -d= -f2 || echo "?")
+        printf "  Kernel PID : %s\n" "${kpid}"
+    fi
+    local log_lines=0
+    [[ -f "${AIOS_LOG_FILE}" ]] && log_lines=$(wc -l < "${AIOS_LOG_FILE}" 2>/dev/null || echo 0)
+    printf "  Log lines  : %s\n" "${log_lines}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+}
+
+# ---------------------------------------------------------------------------
+# Built-in: sysinfo — summary of host + OS environment
+# ---------------------------------------------------------------------------
+_aios_sysinfo() {
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  AIOS System Information"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    printf "  OS name    : AIOS Aurora v1.0\n"
+    printf "  Host OS    : %s %s\n" "$(uname -s)" "$(uname -r)"
+    printf "  Hostname   : %s\n" "$(hostname 2>/dev/null || echo unknown)"
+    printf "  User       : %s\n" "${USER:-${LOGNAME:-unknown}}"
+    if command -v free &>/dev/null; then
+        local mem
+        mem=$(free -h 2>/dev/null | awk '/^Mem:/ {print $2 " total, " $3 " used"}')
+        printf "  Memory     : %s\n" "${mem}"
+    fi
+    if command -v df &>/dev/null; then
+        local disk
+        disk=$(df -h "${AIOS_ROOT}" 2>/dev/null | awk 'NR==2 {print $4 " free of " $2}')
+        printf "  Disk (root): %s\n" "${disk}"
+    fi
+    printf "  Bash ver   : %s\n" "${BASH_VERSION}"
+    if command -v python3 &>/dev/null; then
+        printf "  Python     : %s\n" "$(python3 --version 2>&1)"
+    fi
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+}
+
+# ---------------------------------------------------------------------------
+# Built-in: log.tail — show last N lines of aios.log
+# ---------------------------------------------------------------------------
+_aios_log_tail() {
+    local n="${1:-20}"
+    if [[ ! "${n}" =~ ^[0-9]+$ ]]; then n=20; fi
+    echo "--- last ${n} lines of ${AIOS_LOG_FILE} ---"
+    tail -n "${n}" "${AIOS_LOG_FILE}" 2>/dev/null || echo "(log empty)"
+}
+
 _aios_setup_status
 log "INFO" "AIOS AI shell started. OS_ROOT=${OS_ROOT} AI_BACKEND=${AI_BACKEND:-mock}"
 
@@ -105,9 +184,19 @@ log "INFO" "AIOS AI shell started. OS_ROOT=${OS_ROOT} AI_BACKEND=${AI_BACKEND:-m
 # Main REPL
 # ---------------------------------------------------------------------------
 while true; do
-    if ! read -rp "${prompt}" line; then
-        echo
-        break
+    # Use readline-enabled read when in interactive terminal, plain read otherwise
+    if [[ -t 0 ]]; then
+        if ! read -r -e -p "${prompt}" line; then
+            echo
+            break
+        fi
+        # Add non-empty lines to history
+        [[ -n "${line}" ]] && history -s "${line}"
+    else
+        if ! read -rp "${prompt}" line; then
+            echo
+            break
+        fi
     fi
 
     # Strip leading/trailing whitespace
@@ -121,6 +210,8 @@ while true; do
     case "${line}" in
         exit|quit)
             log "INFO" "AIOS AI shell exiting"
+            # Save history
+            history -a 2>/dev/null || true
             echo "Goodbye."
             break
             ;;
@@ -148,6 +239,11 @@ Network:
   net.ifconfig             Show network interfaces
 
 System:
+  status                   Show live system status
+  sysinfo                  Show host + environment info
+  version                  Print AIOS version
+  log.tail [n]             Show last N lines of aios.log (default: 20)
+  clear                    Clear screen
   sys                      Enter real OS shell (unrestricted)
   sys -- <cmd> [args]      Run one AIOS command non-interactively
 
@@ -158,8 +254,39 @@ Other:
 Natural language:
   Type anything else and the AI backend will interpret or respond.
   Typos in command names are automatically corrected (fuzzy matching).
+  Up/Down arrow keys cycle through command history.
 ══════════════════════════════════════════════════════
 EOF
+            continue
+            ;;
+
+        version)
+            echo "AIOS Aurora v1.0 — AI Operating System Shell"
+            echo "  AIOS_ROOT : ${AIOS_ROOT}"
+            echo "  OS_ROOT   : ${OS_ROOT}"
+            echo "  AI backend: ${AI_BACKEND:-mock}"
+            continue
+            ;;
+
+        status)
+            _aios_status
+            continue
+            ;;
+
+        sysinfo)
+            _aios_sysinfo
+            continue
+            ;;
+
+        clear)
+            clear
+            continue
+            ;;
+
+        log.tail|log.tail\ *)
+            _rest="${line#log.tail}"
+            _rest="${_rest# }"
+            _aios_log_tail "${_rest:-20}"
             continue
             ;;
 
@@ -192,6 +319,7 @@ EOF
     fi
 
     if run_command "${cmd_name}" ${cmd_args:+${cmd_args}}; then
+        log "INFO" "Command executed: ${cmd_name}"
         continue
     fi
 
@@ -204,6 +332,7 @@ EOF
         if read -r -t 10 ans; then
             if [[ -z "${ans}" || "${ans}" =~ ^[Yy]$ ]]; then
                 if run_command "${suggestion}" ${cmd_args:+${cmd_args}}; then
+                    log "INFO" "Typo-corrected command executed: ${suggestion}"
                     continue
                 fi
             fi
@@ -216,6 +345,11 @@ EOF
     # Sanitize input before passing to AI backend (Level 13 security)
     sanitized_line=$(sanitize_input "${line}")
     echo "[AIOS] Routing to AI..."
+    log "INFO" "AI query: ${sanitized_line}"
     aura_ai_query "${sanitized_line}"
 
 done
+
+# Persist history on clean exit
+history -a 2>/dev/null || true
+

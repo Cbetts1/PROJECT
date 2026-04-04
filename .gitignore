@@ -9,6 +9,7 @@ __pycache__/
 *.pyc
 *.pyo
 aura/__pycache__/
+
 # Runtime-generated files (state, events, logs)
 OS/var/events/*.event
 OS/var/log/*
@@ -17,11 +18,14 @@ OS/var/log/*
 !OS/var/log/aura.log
 OS/var/service/
 OS/var/boot.time
-# Keep initial os.state placeholder
-!OS/proc/os.state
+
+# Kernel / boot state files — regenerated at runtime
+OS/proc/os.state
 OS/proc/os.messages
+OS/proc/aura/context/window
 OS/proc/aura/bridge/status
 OS/proc/aura.memory.bak
+
 # Runtime-generated semantic/memory test entries
 OS/proc/aura/semantic/sem_test_*.sem
 OS/proc/aura/semantic/test_sem_*.sem
@@ -29,3 +33,18 @@ OS/proc/aura/memory/test_key_*.mem
 OS/proc/aura/memory/testkey123.mem
 OS/etc/aura/semantic.index.tmp
 OS/etc/aura/memory.index.tmp
+# Test-generated index entries (written during test runs)
+OS/etc/aura/semantic.index
+OS/etc/aura/memory.index
+
+# Shell REPL history (user-specific, contains live session data)
+var/run/aios_history
+
+# AIOS runtime logs (var/ at repo root)
+var/log/aios.log
+var/log/heartbeat.log
+var/log/*.log
+
+# Keep .gitkeep placeholders
+!var/log/.gitkeep
+!var/run/.gitkeep
