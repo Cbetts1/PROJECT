@@ -752,7 +752,7 @@ class TestRouterExtended(unittest.TestCase):
 
     def test_init_bots_creates_three_bots(self):
         r = router.Router(os_root=self.tmpdir, aios_root=self.tmpdir)
-        self.assertEqual(len(r._bots), 4)
+        self.assertEqual(len(r._bots), 7)
 
     def test_registered_bot_has_highest_priority(self):
         class AlwaysBot(bots.BaseBot):
@@ -966,6 +966,243 @@ class TestFuzzyExtended(unittest.TestCase):
     def test_high_cutoff_rejects_poor_match(self):
         result = fuzzy.best_match("xyz", self.CMDS, cutoff=0.9)
         self.assertEqual(result, "")
+
+
+# ===========================================================================
+# ProcessBot
+# ===========================================================================
+
+class TestProcessBot(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.bot = bots.ProcessBot(os_root=self.tmpdir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _intent(self, category, action, entities=None):
+        return intent_engine.Intent(
+            category=category, action=action,
+            entities=entities or {}, raw=""
+        )
+
+    def test_can_handle_proc_ps(self):
+        self.assertTrue(self.bot.can_handle(self._intent("command", "proc.ps")))
+
+    def test_can_handle_proc_kill(self):
+        self.assertTrue(self.bot.can_handle(self._intent("command", "proc.kill")))
+
+    def test_cannot_handle_health(self):
+        self.assertFalse(self.bot.can_handle(self._intent("health", "check")))
+
+    def test_cannot_handle_wrong_action(self):
+        self.assertFalse(self.bot.can_handle(self._intent("command", "fs.ls")))
+
+    def test_ps_returns_string(self):
+        result = self.bot.handle(self._intent("command", "proc.ps"))
+        self.assertIsInstance(result, str)
+        self.assertGreater(len(result), 0)
+
+    def test_kill_missing_pid_returns_usage(self):
+        result = self.bot.handle(self._intent("command", "proc.kill", {}))
+        self.assertIn("Usage", result)
+
+    def test_kill_invalid_pid_returns_error(self):
+        result = self.bot.handle(
+            self._intent("command", "proc.kill", {"pid": "abc"})
+        )
+        self.assertIn("Invalid PID", result)
+
+    def test_kill_valid_pid_format(self):
+        # PID 999999 almost certainly doesn't exist; kill should fail gracefully
+        result = self.bot.handle(
+            self._intent("command", "proc.kill", {"pid": "999999"})
+        )
+        self.assertIsInstance(result, str)
+
+
+# ===========================================================================
+# NetworkBot
+# ===========================================================================
+
+class TestNetworkBot(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.bot = bots.NetworkBot(os_root=self.tmpdir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _intent(self, category, action, entities=None):
+        return intent_engine.Intent(
+            category=category, action=action,
+            entities=entities or {}, raw=""
+        )
+
+    def test_can_handle_net_ping(self):
+        self.assertTrue(self.bot.can_handle(self._intent("command", "net.ping")))
+
+    def test_can_handle_net_ifconfig(self):
+        self.assertTrue(self.bot.can_handle(self._intent("command", "net.ifconfig")))
+
+    def test_can_handle_net_netconf(self):
+        self.assertTrue(self.bot.can_handle(self._intent("command", "net.netconf")))
+
+    def test_can_handle_net_discover(self):
+        self.assertTrue(self.bot.can_handle(self._intent("command", "net.discover")))
+
+    def test_cannot_handle_health(self):
+        self.assertFalse(self.bot.can_handle(self._intent("health", "status")))
+
+    def test_cannot_handle_wrong_action(self):
+        self.assertFalse(self.bot.can_handle(self._intent("command", "proc.ps")))
+
+    def test_offline_mode_blocks_ping(self):
+        with unittest.mock.patch.dict(os.environ, {"OFFLINE_MODE": "1"}):
+            result = self.bot.handle(self._intent("command", "net.ping", {"host": "8.8.8.8"}))
+        self.assertIn("OFFLINE_MODE", result)
+
+    def test_offline_mode_blocks_discover(self):
+        with unittest.mock.patch.dict(os.environ, {"OFFLINE_MODE": "1"}):
+            result = self.bot.handle(self._intent("command", "net.discover"))
+        self.assertIn("OFFLINE_MODE", result)
+
+    def test_ifconfig_returns_string(self):
+        result = self.bot.handle(self._intent("command", "net.ifconfig"))
+        self.assertIsInstance(result, str)
+        self.assertGreater(len(result), 0)
+
+    def test_ping_uses_default_host_when_empty(self):
+        with unittest.mock.patch.object(self.bot, "_run", return_value="pong") as mock_run:
+            self.bot.handle(self._intent("command", "net.ping", {"host": ""}))
+            args = mock_run.call_args[0][0]
+            self.assertEqual(args[-1], "8.8.8.8")
+
+    def test_ping_uses_provided_host(self):
+        with unittest.mock.patch.object(self.bot, "_run", return_value="pong") as mock_run:
+            self.bot.handle(self._intent("command", "net.ping", {"host": "1.1.1.1"}))
+            args = mock_run.call_args[0][0]
+            self.assertEqual(args[-1], "1.1.1.1")
+
+
+# ===========================================================================
+# MemoryBot
+# ===========================================================================
+
+class TestMemoryBot(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.bot = bots.MemoryBot(os_root=self.tmpdir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _intent(self, action, entities=None):
+        return intent_engine.Intent(
+            category="memory", action=action,
+            entities=entities or {}, raw=""
+        )
+
+    def test_can_handle_memory_category(self):
+        self.assertTrue(self.bot.can_handle(self._intent("mem.set")))
+
+    def test_cannot_handle_health(self):
+        i = intent_engine.Intent(category="health", action="check", entities={}, raw="")
+        self.assertFalse(self.bot.can_handle(i))
+
+    def test_mem_set_and_get_roundtrip(self):
+        self.bot.handle(self._intent("mem.set", {"kv": "mykey myvalue"}))
+        result = self.bot.handle(self._intent("mem.get", {"key": "mykey"}))
+        self.assertEqual(result, "myvalue")
+
+    def test_mem_set_equals_syntax(self):
+        self.bot.handle(self._intent("mem.set", {"kv": "cfg=debug"}))
+        result = self.bot.handle(self._intent("mem.get", {"key": "cfg"}))
+        self.assertEqual(result, "debug")
+
+    def test_mem_set_missing_kv_returns_usage(self):
+        result = self.bot.handle(self._intent("mem.set", {"kv": ""}))
+        self.assertIn("Usage", result)
+
+    def test_mem_set_missing_value_returns_usage(self):
+        result = self.bot.handle(self._intent("mem.set", {"kv": "onlykey"}))
+        self.assertIn("Usage", result)
+
+    def test_mem_get_missing_key_returns_usage(self):
+        result = self.bot.handle(self._intent("mem.get", {"key": ""}))
+        self.assertIn("Usage", result)
+
+    def test_mem_get_unknown_key_returns_no_memory(self):
+        result = self.bot.handle(self._intent("mem.get", {"key": "nosuchkey"}))
+        self.assertIn("no memory", result)
+
+    def test_sem_set_and_search(self):
+        self.bot.handle(self._intent("sem.set", {"kv": "doc1 hello world"}))
+        result = self.bot.handle(self._intent("sem.search", {"query": "hello"}))
+        self.assertIn("doc1", result)
+
+    def test_sem_search_no_match(self):
+        result = self.bot.handle(self._intent("sem.search", {"query": "xyzzy_no_match"}))
+        self.assertIn("No semantic matches", result)
+
+    def test_sem_search_empty_query(self):
+        result = self.bot.handle(self._intent("sem.search", {"query": ""}))
+        self.assertIn("Usage", result)
+
+    def test_unknown_action_returns_error(self):
+        result = self.bot.handle(self._intent("memory.unknown"))
+        self.assertIn("Unknown", result)
+
+    def test_mem_set_creates_files(self):
+        self.bot.handle(self._intent("mem.set", {"kv": "testkey testval"}))
+        mem_file = os.path.join(self.tmpdir, "proc", "aura", "memory", "testkey.mem")
+        self.assertTrue(os.path.isfile(mem_file))
+
+    def test_index_update_idempotent(self):
+        """Setting the same key twice should not duplicate index entries."""
+        self.bot.handle(self._intent("mem.set", {"kv": "dupkey val1"}))
+        self.bot.handle(self._intent("mem.set", {"kv": "dupkey val2"}))
+        index_path = os.path.join(self.tmpdir, "etc", "aura", "memory.index")
+        with open(index_path) as fh:
+            lines = [l for l in fh.readlines() if l.startswith("dupkey |")]
+        self.assertEqual(len(lines), 1)
+        # Value should be updated to val2
+        result = self.bot.handle(self._intent("mem.get", {"key": "dupkey"}))
+        self.assertEqual(result, "val2")
+
+
+# ===========================================================================
+# Router — new bots registered
+# ===========================================================================
+
+class TestRouterNewBots(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.router = router.Router(os_root=self.tmpdir)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _intent(self, category, action, entities=None):
+        return intent_engine.Intent(
+            category=category, action=action,
+            entities=entities or {}, raw=""
+        )
+
+    def test_proc_ps_dispatched_to_process_bot(self):
+        result = self.router.dispatch(self._intent("command", "proc.ps"))
+        self.assertIsNotNone(result)
+
+    def test_net_ifconfig_dispatched_to_network_bot(self):
+        result = self.router.dispatch(self._intent("command", "net.ifconfig"))
+        self.assertIsNotNone(result)
+
+    def test_memory_dispatched_to_memory_bot(self):
+        result = self.router.dispatch(self._intent("memory", "mem.get", {"key": "x"}))
+        self.assertIsNotNone(result)
+
+    def test_init_bots_creates_seven_bots(self):
+        self.assertEqual(len(self.router._bots), 7)
 
 
 # ===========================================================================
