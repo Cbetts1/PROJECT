@@ -119,7 +119,7 @@ bash bin/aios
 
 ### Boot Sequence
 
-`./run.sh` runs the full 5-stage boot pipeline before opening the shell:
+`./run.sh` runs the full six-stage boot pipeline before opening the shell:
 
 ```
 [BOOT] Stage 0 — Environment Detection
@@ -297,7 +297,7 @@ User Input
     │  → intent tag (e.g. "system.health", "fs.read", "net.wifi.scan")
     │
     ▼  Router.dispatch(intent)
-    │  → HealthBot / LogBot / RepairBot / NetworkBot / FSBot / ...
+    │  → HealthBot / LogBot / RepairBot / UpgradeBot
     │
     ▼  Handler executes action
     │  → os-service, os-netconf, os-resource, os-log, os-event, ...
@@ -319,7 +319,7 @@ between the OS Services Layer and the AI Shell.
 |---|---|---|
 | **IntentEngine** | `ai/core/intent_engine.py` | Classify natural language into intent tags |
 | **Router** | `ai/core/router.py` | Dispatch intents to subsystem handlers |
-| **Bots** | `ai/core/bots.py` | HealthBot, LogBot, RepairBot — specialized handlers |
+| **Bots** | `ai/core/bots.py` | HealthBot, LogBot, RepairBot, UpgradeBot — specialized handlers |
 | **LLM Client** | `ai/core/llama_client.py` | Interface to llama.cpp for free-form reasoning |
 | **AI Backend** | `ai/core/ai_backend.py` | Top-level pipeline wiring |
 | **Memory** | `OS/lib/aura-memory/` | Hybrid context + symbolic + semantic memory |
@@ -376,22 +376,26 @@ ls $OS_ROOT/mirror/linux/ssh_10.0.0.5/
 # Start AI-OS
 ./bin/aios
 
-# Natural language
-aios> ask what services are running
-aios> ask is my WiFi connected
-aios> ask repair all broken services
+# Natural language (routed to AI backend)
+aios> what services are running?
+aios> repair all broken services
 
-# OS commands (dot notation)
+# Filesystem commands (confined to OS_ROOT)
 aios> fs.ls /
-aios> proc.list
-aios> net.wifi.scan
-aios> mem.set project "AI-OS v1"
-aios> recall project
+aios> fs.mkdir /home/mydir
+aios> fs.write /home/mydir/hello.txt Hello from AIOS!
+aios> fs.cat /home/mydir/hello.txt
 
-# Service management
-aios> services
-aios> service start aura-bridge
-aios> health
+# Process and network
+aios> proc.ps
+aios> net.ping 8.8.8.8
+aios> net.ifconfig
+
+# System info and status
+aios> status
+aios> sysinfo
+aios> version
+aios> log.tail 20
 
 # Drop to raw OS shell
 aios> sys

@@ -11,6 +11,9 @@ HealthBot   — system health checks and status reporting
 LogBot      — log inspection and log-writing
 RepairBot   — self-repair, reinstall, and recovery triggers
 UpgradeBot  — package and system upgrade/update management
+ProcessBot  — process listing and termination
+NetworkBot  — ping, ifconfig, and other network operations
+MemoryBot   — key-value and semantic memory store
 """
 from __future__ import annotations
 
@@ -330,4 +333,290 @@ class UpgradeBot(BaseBot):
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
                 return f"[UpgradeBot] upgrade-all failed: {exc}"
         return "[UpgradeBot] os-install not found; cannot upgrade packages"
+
+
+# ---------------------------------------------------------------------------
+# ProcessBot
+# ---------------------------------------------------------------------------
+
+class ProcessBot(BaseBot):
+    """Handles process listing and termination.
+
+    Mirrors the aura_proc_ps / aura_proc_kill logic from lib/aura-proc.sh
+    directly in Python so these intents don't fall through to the legacy
+    commands.py path.
+    """
+
+    name = "ProcessBot"
+    _CATEGORIES = {"command"}
+    _ACTIONS = {"proc.ps", "proc.kill"}
+
+    def can_handle(self, intent: Intent) -> bool:
+        return intent.category in self._CATEGORIES and intent.action in self._ACTIONS
+
+    def handle(self, intent: Intent) -> str:
+        if intent.action == "proc.kill":
+            pid = intent.entities.get("pid", "").strip()
+            if not pid:
+                return "[ProcessBot] Usage: kill <pid>"
+            return self._kill(pid)
+        return self._ps()
+
+    # ------------------------------------------------------------------
+
+    def _ps(self) -> str:
+        return self._run(["ps", "aux"])
+
+    def _kill(self, pid: str) -> str:
+        if not pid.isdigit():
+            return f"[ProcessBot] Invalid PID: {pid}"
+        result = self._run(["kill", pid])
+        if result.startswith(f"[{self.name}]"):
+            return result  # error from _run
+        return f"[ProcessBot] Sent SIGTERM to PID {pid}"
+
+
+# ---------------------------------------------------------------------------
+# NetworkBot
+# ---------------------------------------------------------------------------
+
+class NetworkBot(BaseBot):
+    """Handles network operations: ping, ifconfig, and discovery.
+
+    Mirrors the aura_net_ping / aura_net_ifconfig logic from lib/aura-net.sh
+    directly in Python, including the OFFLINE_MODE guard.
+    """
+
+    name = "NetworkBot"
+    _CATEGORIES = {"command"}
+    _ACTIONS = {"net.ping", "net.ifconfig", "net.netconf", "net.discover"}
+
+    def can_handle(self, intent: Intent) -> bool:
+        return intent.category in self._CATEGORIES and intent.action in self._ACTIONS
+
+    def handle(self, intent: Intent) -> str:
+        action = intent.action
+        if action == "net.ping":
+            host = intent.entities.get("host", "8.8.8.8").strip() or "8.8.8.8"
+            return self._ping(host)
+        if action == "net.ifconfig":
+            return self._ifconfig()
+        if action == "net.discover":
+            return self._discover()
+        # net.netconf — show resolved network config
+        return self._ifconfig()
+
+    # ------------------------------------------------------------------
+
+    def _offline(self) -> bool:
+        return os.environ.get("OFFLINE_MODE", "0") == "1"
+
+    def _ping(self, host: str) -> str:
+        if self._offline():
+            return "[NetworkBot] Network disabled (OFFLINE_MODE=1)"
+        return self._run(["ping", "-c", "4", host])
+
+    def _ifconfig(self) -> str:
+        import shutil
+        if shutil.which("ip"):
+            return self._run(["ip", "addr", "show"])
+        if shutil.which("ifconfig"):
+            return self._run(["ifconfig"])
+        return "[NetworkBot] Neither 'ip' nor 'ifconfig' found"
+
+    def _discover(self) -> str:
+        if self._offline():
+            return "[NetworkBot] Network disabled (OFFLINE_MODE=1)"
+        # Best-effort: list active network interfaces with addresses
+        return self._ifconfig()
+
+
+# ---------------------------------------------------------------------------
+# MemoryBot
+# ---------------------------------------------------------------------------
+
+class MemoryBot(BaseBot):
+    """Handles key-value and semantic memory operations.
+
+    The key-value store mirrors the shell logic from
+    OS/lib/aura-memory/engine.mod, storing values as plain-text files in
+    OS_ROOT/proc/aura/memory/ and maintaining an index in
+    OS_ROOT/etc/aura/memory.index.
+    """
+
+    name = "MemoryBot"
+    _CATEGORIES = {"memory"}
+
+    def can_handle(self, intent: Intent) -> bool:
+        return intent.category in self._CATEGORIES
+
+    def handle(self, intent: Intent) -> str:
+        action = intent.action
+        if action == "mem.set":
+            kv = intent.entities.get("kv", "").strip()
+            return self._mem_set(kv)
+        if action == "mem.get":
+            key = intent.entities.get("key", "").strip()
+            return self._mem_get(key)
+        if action == "sem.set":
+            kv = intent.entities.get("kv", "").strip()
+            return self._sem_set(kv)
+        if action == "sem.search":
+            query = intent.entities.get("query", "").strip()
+            return self._sem_search(query)
+        return "[MemoryBot] Unknown memory action"
+
+    # ------------------------------------------------------------------
+
+    def _mem_root(self) -> str:
+        return os.path.join(self.os_root, "proc", "aura", "memory")
+
+    def _mem_index(self) -> str:
+        return os.path.join(self.os_root, "etc", "aura", "memory.index")
+
+    def _sem_root(self) -> str:
+        return os.path.join(self.os_root, "proc", "aura", "semantic")
+
+    def _sem_index(self) -> str:
+        return os.path.join(self.os_root, "etc", "aura", "semantic.index")
+
+    def _ensure_dirs(self) -> None:
+        os.makedirs(self._mem_root(), exist_ok=True)
+        os.makedirs(self._sem_root(), exist_ok=True)
+        os.makedirs(os.path.dirname(self._mem_index()), exist_ok=True)
+
+    def _mem_set(self, kv: str) -> str:
+        """Store key=value or 'key value' into the memory store."""
+        if not kv:
+            return "[MemoryBot] Usage: mem.set <key> <value>"
+        # Accept both "key value" and "key=value"
+        if "=" in kv and " " not in kv.split("=")[0]:
+            key, _, val = kv.partition("=")
+        else:
+            parts = kv.split(maxsplit=1)
+            if len(parts) < 2:
+                return "[MemoryBot] Usage: mem.set <key> <value>"
+            key, val = parts
+        key = key.strip()
+        val = val.strip()
+        self._ensure_dirs()
+        filename = key.replace(".", "_") + ".mem"
+        try:
+            with open(os.path.join(self._mem_root(), filename), "w") as fh:
+                fh.write(val)
+            self._index_update(self._mem_index(), key, filename)
+            return f"[MemoryBot] Stored: {key} = {val}"
+        except OSError as exc:
+            return f"[MemoryBot] Write failed: {exc}"
+
+    def _mem_get(self, key: str) -> str:
+        """Retrieve a value from the memory store by key."""
+        if not key:
+            return "[MemoryBot] Usage: mem.get <key>"
+        filename = self._index_lookup(self._mem_index(), key)
+        if not filename:
+            return f"[MemoryBot] (no memory for '{key}')"
+        full = os.path.join(self._mem_root(), filename)
+        if not os.path.isfile(full):
+            return f"[MemoryBot] (memory file missing for '{key}')"
+        try:
+            with open(full) as fh:
+                return fh.read().strip()
+        except OSError as exc:
+            return f"[MemoryBot] Read failed: {exc}"
+
+    def _sem_set(self, kv: str) -> str:
+        """Store a semantic entry (key=document or 'key document')."""
+        if not kv:
+            return "[MemoryBot] Usage: sem.set <key> <text>"
+        if "=" in kv and " " not in kv.split("=")[0]:
+            key, _, val = kv.partition("=")
+        else:
+            parts = kv.split(maxsplit=1)
+            if len(parts) < 2:
+                return "[MemoryBot] Usage: sem.set <key> <text>"
+            key, val = parts
+        key = key.strip()
+        val = val.strip()
+        self._ensure_dirs()
+        filename = key.replace(".", "_") + ".sem"
+        try:
+            with open(os.path.join(self._sem_root(), filename), "w") as fh:
+                fh.write(val)
+            self._index_update(self._sem_index(), key, filename)
+            return f"[MemoryBot] Semantic stored: {key}"
+        except OSError as exc:
+            return f"[MemoryBot] Write failed: {exc}"
+
+    def _sem_search(self, query: str) -> str:
+        """Search semantic entries by key name or document content."""
+        if not query:
+            return "[MemoryBot] Usage: sem.search <query>"
+        sem_root = self._sem_root()
+        index_path = self._sem_index()
+        if not os.path.isfile(index_path):
+            return f"[MemoryBot] No semantic matches for '{query}'"
+        try:
+            with open(index_path) as fh:
+                lines = fh.readlines()
+        except OSError as exc:
+            return f"[MemoryBot] Search failed: {exc}"
+
+        hits = []
+        q_lower = query.lower()
+        for line in lines:
+            parts = line.strip().split("|")
+            if len(parts) < 2:
+                continue
+            key = parts[0].strip()
+            filename = parts[1].strip()
+            # Match on key name
+            if q_lower in key.lower():
+                hits.append(f"{key}: (key match)")
+                continue
+            # Match on file content
+            sem_file = os.path.join(sem_root, filename)
+            try:
+                with open(sem_file) as fh:
+                    content = fh.read()
+                if q_lower in content.lower():
+                    hits.append(f"{key}: {content.strip()}")
+            except OSError:
+                pass
+
+        if not hits:
+            return f"[MemoryBot] No semantic matches for '{query}'"
+        return "\n".join(hits)
+
+    # ------------------------------------------------------------------
+    # Index helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _index_update(index_path: str, key: str, filename: str) -> None:
+        """Upsert a key entry in the index file."""
+        lines: list[str] = []
+        try:
+            with open(index_path) as fh:
+                lines = fh.readlines()
+        except FileNotFoundError:
+            pass
+        lines = [l for l in lines if not l.startswith(f"{key} |")]
+        lines.append(f"{key} | {filename} |\n")
+        with open(index_path, "w") as fh:
+            fh.writelines(lines)
+
+    @staticmethod
+    def _index_lookup(index_path: str, key: str) -> str:
+        """Return the filename for a key, or empty string if not found."""
+        try:
+            with open(index_path) as fh:
+                for line in fh:
+                    if line.startswith(f"{key} |"):
+                        parts = line.split("|")
+                        if len(parts) >= 2:
+                            return parts[1].strip()
+        except FileNotFoundError:
+            pass
+        return ""
 
