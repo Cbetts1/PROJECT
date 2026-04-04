@@ -30,9 +30,10 @@
 
 ## What Is AIOS?
 
-**AIOS** (AI Operating System) is a portable, AI-augmented interactive shell
-environment. It runs on any POSIX host (Linux, macOS, Android via Termux) and
-provides:
+**AIOS** (AI Operating System) is an original, portable, AI-augmented
+operating system written entirely in **POSIX shell** and Python.  It is
+**not** related to, nor derived from, any Python-based "AIOS" framework.
+It runs on any POSIX host (Linux, macOS, Android via Termux) and provides:
 
 - A **confined virtual filesystem** (`fs.*` commands) rooted at `OS/`
 - A **natural-language AI backend** — type plain English and AIOS interprets it
@@ -40,6 +41,7 @@ provides:
 - **Process and network utilities** (`proc.*`, `net.*`)
 - An **escape hatch** (`sys`) to the real host shell when needed
 - Optional **LLaMA LLM integration** via [llama.cpp](https://github.com/ggerganov/llama.cpp)
+- A full POSIX-sh `init` → `rc2.d` service boot pipeline under `OS/sbin/init`
 
 ### OS Identity
 
@@ -49,7 +51,8 @@ provides:
 | **Edition** | Aurora v1.0 |
 | **Codename** | AIOSCPU |
 | **Cognitive Layer** | AURA |
-| **AI CPU** | LLaMA (llama.cpp) |
+| **AI CPU** | LLaMA (llama.cpp) — optional |
+| **Shell** | POSIX sh (`/bin/sh`) — no bash dependency for boot |
 | **Host Requirement** | Any POSIX kernel (Termux, Linux, macOS, Darwin) |
 | **Primary Target** | Android (Samsung Galaxy S21 FE via Termux) |
 | **Author** | Christopher Betts |
@@ -103,7 +106,32 @@ common commands and natural-language questions.
 
 ## How to Run
 
+### Canonical launcher (POSIX sh — recommended)
+
 ```sh
+# Full boot + interactive os-shell
+./run-os.sh
+
+# Boot services only, no interactive shell
+./run-os.sh --no-shell
+
+# Override the login shell
+./run-os.sh --shell=os-real-shell
+```
+
+`run-os.sh` is pure POSIX sh and works on any conforming `/bin/sh`
+(dash, bash, ksh, mksh, …).  It:
+1. Detects the repo root from its own path
+2. Exports `OS_ROOT=$REPO/OS` and `AIOS_HOME=$REPO`
+3. Prepends `OS/bin` and `OS/sbin` to `PATH`
+4. Creates the minimum runtime directories (`proc/`, `var/log/`,
+   `var/service/`, `mirror/`)
+5. `exec`s `OS/sbin/init`
+
+### Legacy Bash launcher
+
+```sh
+# Option 1: full boot sequence + AI shell (bash, with boot animation)
 # Option 1: AIOS-Lite OS boot (canonical — starts rc2.d services then drops into shell)
 ./run-os.sh
 
@@ -113,8 +141,12 @@ common commands and natural-language questions.
 # Option 3: skip boot animation
 ./run.sh --no-boot
 
+# Option 3: direct AI shell
 # Option 4: direct AI shell
 ./bin/aios
+```
+
+### Boot Flow
 
 # Option 5: explicit bash
 bash bin/aios
@@ -125,32 +157,54 @@ bash bin/aios
 # Option 6: boot services only, no interactive shell (CI / automation)
 ./run-os.sh --no-shell
 ```
+run-os.sh
+  └─ OS/sbin/init
+       ├─ Derives OS_ROOT / AIOS_HOME
+       ├─ Creates runtime layout (var/log, var/service, proc/…)
+       ├─ Loads config/aios.conf (optional)
+       ├─ Starts rc2.d/S* services in sorted order
+       │    S10-banner        — prints OS identity
+       │    S20-devices       — links virtual /dev nodes
+       │    S30-aura-bridge   — detects host & connected devices
+       │    S40-os-kernel     — starts heartbeat daemon
+       │    S50-aura-llm      — checks LLM availability
+       │    S60-aura-agents   — starts event/message agents
+       │    S70-aura-tasks    — starts scheduled task runner
+       └─ exec OS/bin/os-shell  (or --no-shell to skip)
+```
 
-### Boot Sequence
+Service failures are logged to `OS/var/log/init.log` and **never crash
+the boot** — the OS continues to the next service regardless.
 
-`./run.sh` runs the full six-stage boot pipeline before opening the shell:
+### AI Fallback Behaviour
+
+`OS/bin/os-ai` auto-detects a LLaMA model using this search order:
+
+1. `$AIOS_HOME/llama_model/*.gguf` (repo root — recommended location)
+2. `$OS_ROOT/llama_model/*.gguf`
+
+If a model **and** a `llama-cli` binary are found, full LLM responses are
+used.  If either is absent the AI prints:
 
 ```
-[BOOT] Stage 0 — Environment Detection
-  ✓ Host environment : linux
-  ✓ Bash 5.2 / Python 3.12
-
-[BOOT] Stage 1 — Filesystem Initialisation
-  ✓ Runtime directories ready
-
-[BOOT] Stage 2 — Permission Check
-  ✓ Executable permissions set
-
-[BOOT] Stage 3 — Service Health Pre-Check
-  ✓ Python AI backend importable
-  ⚠ No llama binary — AI uses built-in rule-based backend
-
-[BOOT] Stage 4 — Kernel State Write
-  ✓ Kernel state written (OS/proc/os.state)
-
-[BOOT] Stage 5 — Boot Complete
-  AIOS boot completed in ~230 ms — launching AI shell
+AI offline, fallback mode
+Place a .gguf model in <repo>/llama_model/ to enable full AI
 ```
+
+and continues with the built-in rule-based responder.  The OS always
+boots and `os-shell` always opens regardless of LLM state.
+
+### Bridge Optionality
+
+The bridge subsystem (`OS/etc/init.d/aura-bridge`) detects external
+devices (Android via ADB, iOS via libimobiledevice, Linux via SSH).
+All three tools are **optional**:
+
+- If `adb` is not installed → warning logged to `OS/var/log/bridge.log`, Android detection skipped
+- If `ideviceinfo` / `idevicepair` are not installed → warning logged, iOS detection skipped
+- If `ssh` / `known_hosts` are absent → SSH host list skipped
+
+A missing bridge tool **never** causes a boot failure or shell crash.
 
 ### Updating
 

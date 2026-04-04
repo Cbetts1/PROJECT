@@ -1,4 +1,5 @@
 #!/bin/sh
+set -u
 # etc/init.d/aura-agents — AURA Agent Runtime
 # © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
 #

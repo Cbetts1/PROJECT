@@ -1,4 +1,5 @@
 #!/bin/sh
+set -u
 # © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
 
 OS_ROOT="${OS_ROOT:-/}"
