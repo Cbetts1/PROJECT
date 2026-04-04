@@ -1,4 +1,5 @@
 #!/bin/sh
+set -eu
 
 OS_ROOT="${OS_ROOT:-/}"
 export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
@@ -8,7 +9,16 @@ LOG="$OS_ROOT/var/log/bridge.log"
 
 health() { mkdir -p "$(dirname "$HEALTH")"; echo "$1" > "$HEALTH"; }
 
-. "$OS_ROOT/lib/aura-bridge/detect.mod"
+_DETECT_MOD="$OS_ROOT/lib/aura-bridge/detect.mod"
+if [ -f "$_DETECT_MOD" ]; then
+    . "$_DETECT_MOD"
+else
+    echo "[aura-bridge] WARNING: detect.mod not found at $_DETECT_MOD" >&2
+    mkdir -p "$(dirname "$LOG")"
+    echo "$(date '+%Y-%m-%dT%H:%M:%SZ') WARNING: detect.mod not found" >> "$LOG"
+    detect_host_os()     { echo "unknown"; }
+    bridge_write_status() { :; }
+fi
 
 case "$1" in
     start)

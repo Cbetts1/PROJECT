@@ -2,13 +2,38 @@
 # os-ai — Interactive AI assistant powered by Aura LLM module
 
 OS_ROOT="${OS_ROOT:-/}"
+AIOS_HOME="${AIOS_HOME:-$(cd "$OS_ROOT/.." 2>/dev/null && pwd)}"
+export OS_ROOT AIOS_HOME
 export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
 
-. "$OS_ROOT/lib/aura-memory/engine.mod"
-. "$OS_ROOT/lib/aura-semantic/embed.mod"
-. "$OS_ROOT/lib/aura-semantic/engine.mod"
-. "$OS_ROOT/lib/aura-hybrid/engine.mod"
-. "$OS_ROOT/lib/aura-llm/llm.mod"
+# ---------------------------------------------------------------------------
+# LLaMA model autodetect: look in $AIOS_HOME/llama_model first, then OS_ROOT
+# ---------------------------------------------------------------------------
+_llama_dir=""
+for _d in "$AIOS_HOME/llama_model" "$OS_ROOT/llama_model"; do
+    if [ -d "$_d" ]; then
+        for _f in "$_d"/*.gguf; do
+            if [ -f "$_f" ]; then
+                _llama_dir="$_d"
+                break 2
+            fi
+        done
+    fi
+done
+
+# Override LLM_MODEL_DIR so llm.mod picks up the correct location
+LLM_MODEL_DIR="${_llama_dir:-$AIOS_HOME/llama_model}"
+export LLM_MODEL_DIR
+
+# ---------------------------------------------------------------------------
+# Load AURA modules (guard each to avoid hard failures)
+# ---------------------------------------------------------------------------
+_load() { [ -f "$1" ] && . "$1" 2>/dev/null || true; }
+_load "$OS_ROOT/lib/aura-memory/engine.mod"
+_load "$OS_ROOT/lib/aura-semantic/embed.mod"
+_load "$OS_ROOT/lib/aura-semantic/engine.mod"
+_load "$OS_ROOT/lib/aura-hybrid/engine.mod"
+_load "$OS_ROOT/lib/aura-llm/llm.mod"
 
 MEMROOT="$OS_ROOT/proc/aura/memory"
 SEMROOT="$OS_ROOT/proc/aura/semantic"
@@ -16,16 +41,27 @@ mkdir -p "$MEMROOT" "$SEMROOT"
 
 if [ "$1" = "-c" ] || [ "$1" = "--cmd" ]; then
     shift
-    llm_query "$*"
+    if command -v llm_query >/dev/null 2>&1; then
+        llm_query "$*"
+    else
+        echo "AI offline, fallback mode: $*"
+    fi
     exit 0
 fi
 
 echo "AIOS-Lite AI Assistant"
-if bin=$(llm_available) && model=$(llm_model); then
-    echo "LLM: $bin | Model: $(basename "$model")"
-else
-    echo "LLM: rule-based fallback (no llama model found)"
-    echo "Place a .gguf model in $OS_ROOT/llama_model/ to enable full AI"
+_ai_online=0
+if command -v llm_available >/dev/null 2>&1 && command -v llm_model >/dev/null 2>&1; then
+    _bin=$(llm_available 2>/dev/null) || _bin=""
+    _model=$(llm_model 2>/dev/null)   || _model=""
+    if [ -n "$_bin" ] && [ -n "$_model" ]; then
+        echo "LLM: $_bin | Model: $(basename "$_model")"
+        _ai_online=1
+    fi
+fi
+if [ "$_ai_online" -eq 0 ]; then
+    echo "AI offline, fallback mode"
+    echo "Place a .gguf model in $AIOS_HOME/llama_model/ to enable full AI"
 fi
 echo "Type 'exit' to quit."
 echo
@@ -35,9 +71,13 @@ while true; do
     IFS= read -r line || break
     [ "$line" = "exit" ] && { echo "Goodbye."; break; }
     [ -z "$line" ] && continue
-    ctx_add "user: $line"
-    response=$(llm_query "$line")
-    ctx_add "ai: $response"
+    command -v ctx_add >/dev/null 2>&1 && ctx_add "user: $line" || true
+    if command -v llm_query >/dev/null 2>&1; then
+        response=$(llm_query "$line")
+    else
+        response="AI offline, fallback mode. (Place a .gguf model in $AIOS_HOME/llama_model/)"
+    fi
+    command -v ctx_add >/dev/null 2>&1 && ctx_add "ai: $response" || true
     echo "$response"
     echo
 done

@@ -55,6 +55,7 @@ BOOT_TARGET="$OS_ROOT/etc/boot.target"
 RUNLEVEL_DIR="$OS_ROOT/etc/rc2.d"
 BOOT_LOG="$OS_ROOT/var/boot.time"
 AURA_LOG="$OS_ROOT/var/log/aura.log"
+INIT_LOG="$OS_ROOT/var/log/init.log"
 
 # ---------------------------------------------------------------------------
 # Banner
@@ -95,6 +96,7 @@ date +%s > "$BOOT_LOG"
 [ -f "$OS_ROOT/var/log/os.log" ]           || touch "$OS_ROOT/var/log/os.log"
 [ -f "$OS_ROOT/var/log/aura.log" ]         || touch "$OS_ROOT/var/log/aura.log"
 [ -f "$OS_ROOT/var/log/events.log" ]       || touch "$OS_ROOT/var/log/events.log"
+[ -f "$OS_ROOT/var/log/init.log" ]         || touch "$OS_ROOT/var/log/init.log"
 
 # Write initial os.state if absent
 if [ ! -f "$OS_ROOT/proc/os.state" ]; then
@@ -219,7 +221,10 @@ else
         if sh "$script" start; then
             _started=$((_started+1))
         else
-            echo "[BOOT] WARNING: $svc failed to start (exit $?)" >&2
+            _rc=$?
+            echo "[BOOT] WARNING: $svc failed to start (exit $_rc)" >&2
+            _ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
+            echo "[$_ts] FAIL $svc exit=$_rc" >> "$INIT_LOG"
             _failed=$((_failed+1))
         fi
     done
@@ -241,6 +246,7 @@ fi
 # Audit log
 ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
 echo "[$ts] [init] boot complete runlevel=$TARGET started=$_started failed=$_failed" >> "$AURA_LOG"
+echo "[$ts] boot complete runlevel=$TARGET started=$_started failed=$_failed" >> "$INIT_LOG"
 
 # Emit boot.complete event (Level 17)
 if [ -x "$OS_ROOT/bin/os-emit" ]; then
