@@ -40,8 +40,8 @@ from typing import Any
 #       name       – human-readable label
 #       scope      – list of paths (files or directories) the agent may touch
 #       prompt     – instruction sent to the LLM (or printed in dry-run mode)
-#       run_order  – lower number runs first (agents with the same number run
-#                    in definition order; must be unique across the registry)
+#       run_order  – lower number runs first; ties are broken alphabetically
+#                    by agent name (duplicate values are allowed)
 # ──────────────────────────────────────────────────────────────────────────────
 
 DEFAULT_AGENTS: list[dict[str, Any]] = [
