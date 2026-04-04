@@ -1,5 +1,5 @@
 # AIOS File Manifest
-# Generated: 2026-04-04T03:49:36Z
+# Generated: 2026-04-04T04:02:20Z
 # Format: sha256sum  path (relative to AIOS_ROOT)
 #
 # This manifest is used by system_check.sh to verify file integrity.
@@ -19,11 +19,11 @@ a0fb80cdd074a5e86bf8500cbe80a5d63cdf8f752792cceaef4396e3ca1ec7fe  lib/aura-proc.
 8566e8f2608053d5d86d19777df96140982e578354a0d461e529a69f09954c76  lib/aura-net.sh
 6f0af3f6ddbc25a2d9fbe1659977aa587e26309bef42775a239d4901a2d832e4  tools/system_autofix.sh
 1933ca2cfe9c3538db2b50f0b399e56d2048aba1614024fc06c508c32b1249fd  tools/log-viewer.sh
-25ea0957b1990eca7c7e962d6c106bc8477aa9420affe6c061c4a2ff17ebfdc1  tools/offline-check.sh
+51379fa4fbc22222eca1db7052a23315bcd34b61b922d13cdb86012f428938c6  tools/offline-check.sh
 a206403c0ea81ba7cc623724a7c6d952873a52aed4953f009b5c18750c61d615  tools/event-bus.sh
 35401efd7883422d3d0fbf099737d459857c3f4c5211f672574d8fcb46ca21cd  tools/production-audit.sh
 423c8b5004dc3a7bb3d2ba904279eb9e725799c951f1a21b348e91d3d2a2230e  tools/recovery-ctl.sh
-cccd2a23918dc0f8ecebf0f2ee1729bb6aad5c1cd6330ce34d998e67f10c0c9d  tools/security-audit.sh
+4f12854220a8836b806ff721ddb95e1c284408707cac97750eca94cc1d372263  tools/security-audit.sh
 dc550cb23074286ed4179466e0335fd026574fe473786c9087b8001ae249b5b1  tools/perms-audit.sh
 3fd56dda3263110f12a6dafe166cf60a60b2c2a0527dee2df8ef560936a83b86  tools/generate-manifest.sh
 41b9f67756bf0379d80b49cd8b348607bb28fe12f4d58a0275029562fc344c87  tools/health_check.sh

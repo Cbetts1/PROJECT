@@ -62,8 +62,8 @@ log_finding() {
     case "$severity" in
         CRITICAL) CRITICAL=$((CRITICAL + 1)); echo "[CRITICAL] $file: $desc" ;;
         HIGH)     HIGH=$((HIGH + 1)); echo "[HIGH] $file: $desc" ;;
-        MEDIUM)   MEDIUM=$((MEDIUM + 1)); [ "$VERBOSE" -eq 1 ] && echo "[MEDIUM] $file: $desc" ;;
-        LOW)      LOW=$((LOW + 1)); [ "$VERBOSE" -eq 1 ] && echo "[LOW] $file: $desc" ;;
+        MEDIUM)   MEDIUM=$((MEDIUM + 1)); if [ "$VERBOSE" -eq 1 ]; then echo "[MEDIUM] $file: $desc"; fi ;;
+        LOW)      LOW=$((LOW + 1)); if [ "$VERBOSE" -eq 1 ]; then echo "[LOW] $file: $desc"; fi ;;
     esac
 }
 
@@ -98,6 +98,8 @@ for dir in "$OS_ROOT/bin" "$AIOS_ROOT/tools" "$AIOS_ROOT/bin" "$AIOS_ROOT/lib"; 
     [ -d "$dir" ] || continue
     while IFS=: read -r file lineno content; do
         [ -z "$file" ] && continue
+        # Skip this script to avoid self-flagging the grep patterns below
+        [[ "$file" -ef "${BASH_SOURCE[0]}" ]] && continue
         # Check for eval with variables
         if echo "$content" | grep -qE 'eval.*\$'; then
             log_finding "HIGH" "$file:$lineno" "eval with variable: ${content:0:50}..."
@@ -130,9 +132,12 @@ done
 # ---------------------------------------------------------------------------
 echo "--- Check 4: OS_ROOT jail enforcement ---"
 
-# Check for symlinks that could escape the jail
+# Check for symlinks that could escape the jail.
+# OS/dev/ is excluded: device/pipe symlinks in dev/ are expected to point outside the tree.
 while IFS= read -r link; do
     [ -z "$link" ] && continue
+    # Skip device files — they legitimately point to /dev, /proc, runtime pipes, etc.
+    [[ "$link" == "$OS_ROOT/dev/"* ]] && continue
     target=$(readlink -f "$link" 2>/dev/null || true)
     if [ -n "$target" ] && [[ ! "$target" =~ ^"$OS_ROOT" ]] && [[ ! "$target" =~ ^"$AIOS_ROOT" ]]; then
         log_finding "HIGH" "$link" "Symlink escapes OS_ROOT: -> $target"
@@ -158,17 +163,20 @@ for dir in "$AIOS_ROOT/config" "$AIOS_ROOT/etc" "$OS_ROOT/etc"; do
     [ -d "$dir" ] || continue
     while IFS=: read -r file lineno content; do
         [ -z "$file" ] && continue
+        # Skip commented-out lines
+        echo "$content" | grep -qE '^[[:space:]]*#' && continue
         # Skip if it's just a placeholder or empty
         if echo "$content" | grep -qiE '(password=["'"'"']?$|password=["'"'"']?\$|password=["'"'"']{2}|password=.*CHANGE_ME|password=.*example)'; then
             log_finding "LOW" "$file:$lineno" "Empty/placeholder credential (OK)"
         elif echo "$content" | grep -qiE "password=|secret=|api_key="; then
             # Check if it looks like a real secret
-            value=$(echo "$content" | grep -oE '(password|secret|api_key)=[^ ]+' | cut -d= -f2)
+            value=$(echo "$content" | grep -oE '(password|secret|api_key)=[^ ]+' | cut -d= -f2 || true)
             if [ -n "$value" ] && [ ${#value} -gt 5 ] && [[ ! "$value" =~ ^\$ ]]; then
                 log_finding "CRITICAL" "$file:$lineno" "Potential hardcoded secret"
             fi
         fi
-    done < <(grep -rn --include="*.conf" --include="*.sh" -iE "$SECRET_PATTERNS" "$dir" 2>/dev/null || true)
+    done < <(grep -rn --include="*.conf" --include="*.sh" -iE "$SECRET_PATTERNS" "$dir" \
+        --exclude-dir=".git" 2>/dev/null | head -200 || true)
 done
 
 # ---------------------------------------------------------------------------

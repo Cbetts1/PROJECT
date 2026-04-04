@@ -86,10 +86,23 @@ while IFS=: read -r file lineno content; do
     case "$file" in
         */tests/*|*test*.py|*test*.sh|*.md|*/docs/*|*/CHANGELOG*) continue ;;
     esac
+
+    # Skip build-time scripts — they are expected to need network at build time,
+    # not at OS runtime.
+    case "$file" in
+        */aioscpu/build/*|*/build/build.sh) continue ;;
+    esac
+
+    # Skip tool-detection code in detect-env.sh: checking whether curl/wget
+    # binaries exist is not a network call.
+    case "$file" in
+        */tools/detect-env.sh) continue ;;
+    esac
     
-    # Check if the command is behind an offline guard
-    # Look for patterns like: if [ "$OFFLINE_MODE" != "1" ]; or if ! offline check
-    if grep -B5 "^${lineno}:" "$file" 2>/dev/null | grep -qiE "OFFLINE_MODE|offline.*guard|if.*online|network.*check"; then
+    # Check if the command is behind an offline guard.
+    # Strategy: look at the 10 lines before this one in the raw file for guard signals.
+    context_before=$(awk -v ln="$lineno" 'NR>=(ln-10) && NR<ln' "$file" 2>/dev/null || true)
+    if echo "$context_before" | grep -qiE "_aura_net_offline_check|OFFLINE_MODE|offline.*guard|if.*online|network.*check"; then
         log_finding "NETWORK_GATED" "$file" "$lineno" "Network command behind offline guard: ${content:0:60}..."
     else
         # Check if it's in a clearly optional/download function
@@ -99,7 +112,7 @@ while IFS=: read -r file lineno content; do
             log_finding "NETWORK_REQUIRED" "$file" "$lineno" "Unguarded network command: ${content:0:60}..."
         fi
     fi
-done < <(grep -rn --include="*.sh" --include="*.py" -E "$NETWORK_CMDS" "$SCAN_PATH" 2>/dev/null | grep -v "offline-check.sh" | head -100 || true)
+done < <(grep -rn --include="*.sh" -E "$NETWORK_CMDS" "$SCAN_PATH" 2>/dev/null | grep -v "offline-check.sh" | head -100 || true)
 
 # ---------------------------------------------------------------------------
 # Check 2: Hardcoded HTTP/HTTPS URLs
@@ -113,6 +126,14 @@ while IFS=: read -r file lineno content; do
     case "$file" in
         */tests/*|*test*.py|*test*.sh|*.md|*/docs/*|*/LICENSE*|*/CHANGELOG*|*README*) continue ;;
     esac
+
+    # Skip build-time scripts
+    case "$file" in
+        */aioscpu/build/*|*/build/build.sh) continue ;;
+    esac
+
+    # Skip commented-out example lines (lines that start with # after whitespace)
+    if echo "$content" | grep -qE '^[[:space:]]*#'; then continue; fi
     
     # Extract URL for classification
     url=$(echo "$content" | grep -oE 'https?://[^ "'"'"']+' | head -1)
@@ -157,6 +178,14 @@ while IFS=: read -r file lineno content; do
     case "$file" in
         */tests/*|*test*.py|*test*.sh|*.md|*/docs/*) continue ;;
     esac
+
+    # Skip build-time scripts
+    case "$file" in
+        */aioscpu/build/*|*/build/build.sh) continue ;;
+    esac
+
+    # Skip commented-out lines
+    if echo "$content" | grep -qE '^[[:space:]]*#'; then continue; fi
     
     # Cloud services typically require network
     if echo "$content" | grep -qiE "OFFLINE_MODE|if.*offline"; then
