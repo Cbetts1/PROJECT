@@ -195,6 +195,121 @@ grep -q "service dead: fake-svc" "$_AURA_LOG_FILE" && pass "heartbeat: dead serv
 rm -rf "$_STATE_DIR" "$_AURA_LOG_FILE" "$_EVENTS_LOG"
 
 # ---------------------------------------------------------------------------
+# Shell library tests (aura-core.sh, aura-fs.sh, aura-typo.sh, aura-proc.sh)
+# ---------------------------------------------------------------------------
+echo
+echo "=== shell library tests ==="
+
+_LIB_TEST_ROOT=$(mktemp -d)
+_LIB_AIOS_LOG=$(mktemp)
+mkdir -p "$_LIB_TEST_ROOT/var/log" "$_LIB_TEST_ROOT/proc"
+
+# Helper: source a lib in a fresh subprocess with all required env vars set.
+# Usage: _ltest <lib.sh> <bash_code>
+# Returns stdout+stderr; preserves the exit code.
+_ltest() {
+    local _lib="$1"
+    local _code="$2"
+    local _script
+    _script=$(mktemp /tmp/aios-ltest-XXXXXX.sh)
+    printf '#!/bin/bash\nset +e\nset +u\nexport AIOS_HOME="%s"\nexport OS_ROOT="%s"\nexport AIOS_LOG_FILE="%s"\n. "%s/lib/%s"\nset +e\nset +u\n%s\n' \
+        "$REPO_ROOT" "$_LIB_TEST_ROOT" "$_LIB_AIOS_LOG" \
+        "$REPO_ROOT" "$_lib" \
+        "$_code" > "$_script"
+    local _out
+    _out=$(bash "$_script" 2>&1)
+    local _rc=$?
+    rm -f "$_script"
+    printf '%s' "$_out"
+    return $_rc
+}
+
+# --- aura-core.sh: osroot_resolve stays inside OS_ROOT ---
+_r=$(_ltest aura-core.sh "osroot_resolve 'var/log'" 2>&1)
+if echo "$_r" | grep -q "$_LIB_TEST_ROOT"; then
+    pass "aura-core: osroot_resolve stays inside OS_ROOT"
+else
+    fail "aura-core: osroot_resolve should be under OS_ROOT (got '$_r')"
+fi
+
+# --- aura-core.sh: osroot_resolve rejects path traversal ---
+_r=$(_ltest aura-core.sh "osroot_resolve '../../etc/passwd'; echo exitcode:\$?" 2>&1)
+if echo "$_r" | grep -qiE "(Access denied|denied|exitcode:1)"; then
+    pass "aura-core: osroot_resolve rejects traversal"
+else
+    fail "aura-core: osroot_resolve should reject traversal (got '$_r')"
+fi
+
+# --- aura-core.sh: register_command + run_command ---
+_r=$(_ltest aura-core.sh "register_command testcmd echo; run_command testcmd hello-registry" 2>&1)
+if echo "$_r" | grep -q "hello-registry"; then
+    pass "aura-core: register_command/run_command works"
+else
+    fail "aura-core: register_command/run_command failed (got '$_r')"
+fi
+
+# --- aura-core.sh: run_command returns 127 for unknown command ---
+_r=$(_ltest aura-core.sh "run_command no_such_cmd_xyz; echo exitcode:\$?" 2>&1)
+if echo "$_r" | grep -q "exitcode:127"; then
+    pass "aura-core: run_command returns 127 for unknown command"
+else
+    fail "aura-core: run_command should return 127 for unknown (got '$_r')"
+fi
+
+# --- aura-fs.sh: aura_fs_mkdir creates directory ---
+_r=$(_ltest aura-fs.sh "aura_fs_mkdir testsubdir" 2>&1)
+if echo "$_r" | grep -q "Created testsubdir" && [ -d "$_LIB_TEST_ROOT/testsubdir" ]; then
+    pass "aura-fs: aura_fs_mkdir creates directory"
+else
+    fail "aura-fs: aura_fs_mkdir failed (got '$_r')"
+fi
+
+# --- aura-fs.sh: aura_fs_write + aura_fs_cat roundtrip ---
+_r=$(_ltest aura-fs.sh "aura_fs_write test/write-test.txt 'shell-write-content'; aura_fs_cat test/write-test.txt" 2>&1)
+if echo "$_r" | grep -q "shell-write-content"; then
+    pass "aura-fs: aura_fs_write/cat roundtrip"
+else
+    fail "aura-fs: aura_fs_write/cat roundtrip failed (got '$_r')"
+fi
+
+# --- aura-fs.sh: aura_fs_rm removes file ---
+# First write a file, then remove it
+_ltest aura-fs.sh "aura_fs_write rmtest.txt 'delete-me'" > /dev/null 2>&1
+_r=$(_ltest aura-fs.sh "aura_fs_rm rmtest.txt" 2>&1)
+if echo "$_r" | grep -q "Removed rmtest.txt" && [ ! -f "$_LIB_TEST_ROOT/rmtest.txt" ]; then
+    pass "aura-fs: aura_fs_rm removes file"
+else
+    fail "aura-fs: aura_fs_rm failed (got '$_r')"
+fi
+
+# --- aura-fs.sh: aura_fs_cp copies file ---
+_ltest aura-fs.sh "aura_fs_write cpsrc.txt 'copy-source-content'" > /dev/null 2>&1
+_r=$(_ltest aura-fs.sh "aura_fs_cp cpsrc.txt cpdst.txt; aura_fs_cat cpdst.txt" 2>&1)
+if echo "$_r" | grep -q "copy-source-content"; then
+    pass "aura-fs: aura_fs_cp copies file content"
+else
+    fail "aura-fs: aura_fs_cp failed (got '$_r')"
+fi
+
+# --- aura-typo.sh: aura_known_commands lists expected entries ---
+_r=$(_ltest aura-typo.sh "aura_known_commands" 2>&1)
+if echo "$_r" | grep -q "fs.ls" && echo "$_r" | grep -q "net.ping"; then
+    pass "aura-typo: aura_known_commands lists expected commands"
+else
+    fail "aura-typo: aura_known_commands missing entries (got '$_r')"
+fi
+
+# --- aura-proc.sh: aura_proc_kill rejects non-numeric PID ---
+_r=$(_ltest aura-proc.sh "aura_proc_kill notanumber; echo exitcode:\$?" 2>&1)
+if echo "$_r" | grep -qiE "(Invalid PID|exitcode:1)"; then
+    pass "aura-proc: aura_proc_kill rejects non-numeric PID"
+else
+    fail "aura-proc: aura_proc_kill should reject non-numeric PID (got '$_r')"
+fi
+
+rm -rf "$_LIB_TEST_ROOT" "$_LIB_AIOS_LOG"
+
+# ---------------------------------------------------------------------------
 # Cleanup test fixtures
 # ---------------------------------------------------------------------------
 [ "$_created_os_log" = true ]   && rm -f "$_STUB_OS_LOG"
