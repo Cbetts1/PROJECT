@@ -191,39 +191,43 @@ fi
 
 # ---------------------------------------------------------------------------
 # Ensure PATH includes our bin/sbin dirs
+# Save the original system PATH first so host-native tools (ls, sort, etc.)
+# can be invoked explicitly when OS_ROOT/bin contains cross-compiled binaries.
 # ---------------------------------------------------------------------------
+_INIT_SYS_PATH="$PATH"
 export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
 
 # ---------------------------------------------------------------------------
-# Start rc2.d services
+# Start rc2.d services — explicit sorted order for deterministic startup
 # ---------------------------------------------------------------------------
 _started=0
 _failed=0
 
-# Check that RUNLEVEL_DIR has at least one S* script before looping
-_has_services=0
-for _check in "$RUNLEVEL_DIR"/S*; do
-    if [ -f "$_check" ] || [ -L "$_check" ]; then
-        _has_services=1
-        break
-    fi
-done
+# Build a sorted list via a temp file so we iterate in lexicographic order
+# regardless of filesystem ordering, and counters update in the current shell.
+# $OS_ROOT/tmp is guaranteed to exist (created above); use system PATH for ls
+# and sort in case OS_ROOT/bin contains cross-compiled binaries.
+_svc_tmp="$OS_ROOT/tmp/.boot_svc_list_$$"
+( PATH="$_INIT_SYS_PATH"; ls -1d "$RUNLEVEL_DIR"/S* 2>/dev/null | sort ) \
+    > "$_svc_tmp" 2>/dev/null || true
 
-if [ "$_has_services" -eq 0 ]; then
+if [ ! -s "$_svc_tmp" ]; then
     echo "[BOOT] WARNING: No S* service scripts found in $RUNLEVEL_DIR" >&2
 else
-    for script in "$RUNLEVEL_DIR"/S*; do
+    while IFS= read -r script; do
         [ -f "$script" ] || [ -L "$script" ] || continue
         svc=$(basename "$script")
         echo "[BOOT] Starting $svc ..."
-        if sh "$script" start; then
+        if PATH="$_INIT_SYS_PATH" sh "$script" start; then
             _started=$((_started+1))
         else
             echo "[BOOT] WARNING: $svc failed to start (exit $?)" >&2
             _failed=$((_failed+1))
         fi
-    done
+    done < "$_svc_tmp"
 fi
+
+rm -f "$_svc_tmp"
 
 echo "[BOOT] Services: $_started started, $_failed failed."
 
