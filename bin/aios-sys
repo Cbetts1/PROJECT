@@ -20,6 +20,8 @@ export AIOS_ROOT
 
 # shellcheck source=lib/aura-core.sh
 . "${AIOS_ROOT}/lib/aura-core.sh"
+# shellcheck source=lib/aura-security.sh
+. "${AIOS_ROOT}/lib/aura-security.sh"
 
 # ------------------------------------------------------------------
 # Dispatcher mode:  bin/aios-sys -- <cmd> [args...]

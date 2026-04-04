@@ -1,0 +1,26 @@
+#!/bin/sh
+# OS/bin/os-svc — Service management wrapper
+# © 2026 Chris Betts | AIOSCPU Official
+#
+# Thin wrapper around tools/service-ctl.sh for use from within the OS shell.
+#
+# Usage:
+#   os-svc list
+#   os-svc status <service>
+#   os-svc start|stop|restart <service>
+#   os-svc enable|disable <service>
+
+_SCRIPT_DIR="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+OS_ROOT="${OS_ROOT:-$(cd "$_SCRIPT_DIR/.." 2>/dev/null && pwd)}"
+AIOS_HOME="${AIOS_HOME:-$(cd "$OS_ROOT/.." 2>/dev/null && pwd)}"
+
+export OS_ROOT AIOS_HOME
+
+SERVICE_CTL="$AIOS_HOME/tools/service-ctl.sh"
+
+if [ ! -f "$SERVICE_CTL" ]; then
+    echo "[os-svc] ERROR: service-ctl.sh not found at $SERVICE_CTL" >&2
+    exit 1
+fi
+
+exec bash "$SERVICE_CTL" "$@"

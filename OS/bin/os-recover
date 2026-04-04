@@ -292,6 +292,51 @@ case "$CMD" in
         _check_deps
         ;;
 
+    --list|list)
+        # Level 18: List available backups
+        _head "Available Backups"
+        if [ -d "$BACKUP_DIR" ]; then
+            for dir in "$BACKUP_DIR"/*/; do
+                [ -d "$dir" ] || continue
+                _stamp=$(basename "$dir")
+                echo "  $_stamp"
+            done
+            [ -f "$BACKUP_DIR/latest" ] && echo "Latest: $(cat "$BACKUP_DIR/latest")"
+        else
+            echo "No backups found in $BACKUP_DIR"
+        fi
+        # Also check checkpoints
+        _cp_dir="$OS_ROOT/var/backup/checkpoints"
+        if [ -d "$_cp_dir" ]; then
+            _head "Checkpoints"
+            for dir in "$_cp_dir"/*/; do
+                [ -d "$dir" ] || continue
+                _stamp=$(basename "$dir")
+                _label=""
+                [ -f "$dir/label" ] && _label=$(cat "$dir/label")
+                echo "  $_stamp ${_label:+($_label)}"
+            done
+        fi
+        ;;
+
+    --checkpoint|checkpoint)
+        # Level 18: Restore from latest checkpoint
+        _cp_dir="$OS_ROOT/var/backup/checkpoints"
+        _latest=$(ls -1t "$_cp_dir" 2>/dev/null | head -1)
+        if [ -z "$_latest" ]; then
+            _out "No checkpoints found"
+            exit 1
+        fi
+        _cp_path="$_cp_dir/$_latest"
+        _out "Restoring from checkpoint: $_latest"
+        # Restore critical files
+        [ -f "$_cp_path/aios.conf" ] && cp "$_cp_path/aios.conf" "$AIOS_HOME/config/"
+        [ -f "$_cp_path/OS/sbin/init" ] && cp "$_cp_path/OS/sbin/init" "$OS_ROOT/sbin/"
+        [ -f "$_cp_path/OS/proc/os.state" ] && cp "$_cp_path/OS/proc/os.state" "$OS_ROOT/proc/"
+        _log "restored from checkpoint: $_latest"
+        _out "Checkpoint restore complete"
+        ;;
+
     help|--help|-h)
         cat << 'EOF'
 AIOS Recovery Mode
@@ -303,6 +348,8 @@ Commands:
   check               System integrity check (no changes)
   backup              Backup current state to var/backup/
   restore [stamp]     Restore from backup (default: latest)
+  --list | list       List available backups and checkpoints
+  --checkpoint        Restore from latest checkpoint
   deps                Dependency audit
   help                This message
 

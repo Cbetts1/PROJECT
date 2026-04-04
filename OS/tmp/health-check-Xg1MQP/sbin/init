@@ -46,8 +46,11 @@ AIOS_CONF="$AIOS_HOME/config/aios.conf"
 
 # ---------------------------------------------------------------------------
 # Environment detection (Level 12)
-# Note: detect-env.sh is bash-specific; AIOS_ENV is set by config/aios.conf
 # ---------------------------------------------------------------------------
+DETECT_ENV="$AIOS_HOME/tools/detect-env.sh"
+if [ -f "$DETECT_ENV" ]; then
+    . "$DETECT_ENV" 2>/dev/null || true
+fi
 AIOS_ENV="${AIOS_ENV:-linux}"
 export AIOS_ENV
 

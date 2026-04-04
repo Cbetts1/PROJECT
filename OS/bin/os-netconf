@@ -422,6 +422,46 @@ case "$CMD" in
             || _err "load requires a valid config file path"
         ;;
 
+    --offline-mode|offline-mode)
+        # Level 11: Enable/disable offline mode system-wide
+        _state_file="$OS_ROOT/proc/os/state"
+        mkdir -p "$(dirname "$_state_file")" 2>/dev/null
+        
+        _current_mode="0"
+        if [ -f "$_state_file" ] && grep -q "^OFFLINE_MODE=" "$_state_file" 2>/dev/null; then
+            _current_mode=$(grep "^OFFLINE_MODE=" "$_state_file" | cut -d= -f2)
+        fi
+        
+        _new_mode="${1:-}"
+        if [ -z "$_new_mode" ]; then
+            # Toggle mode
+            if [ "$_current_mode" = "1" ]; then
+                _new_mode="0"
+            else
+                _new_mode="1"
+            fi
+        fi
+        
+        # Update state file
+        if [ -f "$_state_file" ]; then
+            grep -v "^OFFLINE_MODE=" "$_state_file" > "${_state_file}.tmp" 2>/dev/null || true
+            mv "${_state_file}.tmp" "$_state_file"
+        fi
+        echo "OFFLINE_MODE=$_new_mode" >> "$_state_file"
+        
+        # Export for current session
+        export OFFLINE_MODE="$_new_mode"
+        
+        _log "offline-mode set to $_new_mode"
+        if [ "$_new_mode" = "1" ]; then
+            _out "Offline mode ENABLED — network operations blocked"
+            echo "[$(date '+%Y-%m-%dT%H:%M:%SZ')] [netconf] offline-mode enabled" >> "$OS_ROOT/var/log/os.log"
+        else
+            _out "Offline mode DISABLED — network operations allowed"
+            echo "[$(date '+%Y-%m-%dT%H:%M:%SZ')] [netconf] offline-mode disabled" >> "$OS_ROOT/var/log/os.log"
+        fi
+        ;;
+
     *)
         cat >&2 << 'EOF'
 Usage: os-netconf <command> [args]
@@ -437,6 +477,7 @@ Commands:
   nat  status|enable <iface>|disable
   discover            LAN service discovery
   save [file]         Save config snapshot
+  --offline-mode [0|1] Enable/disable offline mode (toggles if no arg)
 EOF
         exit 1
         ;;

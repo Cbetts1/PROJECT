@@ -1,0 +1,142 @@
+#!/bin/sh
+# OS/etc/init.d/aura-llm — AURA LLM Subsystem Service
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
+#
+# Initializes the LLM subsystem based on ENABLE_LLM config flag.
+# Checks for llama-cli availability and model presence.
+
+OS_ROOT="${OS_ROOT:-/}"
+AIOS_HOME="${AIOS_HOME:-$(cd "$OS_ROOT/.." 2>/dev/null && pwd)}"
+export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
+
+HEALTH="$OS_ROOT/var/service/aura-llm.health"
+STATE="$OS_ROOT/proc/os/ai"
+LOG="$OS_ROOT/var/log/aura.log"
+
+# Load config to check ENABLE_LLM
+AIOS_CONF="$AIOS_HOME/config/aios.conf"
+ENABLE_LLM="${ENABLE_LLM:-0}"
+[ -f "$AIOS_CONF" ] && . "$AIOS_CONF" 2>/dev/null
+
+mkdir -p "$(dirname "$HEALTH")" "$(dirname "$STATE")" "$(dirname "$LOG")"
+
+health() {
+    echo "$1" > "$HEALTH"
+}
+
+aura_log() {
+    ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
+    echo "[$ts] [aura-llm] $*" >> "$LOG"
+}
+
+update_ai_state() {
+    local status="$1"
+    local backend="$2"
+    local loaded="$3"
+    cat > "$STATE" << EOF
+# AI subsystem state — updated by aura-llm at runtime
+ai_status=$status
+llm_backend=$backend
+model_loaded=$loaded
+last_query=0
+EOF
+}
+
+check_llama_cli() {
+    # Check if llama-cli is available in PATH
+    command -v llama-cli >/dev/null 2>&1 && return 0
+    command -v llama >/dev/null 2>&1 && return 0
+    command -v main >/dev/null 2>&1 && return 0
+    return 1
+}
+
+check_model() {
+    # Check if model directory has any .gguf files
+    LLAMA_MODEL_DIR="${LLAMA_MODEL_DIR:-$AIOS_HOME/llama_model}"
+    if [ -d "$LLAMA_MODEL_DIR" ]; then
+        for f in "$LLAMA_MODEL_DIR"/*.gguf; do
+            [ -f "$f" ] && return 0
+        done
+    fi
+    return 1
+}
+
+case "$1" in
+    start)
+        echo "[aura-llm] Starting LLM subsystem..."
+        
+        if [ "$ENABLE_LLM" != "1" ]; then
+            echo "[aura-llm] LLM disabled (ENABLE_LLM=$ENABLE_LLM)"
+            health "status=disabled
+time=$(date +%s)
+reason=ENABLE_LLM_not_set"
+            update_ai_state "offline" "none" "false"
+            aura_log "LLM subsystem disabled by config"
+            exit 0
+        fi
+        
+        llm_cli_available="false"
+        model_available="false"
+        
+        if check_llama_cli; then
+            llm_cli_available="true"
+            echo "[aura-llm] llama-cli: found"
+        else
+            echo "[aura-llm] llama-cli: not found (mock mode will be used)"
+        fi
+        
+        if check_model; then
+            model_available="true"
+            echo "[aura-llm] Model: found in $LLAMA_MODEL_DIR"
+        else
+            echo "[aura-llm] Model: not found (mock mode will be used)"
+        fi
+        
+        if [ "$llm_cli_available" = "true" ] && [ "$model_available" = "true" ]; then
+            health "status=running
+time=$(date +%s)
+llm_cli=available
+model=available
+backend=llama"
+            update_ai_state "online" "llama" "true"
+            aura_log "LLM subsystem started with llama backend"
+            echo "[aura-llm] Ready (llama backend)"
+        else
+            health "status=running
+time=$(date +%s)
+llm_cli=$llm_cli_available
+model=$model_available
+backend=mock"
+            update_ai_state "online" "mock" "false"
+            aura_log "LLM subsystem started with mock backend"
+            echo "[aura-llm] Ready (mock backend)"
+        fi
+        ;;
+    
+    stop)
+        echo "[aura-llm] Stopping LLM subsystem..."
+        health "status=stopped
+time=$(date +%s)"
+        update_ai_state "offline" "none" "false"
+        aura_log "LLM subsystem stopped"
+        echo "[aura-llm] Stopped."
+        ;;
+    
+    status)
+        if [ -f "$HEALTH" ]; then
+            echo "[aura-llm] Health:"
+            cat "$HEALTH"
+        else
+            echo "[aura-llm] Status unknown (no health file)"
+        fi
+        if [ -f "$STATE" ]; then
+            echo "[aura-llm] AI State:"
+            cat "$STATE"
+        fi
+        ;;
+    
+    *)
+        echo "Usage: aura-llm {start|stop|status}"
+        exit 1
+        ;;
+esac

@@ -18,7 +18,14 @@ case "$1" in
   stop)
     health "status=stopped"
     ;;
+  status)
+    if [ -f "$HEALTH" ]; then
+      cat "$HEALTH"
+    else
+      echo "status=unknown"
+    fi
+    ;;
   *)
-    echo "Usage: devices {start|stop}"
+    echo "Usage: devices {start|stop|status}"
     ;;
 esac
