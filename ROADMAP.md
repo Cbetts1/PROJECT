@@ -46,7 +46,7 @@ Features are grouped by milestone. Status markers:
 
 ---
 
-## Milestone 3 — Stability & Documentation (Current 🔄)
+## Milestone 3 — Stability & Documentation (Complete ✅)
 
 - ✅ CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md
 - ✅ CHANGELOG.md, ROADMAP.md, INSTALL.md, USAGE.md
@@ -54,10 +54,10 @@ Features are grouped by milestone. Status markers:
 - ✅ Legal documents (terms, privacy, disclaimer, copyright, AI disclosure)
 - ✅ System config templates and module registry
 - ✅ Complete INSTRUCTION-MANUAL.md
-- 🔲 Automated CI pipeline (GitHub Actions)
-- 🔲 shellcheck enforcement in CI
-- 🔲 pytest enforcement in CI
-- 🔲 Coverage reporting
+- ✅ Automated CI pipeline (GitHub Actions)
+- ✅ shellcheck enforcement in CI
+- ✅ pytest enforcement in CI
+- ✅ Coverage reporting
 
 ---
 
