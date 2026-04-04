@@ -12,6 +12,7 @@ aura_known_commands() {
         "fs.ls" "fs.cat" "fs.write" "fs.mkdir" "fs.rm" "fs.cp" "fs.mv" "fs.find" \
         "proc.ps" "proc.kill" \
         "net.ping" "net.ifconfig" \
+        "status" "sysinfo" "version" "log.tail" "clear" \
         "sys" "help" "exit" "quit"
 }
 
