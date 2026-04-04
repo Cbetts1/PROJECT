@@ -135,6 +135,7 @@ dirs=(
     "${AIOS_ROOT}/var/log"
     "${AIOS_ROOT}/var/run"
     "${AIOS_ROOT}/llama_model"
+    "${OS_ROOT}/llama_model"
 )
 
 created=0
@@ -218,13 +219,16 @@ while IFS= read -r -d '' f; do
     model_ready=1
     _ok "Model file: $(basename "${f}")"
     break
-done < <(find "${AIOS_ROOT}/llama_model" -name "*.gguf" -print0 2>/dev/null)
+done < <(
+    find "${OS_ROOT}/llama_model" "${AIOS_ROOT}/llama_model" \
+         -maxdepth 1 -name "*.gguf" -print0 2>/dev/null | sort -z
+)
 
 if (( llm_ready == 0 )); then
     _warn "No llama binary — AI will use built-in rule-based backend"
 fi
 if (( model_ready == 0 )); then
-    _warn "No .gguf model found in llama_model/ — see docs/AI_MODEL_SETUP.md"
+    _warn "AI offline, fallback mode — no .gguf model in llama_model/ (see docs/AI_MODEL_SETUP.md)"
 fi
 
 log "BOOT" "Stage 3 complete: service checks done"
