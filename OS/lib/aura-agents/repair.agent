@@ -12,6 +12,22 @@ _repair_ai_backend() {
     return 1
 }
 
+# Run AURA Python self-repair; log output.  Runs in background and stores the
+# PID so the agent runtime can reap it; no-op when Python is unavailable.
+_repair_run() {
+    _alog="${OS_ROOT}/var/log/aura.log"
+    if command -v python3 >/dev/null 2>&1; then
+        _backend=$(_repair_ai_backend)
+        if [ -n "$_backend" ]; then
+            OS_ROOT="$OS_ROOT" python3 "$_backend" "repair self" >> "$_alog" 2>&1 &
+            _repair_last_pid=$!
+        fi
+    fi
+}
+
+# PID of last background repair (allows monitoring / cleanup)
+_repair_last_pid=""
+
 # Called by the agent runtime on every heartbeat tick
 agent_heartbeat() {
     _alog="${OS_ROOT}/var/log/aura.log"
@@ -36,14 +52,8 @@ agent_heartbeat() {
         echo "[$_ts] [repair-agent] ERR: $_eline" >> "$_alog"
     done
 
-    # Attempt Python-level self-repair if the AI backend is available
-    if command -v python3 >/dev/null 2>&1; then
-        _backend=$(_repair_ai_backend)
-        if [ -n "$_backend" ]; then
-            OS_ROOT="$OS_ROOT" python3 "$_backend" "repair self" \
-                >> "$_alog" 2>&1 &
-        fi
-    fi
+    # Run the shared repair helper
+    _repair_run
 
     # Also fire a system event so other agents can react
     command -v os-event >/dev/null 2>&1 && \
@@ -58,13 +68,7 @@ agent_message() {
             _ts=$(date '+%Y-%m-%dT%H:%M:%SZ')
             _alog="${OS_ROOT}/var/log/aura.log"
             echo "[$_ts] [repair-agent] Message-triggered repair: $_msg" >> "$_alog"
-            if command -v python3 >/dev/null 2>&1; then
-                _backend=$(_repair_ai_backend)
-                if [ -n "$_backend" ]; then
-                    OS_ROOT="$OS_ROOT" python3 "$_backend" "repair self" \
-                        >> "$_alog" 2>&1
-                fi
-            fi
+            _repair_run
             ;;
     esac
 }
