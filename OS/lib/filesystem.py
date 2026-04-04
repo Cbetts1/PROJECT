@@ -23,6 +23,7 @@ Environment:
               remain inside it — attempts to escape are rejected.
 """
 
+import fcntl
 import os
 import sys
 import stat as _stat
@@ -52,7 +53,11 @@ def _write_aura_log(message: str) -> None:
         log_file = _OS_ROOT / _AURA_LOG
         log_file.parent.mkdir(parents=True, exist_ok=True)
         with log_file.open("a", encoding="utf-8") as fh:
-            fh.write(f"[{_ts()}] [filesystem] {message}\n")
+            fcntl.flock(fh, fcntl.LOCK_EX)
+            try:
+                fh.write(f"[{_ts()}] [filesystem] {message}\n")
+            finally:
+                fcntl.flock(fh, fcntl.LOCK_UN)
     except OSError:
         pass  # Log failures must never crash callers
 

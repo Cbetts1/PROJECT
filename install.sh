@@ -50,12 +50,12 @@ success() { echo "[install] ✓ $*"; }
 warn()    { echo "[install] ⚠ $*" >&2; }
 
 # ---------------------------------------------------------------------------
-# Check Python 3.13+
+# Check Python 3.10+
 # ---------------------------------------------------------------------------
 check_python() {
     if ! command -v python3 &>/dev/null; then
         warn "python3 not found — filesystem.py will not work."
-        warn "Install python3 (>=3.9 required, 3.13+ recommended)."
+        warn "Install python3 (>=3.10 required, 3.13+ recommended)."
         return
     fi
     py_ver=$(python3 -c "import sys; print(sys.version_info[:2])")

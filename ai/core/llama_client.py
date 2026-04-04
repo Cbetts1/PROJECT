@@ -9,12 +9,12 @@ llama  — calls the llama-cli binary from llama.cpp.
 import argparse
 import subprocess
 import sys
-from typing import Iterator, Literal
+from typing import Iterator, Literal, Optional
 
 Backend = Literal["llama", "mock"]
 
 
-def _find_llama_bin() -> str | None:
+def _find_llama_bin() -> Optional[str]:
     """Return the first llama binary found in PATH, or None."""
     for candidate in ("llama-cli", "llama", "llama.cpp", "main"):
         result = subprocess.run(

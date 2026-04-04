@@ -23,6 +23,9 @@ try:
 except ImportError:
     from intent_engine import Intent   # type: ignore  (standalone import)
 
+# Default subprocess timeout (seconds). Override with AIOS_BOT_TIMEOUT env var.
+_DEFAULT_TIMEOUT: int = int(os.environ.get("AIOS_BOT_TIMEOUT", "10"))
+
 
 # ---------------------------------------------------------------------------
 # BaseBot
@@ -62,7 +65,7 @@ class BaseBot:
         except OSError as exc:
             return f"[{self.name}] Cannot read {rel_path}: {exc}"
 
-    def _run(self, cmd: list, timeout: int = 10) -> str:
+    def _run(self, cmd: list, timeout: int = _DEFAULT_TIMEOUT) -> str:
         """Run a subprocess and return its combined stdout/stderr."""
         try:
             return subprocess.check_output(

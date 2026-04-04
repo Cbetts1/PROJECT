@@ -11,8 +11,30 @@ This project uses [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- Complete documentation suite: CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md,
-  ROADMAP.md, INSTALL.md, USAGE.md
+- `AIOS_BOT_TIMEOUT` environment variable to configure the subprocess timeout
+  for all bot operations (default: 10 s); useful for long-running repair jobs.
+
+### Fixed
+- **Python 3.9/3.10 compatibility**: replaced `str | None` union-type syntax in
+  `ai/core/llama_client.py` with `Optional[str]` from `typing` so the codebase
+  runs on Python ≥ 3.10 rather than requiring 3.10+.
+- **install.sh**: corrected Python version comment from "3.13+" to "3.10+" to
+  match the actual minimum required by the codebase; updated advisory message
+  from "3.9 required" to "3.10 required".
+- **lib/aura-ai.sh**: added `python3` availability guard so a missing interpreter
+  produces a clear error message instead of a cryptic shell failure.
+- **OS/lib/filesystem.py**: added POSIX advisory file locking (`fcntl.LOCK_EX`)
+  around audit-log writes to prevent interleaved entries from concurrent processes.
+- **config/aios.conf**: replaced hard-coded Samsung Galaxy S21 FE device profile
+  (`LLAMA_CPU_AFFINITY="1-3"`, `DEVICE_RAM_GB="8"`, `DEVICE_THERMAL_LIMIT_C="68"`)
+  with auto-detection defaults; all values are now overridable via environment
+  variables so the config works correctly on any device.
+
+### Changed
+- `AIOS_VERSION` bumped to 0.2.
+
+---
+
 - OS-level specification documents: BOOT-SEQUENCE.md, SYSCALL-LIST.md,
   PROCESS-MODEL.md, SCHEDULER.md, RESOURCE-MANAGER.md, PERMISSIONS-MODEL.md,
   SERVICE-REGISTRY.md, NETWORKING-MODEL.md
