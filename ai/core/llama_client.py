@@ -7,23 +7,23 @@ mock   — always works; returns context-aware guidance (no model required).
 llama  — calls the llama-cli binary from llama.cpp.
 """
 import argparse
-import glob as _glob
+import glob
 import os
 import subprocess
 import sys
-from typing import Iterator, Literal
+from typing import Iterator, Literal, Optional
 
 Backend = Literal["llama", "mock"]
 
 
-def autodetect_model(os_root: str) -> "str | None":
+def autodetect_model(os_root: str) -> Optional[str]:
     """Search *os_root*/llama_model/ for the first .gguf model file.
 
     Returns the absolute path of the first match found (sorted for
     determinism), or None when the directory is absent or empty.
     """
     model_dir = os.path.join(os_root, "llama_model")
-    matches = sorted(_glob.glob(os.path.join(model_dir, "*.gguf")))
+    matches = sorted(glob.glob(os.path.join(model_dir, "*.gguf")))
     return matches[0] if matches else None
 
 
