@@ -1,10 +1,10 @@
 #!/bin/sh
+set -u
 # etc/init.d/aura-agents — AURA Agent Runtime
 # © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
 #
 # Starts all enabled AURA agents listed in etc/aura/agents.list.
 # Each agent runs in a background sub-shell that polls for events/messages.
-set -u
 
 OS_ROOT="${OS_ROOT:-/}"
 export PATH="$PATH:$OS_ROOT/bin:$OS_ROOT/sbin"

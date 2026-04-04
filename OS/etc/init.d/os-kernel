@@ -1,6 +1,6 @@
 #!/bin/sh
-# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
 set -u
+# © 2026 Chris Betts | AIOSCPU Official | AI-generated, fully legal
 
 OS_ROOT="${OS_ROOT:-/}"
 export PATH="$OS_ROOT/bin:$OS_ROOT/sbin:$PATH"
