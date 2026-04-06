@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# OS/etc/init.d/aura-mdns — mDNS/DNS-SD service advertisement for AIOS-Lite
+#
+# Advertises _aios._tcp on the local network so peers can discover this device
+# without manual configuration.  Uses avahi-daemon if available; falls back to
+# dns-sd (macOS) or logs a warning on unsupported hosts.
+#
+# Usage:
+#   sh OS/etc/init.d/aura-mdns start
+#   sh OS/etc/init.d/aura-mdns stop
+#   sh OS/etc/init.d/aura-mdns status
+
+set -euo pipefail
+
+OS_ROOT="${OS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)/OS}"
+SERVICE_NAME="${AIOS_MDNS_NAME:-AIOS-$(hostname 2>/dev/null | cut -c1-12)}"
+SERVICE_TYPE="_aios._tcp"
+SERVICE_PORT="${AIOS_API_PORT:-8080}"
+STATE_FILE="${OS_ROOT}/proc/os/mdns.state"
+LOG_FILE="${OS_ROOT}/var/log/aura-mdns.log"
+PID_FILE="${OS_ROOT}/proc/os/mdns.pid"
+
+mkdir -p "$(dirname "${STATE_FILE}")" "$(dirname "${LOG_FILE}")"
+
+log() { printf '[%s] [aura-mdns] %s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$*" | tee -a "${LOG_FILE}"; }
+
+# ---------------------------------------------------------------------------
+start_mdns() {
+    log "Starting mDNS advertisement: ${SERVICE_NAME} ${SERVICE_TYPE} port ${SERVICE_PORT}"
+
+    if command -v avahi-publish &>/dev/null; then
+        # Avahi (Linux): publish in background
+        avahi-publish -s "${SERVICE_NAME}" "${SERVICE_TYPE}" "${SERVICE_PORT}" \
+            "os=AIOS-Lite" "version=1.0" &
+        echo "$!" > "${PID_FILE}"
+        echo "running" > "${STATE_FILE}"
+        log "avahi-publish started (PID $!)"
+
+    elif command -v dns-sd &>/dev/null; then
+        # macOS / Bonjour
+        dns-sd -R "${SERVICE_NAME}" "${SERVICE_TYPE}" local "${SERVICE_PORT}" &
+        echo "$!" > "${PID_FILE}"
+        echo "running" > "${STATE_FILE}"
+        log "dns-sd started (PID $!)"
+
+    else
+        log "WARN: Neither avahi-publish nor dns-sd found — mDNS unavailable."
+        echo "unavailable" > "${STATE_FILE}"
+    fi
+}
+
+stop_mdns() {
+    log "Stopping mDNS advertisement ..."
+    if [[ -f "${PID_FILE}" ]]; then
+        local pid; pid="$(cat "${PID_FILE}")"
+        kill "${pid}" 2>/dev/null || true
+        rm -f "${PID_FILE}"
+    fi
+    echo "stopped" > "${STATE_FILE}"
+    log "mDNS stopped."
+}
+
+status_mdns() {
+    local state; state="$(cat "${STATE_FILE}" 2>/dev/null || echo unknown)"
+    echo "[aura-mdns] state: ${state}"
+    if [[ -f "${PID_FILE}" ]]; then
+        local pid; pid="$(cat "${PID_FILE}")"
+        if kill -0 "${pid}" 2>/dev/null; then
+            echo "[aura-mdns] advertise PID: ${pid} (running)"
+        else
+            echo "[aura-mdns] advertise PID: ${pid} (not running)"
+        fi
+    fi
+}
+
+# ---------------------------------------------------------------------------
+case "${1:-status}" in
+    start)   start_mdns ;;
+    stop)    stop_mdns ;;
+    status)  status_mdns ;;
+    restart) stop_mdns; start_mdns ;;
+    *) echo "Usage: $0 {start|stop|restart|status}" >&2; exit 1 ;;
+esac

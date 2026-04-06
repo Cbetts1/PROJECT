@@ -1,0 +1,6 @@
+fs.read
+fs.write
+log.*
+memory.*
+ai.*
+health.*

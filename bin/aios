@@ -185,6 +185,32 @@ _aios_setup_status
 log "INFO" "AIOS AI shell started. OS_ROOT=${OS_ROOT} AI_BACKEND=${AI_BACKEND:-mock}"
 
 # ---------------------------------------------------------------------------
+# SIGUSR1 handler — hot-reload plugins without restarting the shell
+# ---------------------------------------------------------------------------
+_aios_reload_plugins() {
+    echo ""
+    echo "[AIOS] SIGUSR1 received — reloading plugins ..."
+    log "INFO" "Plugin hot-reload triggered (SIGUSR1)"
+    if command -v python3 &>/dev/null; then
+        python3 - <<PYEOF
+import sys, os
+sys.path.insert(0, '${AIOS_ROOT}/ai/core')
+try:
+    import plugin_loader, router as router_mod
+    r = router_mod.Router(os_root='${OS_ROOT}', aios_root='${AIOS_ROOT}')
+    loaded = plugin_loader.load_plugins(r, os_root='${OS_ROOT}')
+    print(f"[AIOS] Loaded {len(loaded)} plugin(s): " + ", ".join(m.name for m in loaded) if loaded else "[AIOS] No plugins found.")
+except Exception as e:
+    print(f"[AIOS] Plugin reload error: {e}")
+PYEOF
+    else
+        echo "[AIOS] python3 not found — cannot reload plugins"
+    fi
+    echo ""
+}
+trap '_aios_reload_plugins' USR1
+
+# ---------------------------------------------------------------------------
 # Main REPL
 # ---------------------------------------------------------------------------
 while true; do

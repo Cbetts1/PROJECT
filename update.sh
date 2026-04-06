@@ -29,13 +29,16 @@ die()     { echo "[update] ✗ $*" >&2; exit 1; }
 # ---------------------------------------------------------------------------
 CHECK_ONLY=0
 RUN_TESTS=0
+OTA_BUNDLE=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --check)     CHECK_ONLY=1; shift ;;
-        --self-test) RUN_TESTS=1; shift ;;
+        --check)      CHECK_ONLY=1; shift ;;
+        --self-test)  RUN_TESTS=1; shift ;;
+        --ota)        OTA_BUNDLE="$2"; shift 2 ;;
         --help|-h)
             sed -n '3,14p' "$0"
+            echo "  bash update.sh --ota <bundle.tar.gz>  — verify + apply OTA bundle"
             exit 0
             ;;
         *) die "Unknown option: $1" ;;
@@ -47,6 +50,26 @@ echo "  AIOS Update System"
 echo "  Repo root : ${REPO_ROOT}"
 echo "════════════════════════════════════════"
 echo ""
+
+# ---------------------------------------------------------------------------
+# OTA bundle path: verify + apply and exit
+# ---------------------------------------------------------------------------
+if [[ -n "${OTA_BUNDLE}" ]]; then
+    [[ -f "${OTA_BUNDLE}" ]] || die "OTA bundle not found: ${OTA_BUNDLE}"
+    info "Verifying OTA bundle: ${OTA_BUNDLE}"
+    if bash "${REPO_ROOT}/scripts/ota-verify.sh" "${OTA_BUNDLE}"; then
+        success "OTA bundle verified."
+    else
+        die "OTA verification failed — aborting."
+    fi
+    info "Extracting OTA bundle ..."
+    tar -xzf "${OTA_BUNDLE}" -C "${REPO_ROOT}"
+    success "OTA bundle applied."
+    info "Re-running installer ..."
+    bash "${REPO_ROOT}/install.sh" 2>&1 || warn "Install step had warnings."
+    success "OTA update complete."
+    exit 0
+fi
 
 # ---------------------------------------------------------------------------
 # Verify git is available

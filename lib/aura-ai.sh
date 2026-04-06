@@ -8,10 +8,16 @@ _AURA_AI_SH_LOADED=1
 
 # Route the user's natural-language input through the Python AI backend.
 # The backend may translate it into a command or return a chat response.
+# When AI_BACKEND=llama, tokens are streamed as they arrive.
 aura_ai_query() {
     local user_input="$*"
+    local stream_flag=""
+    if [[ "${AI_BACKEND:-mock}" == "llama" ]]; then
+        stream_flag="--stream"
+    fi
     python3 "${AIOS_ROOT}/ai/core/ai_backend.py" \
         --input   "${user_input}" \
         --os-root "${OS_ROOT}" \
-        --aios-root "${AIOS_ROOT}"
+        --aios-root "${AIOS_ROOT}" \
+        ${stream_flag}
 }
