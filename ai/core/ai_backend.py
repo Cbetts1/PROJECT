@@ -37,7 +37,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
 
 from commands import parse_natural_language  # noqa: E402  (legacy fallback)
-from llama_client import run_mock            # noqa: E402
+from llama_client import run_mock, stream_llama, stream_mock, autodetect_model  # noqa: E402
 from intent_engine import IntentEngine       # noqa: E402
 from router import Router                    # noqa: E402
 
@@ -101,6 +101,26 @@ def chat_response(user_input: str) -> str:
     return run_mock(user_input)
 
 
+def chat_response_stream(user_input: str, os_root: str = "", aios_root: str = ""):
+    """Yield chat response tokens as they arrive (streaming).
+
+    When AI_BACKEND=llama and a model is available, delegates to
+    stream_llama() for live token output.  Falls back to stream_mock()
+    otherwise.
+    """
+    backend = os.environ.get("AI_BACKEND", "mock")
+    if backend == "llama":
+        model_path = os.environ.get("LLAMA_MODEL_PATH", "")
+        if not model_path and os_root:
+            model_path = autodetect_model(os_root) or ""
+        if model_path and os.path.isfile(model_path):
+            ctx     = int(os.environ.get("LLAMA_CTX_SIZE",  "4096"))
+            threads = int(os.environ.get("LLAMA_THREADS",   "4"))
+            yield from stream_llama(model_path, ctx, threads, user_input)
+            return
+    yield from stream_mock(user_input)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="AIOS AI dispatch backend")
     parser.add_argument("--input",       required=True, help="User input string")
@@ -108,6 +128,8 @@ def main() -> None:
     parser.add_argument("--aios-root",   required=True, help="AIOS project root")
     parser.add_argument("--json-output", action="store_true",
                         help="Wrap response in JSON format")
+    parser.add_argument("--stream",      action="store_true",
+                        help="Stream tokens as they arrive (chat path only)")
     args = parser.parse_args()
 
     start_time = time.time()
@@ -129,6 +151,17 @@ def main() -> None:
         # ------------------------------------------------------------------
         plan = parse_natural_language(args.input)
         if plan.command == "chat":
+            if args.stream and not args.json_output:
+                # Streaming: print tokens as they arrive; skip buffered response
+                chunk = ""
+                for chunk in chat_response_stream(
+                    args.input, os_root=args.os_root, aios_root=args.aios_root
+                ):
+                    sys.stdout.write(chunk)
+                    sys.stdout.flush()
+                if not chunk.endswith("\n"):
+                    sys.stdout.write("\n")
+                return
             resp = chat_response(args.input)
         else:
             resp = run_system_command(plan, args.aios_root)

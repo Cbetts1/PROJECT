@@ -1,0 +1,8 @@
+{
+  "name":         "hello-bot",
+  "version":      "1.0.0",
+  "entry_point":  "hello_bot",
+  "bot_class":    "HelloBot",
+  "capabilities": [],
+  "description":  "Reference plugin — greets the user and echoes their input"
+}

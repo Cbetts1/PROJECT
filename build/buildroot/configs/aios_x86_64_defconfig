@@ -1,0 +1,52 @@
+# build/buildroot/configs/aios_x86_64_defconfig
+# Buildroot defconfig for AIOS-Lite on x86-64 (hosted / AIOSCPU desktop build)
+#
+# Usage:
+#   cd buildroot/
+#   make BR2_EXTERNAL=<path-to>/build/buildroot aios_x86_64_defconfig
+#   make
+
+BR2_x86_64=y
+BR2_TOOLCHAIN_EXTERNAL=y
+BR2_TOOLCHAIN_EXTERNAL_PREINSTALLED=y
+
+# System
+BR2_TARGET_GENERIC_HOSTNAME="aioscpu"
+BR2_TARGET_GENERIC_ISSUE="AIOSCPU v1.0.0 (Aurora) - AI Operating System"
+BR2_ROOTFS_POST_BUILD_SCRIPT=""
+
+# Filesystem / init
+BR2_INIT_SYSTEMD=y
+BR2_PACKAGE_SYSTEMD=y
+
+# Shell & scripting
+BR2_PACKAGE_BASH=y
+BR2_PACKAGE_BASH_COMPLETION=y
+
+# Python (required by AI core)
+BR2_PACKAGE_PYTHON3=y
+BR2_PACKAGE_PYTHON3_PY_PYC=y
+BR2_PACKAGE_PYTHON_CRYPTOGRAPHY=y
+
+# Network tools
+BR2_PACKAGE_IPROUTE2=y
+BR2_PACKAGE_OPENSSH=y
+BR2_PACKAGE_WIREGUARD_TOOLS=y
+BR2_PACKAGE_AVAHI=y
+BR2_PACKAGE_BLUEZ5_UTILS=y
+
+# Utilities
+BR2_PACKAGE_SUDO=y
+BR2_PACKAGE_VIM=y
+BR2_PACKAGE_GIT=y
+BR2_PACKAGE_RSYNC=y
+BR2_PACKAGE_CURL=y
+BR2_PACKAGE_XORRISO=y
+
+# Bootloader
+BR2_TARGET_GRUB2=y
+BR2_TARGET_GRUB2_I386_PC=y
+BR2_TARGET_GRUB2_BUILTIN_MODULES_I386_PC="boot linux ext2 fat part_msdos part_gpt normal echo"
+
+# AIOS-Lite
+BR2_PACKAGE_AIOS_LITE=y

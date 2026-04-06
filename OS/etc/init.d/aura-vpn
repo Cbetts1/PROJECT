@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+# OS/etc/init.d/aura-vpn — WireGuard VPN service for AIOS-Lite
+#
+# Manages a WireGuard VPN tunnel using peer configuration stored in
+# OS_ROOT/etc/aura/vpn/.
+#
+# Usage (via os-service):
+#   sh OS/etc/init.d/aura-vpn start
+#   sh OS/etc/init.d/aura-vpn stop
+#   sh OS/etc/init.d/aura-vpn status
+
+set -euo pipefail
+
+OS_ROOT="${OS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)/OS}"
+VPN_CONF_DIR="${OS_ROOT}/etc/aura/vpn"
+VPN_IFACE="${AURA_VPN_IFACE:-wg-aura}"
+STATE_FILE="${OS_ROOT}/proc/os/vpn.state"
+LOG_FILE="${OS_ROOT}/var/log/aura-vpn.log"
+
+mkdir -p "$(dirname "${STATE_FILE}")" "$(dirname "${LOG_FILE}")"
+
+log() { printf '[%s] [aura-vpn] %s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$*" | tee -a "${LOG_FILE}"; }
+
+# ---------------------------------------------------------------------------
+start_vpn() {
+    log "Starting WireGuard VPN (${VPN_IFACE}) ..."
+    local conf="${VPN_CONF_DIR}/${VPN_IFACE}.conf"
+    if [[ ! -f "${conf}" ]]; then
+        log "WARN: VPN config not found at ${conf} — skipping."
+        echo "stopped" > "${STATE_FILE}"
+        return 0
+    fi
+    if ! command -v wg-quick &>/dev/null; then
+        log "WARN: wg-quick not found — WireGuard not available on this host."
+        echo "unavailable" > "${STATE_FILE}"
+        return 0
+    fi
+    if wg-quick up "${conf}" 2>>"${LOG_FILE}"; then
+        echo "running" > "${STATE_FILE}"
+        log "VPN up (interface: ${VPN_IFACE})"
+    else
+        echo "failed" > "${STATE_FILE}"
+        log "ERROR: Failed to bring up VPN"
+        return 1
+    fi
+}
+
+stop_vpn() {
+    log "Stopping WireGuard VPN (${VPN_IFACE}) ..."
+    local conf="${VPN_CONF_DIR}/${VPN_IFACE}.conf"
+    if command -v wg-quick &>/dev/null && [[ -f "${conf}" ]]; then
+        wg-quick down "${conf}" 2>>"${LOG_FILE}" || true
+    fi
+    echo "stopped" > "${STATE_FILE}"
+    log "VPN down"
+}
+
+status_vpn() {
+    local state
+    state="$(cat "${STATE_FILE}" 2>/dev/null || echo unknown)"
+    echo "[aura-vpn] state: ${state}"
+    if [[ "${state}" == "running" ]] && command -v wg &>/dev/null; then
+        wg show "${VPN_IFACE}" 2>/dev/null || true
+    fi
+}
+
+# ---------------------------------------------------------------------------
+case "${1:-status}" in
+    start)  start_vpn ;;
+    stop)   stop_vpn ;;
+    status) status_vpn ;;
+    restart) stop_vpn; start_vpn ;;
+    *) echo "Usage: $0 {start|stop|restart|status}" >&2; exit 1 ;;
+esac

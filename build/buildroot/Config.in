@@ -1,0 +1,7 @@
+################################################################################
+# build/buildroot/Config.in — top-level Kconfig for AIOS-Lite external tree
+################################################################################
+
+menu "AIOS-Lite packages"
+    source "$BR2_EXTERNAL_AIOS_PATH/package/aios-lite/Config.in"
+endmenu

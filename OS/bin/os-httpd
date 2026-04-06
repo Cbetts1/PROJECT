@@ -201,6 +201,200 @@ def _ws_decode(data: bytes):
 
 
 # ---------------------------------------------------------------------------
+# Web dashboard HTML
+# ---------------------------------------------------------------------------
+
+_DASHBOARD_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AIOS-Lite Dashboard</title>
+<style>
+  :root { --bg:#0d1117; --panel:#161b22; --border:#30363d; --green:#3fb950; --blue:#58a6ff; --text:#c9d1d9; --muted:#8b949e; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; font-size:14px; }
+  header { background:var(--panel); border-bottom:1px solid var(--border); padding:12px 20px; display:flex; align-items:center; gap:12px; }
+  header h1 { font-size:18px; color:var(--blue); }
+  header .badge { font-size:11px; background:#1f6feb; color:#fff; padding:2px 8px; border-radius:12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; padding:20px; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px; }
+  .card h2 { font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; }
+  .metric { font-size:28px; font-weight:600; color:var(--green); }
+  .metric-sub { font-size:12px; color:var(--muted); margin-top:4px; }
+  pre { font-family:'Consolas','Courier New',monospace; font-size:12px; white-space:pre-wrap; max-height:240px; overflow-y:auto; line-height:1.5; }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--green); margin-right:6px; }
+  .dot.red { background:#f85149; }
+  #cmd-input { width:100%; background:#0d1117; border:1px solid var(--border); color:var(--text); padding:8px 10px; border-radius:6px; font-family:monospace; font-size:13px; margin-top:10px; }
+  #cmd-output { margin-top:8px; }
+  button { background:#1f6feb; color:#fff; border:none; border-radius:6px; padding:6px 14px; cursor:pointer; font-size:13px; }
+  button:hover { background:#388bfd; }
+  .token-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+  #token-field { flex:1; background:#0d1117; border:1px solid var(--border); color:var(--muted); padding:6px; border-radius:6px; font-family:monospace; font-size:12px; }
+  .status-bar { background:var(--panel); border-top:1px solid var(--border); padding:6px 20px; font-size:12px; color:var(--muted); display:flex; gap:20px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚡ AIOS-Lite</h1>
+  <span class="badge">v1.0.0 Aurora</span>
+  <span id="conn-status" style="margin-left:auto;font-size:12px;color:var(--muted)">● Connecting …</span>
+</header>
+
+<div class="grid">
+  <!-- Health card -->
+  <div class="card">
+    <h2>System Health</h2>
+    <div><span class="dot" id="health-dot"></span><span id="health-text">Loading …</span></div>
+    <div class="metric-sub" id="health-time"></div>
+  </div>
+
+  <!-- Metrics card -->
+  <div class="card">
+    <h2>Resource Usage</h2>
+    <div id="metrics-body" class="metric-sub">Loading …</div>
+  </div>
+
+  <!-- Status card -->
+  <div class="card">
+    <h2>OS State</h2>
+    <pre id="status-body">Loading …</pre>
+  </div>
+
+  <!-- Services card -->
+  <div class="card">
+    <h2>Services</h2>
+    <pre id="services-body">Loading …</pre>
+  </div>
+
+  <!-- Log tail card -->
+  <div class="card" style="grid-column:span 2">
+    <h2>Live Log  <span style="font-size:11px;color:var(--muted)">(aura.log, SSE)</span></h2>
+    <pre id="log-body">Connecting to live log …</pre>
+  </div>
+
+  <!-- AI command card -->
+  <div class="card" style="grid-column:span 2">
+    <h2>AI Shell</h2>
+    <div class="token-row">
+      <input id="token-field" placeholder="API token (leave blank if auth disabled)" type="password">
+      <button onclick="saveToken()">Set Token</button>
+    </div>
+    <input id="cmd-input" placeholder="Type an AIOS command or natural language query …" onkeydown="if(event.key==='Enter')runCmd()">
+    <button style="margin-top:8px" onclick="runCmd()">Run</button>
+    <pre id="cmd-output"></pre>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span id="sb-time"></span>
+  <span>OS_ROOT: <code id="sb-osroot">…</code></span>
+  <span id="sb-auth">auth: …</span>
+</div>
+
+<script>
+let _token = localStorage.getItem('aios_token') || '';
+document.getElementById('token-field').value = _token;
+
+function saveToken() {
+  _token = document.getElementById('token-field').value.trim();
+  localStorage.setItem('aios_token', _token);
+  alert('Token saved.');
+}
+
+function headers() {
+  const h = {'Content-Type':'application/json'};
+  if (_token) h['X-API-Token'] = _token;
+  return h;
+}
+
+async function fetchJSON(url) {
+  const r = await fetch(url, {headers: headers()});
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+async function loadHealth() {
+  try {
+    const d = await fetchJSON('/api/v1/health');
+    document.getElementById('health-dot').className = 'dot';
+    document.getElementById('health-text').textContent = 'Healthy';
+    document.getElementById('health-time').textContent = d.time;
+    document.getElementById('conn-status').textContent = '● Connected';
+    document.getElementById('conn-status').style.color = 'var(--green)';
+  } catch(e) {
+    document.getElementById('health-dot').className = 'dot red';
+    document.getElementById('health-text').textContent = 'Unreachable';
+  }
+}
+
+async function loadStatus() {
+  try {
+    const d = await fetchJSON('/api/v1/status');
+    document.getElementById('status-body').textContent =
+      Object.entries(d).map(([k,v])=> k+': '+v).join('\\n');
+    document.getElementById('sb-osroot').textContent = d.os_root || '(not set)';
+  } catch(e) { document.getElementById('status-body').textContent = 'Error: '+e; }
+}
+
+async function loadServices() {
+  try {
+    const d = await fetchJSON('/api/v1/services');
+    document.getElementById('services-body').textContent = d.services || '(no data)';
+  } catch(e) { document.getElementById('services-body').textContent = 'Error: '+e; }
+}
+
+async function loadMetrics() {
+  try {
+    const d = await fetchJSON('/api/v1/metrics');
+    const lines = [];
+    if (d.mem_pct !== undefined) lines.push('Memory: '+d.mem_pct+'% used');
+    if (d.disk_pct !== undefined) lines.push('Disk: '+d.disk_pct+'% used');
+    if (d.uptime_raw) lines.push('Uptime: '+d.uptime_raw.trim());
+    document.getElementById('metrics-body').textContent = lines.join('\\n') || 'No metrics';
+  } catch(e) { document.getElementById('metrics-body').textContent = 'Error: '+e; }
+}
+
+async function runCmd() {
+  const input = document.getElementById('cmd-input').value.trim();
+  if (!input) return;
+  document.getElementById('cmd-output').textContent = '⏳ Running …';
+  try {
+    const r = await fetch('/api/v1/command', {method:'POST', headers:headers(), body:JSON.stringify({cmd:input})});
+    const d = await r.json();
+    document.getElementById('cmd-output').textContent = d.output || d.error || JSON.stringify(d);
+  } catch(e) { document.getElementById('cmd-output').textContent = 'Error: '+e; }
+}
+
+// Live log via SSE
+function startSSE() {
+  const el = document.getElementById('log-body');
+  const src = new EventSource('/api/v1/events');
+  src.onmessage = e => {
+    el.textContent += e.data + '\\n';
+    el.scrollTop = el.scrollHeight;
+  };
+  src.onerror = () => { el.textContent += '[SSE disconnected]\\n'; };
+}
+
+// Clock
+function clock() {
+  document.getElementById('sb-time').textContent = new Date().toISOString();
+}
+
+// Boot
+loadHealth(); loadStatus(); loadServices(); loadMetrics();
+startSSE();
+setInterval(loadHealth, 15000);
+setInterval(loadMetrics, 30000);
+setInterval(clock, 1000);
+clock();
+</script>
+</body>
+</html>"""
+
+
+# ---------------------------------------------------------------------------
 # HTTP request handler
 # ---------------------------------------------------------------------------
 
@@ -286,6 +480,11 @@ class AIOSHandler(http.server.BaseHTTPRequestHandler):
             self._sse_stream()
             return
 
+        # Web dashboard (unauthenticated static SPA)
+        if path in ("", "/"):
+            self._serve_dashboard()
+            return
+
         if not self._is_authenticated():
             self._unauthorized(); return
 
@@ -352,6 +551,20 @@ class AIOSHandler(http.server.BaseHTTPRequestHandler):
                 self._json(500, {"error": str(e)})
         else:
             self._json(404, {"error": "Not Found"})
+
+    # ------------------------------------------------------------------
+    # Web Dashboard (static SPA)
+    # ------------------------------------------------------------------
+
+    def _serve_dashboard(self) -> None:
+        """Serve the AIOS-Lite single-page web dashboard."""
+        html = _DASHBOARD_HTML
+        body = html.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     # ------------------------------------------------------------------
     # Server-Sent Events

@@ -1,0 +1,11 @@
+################################################################################
+# build/buildroot/package/aios-lite/Config.in
+################################################################################
+
+config BR2_PACKAGE_AIOS_LITE
+    bool "aios-lite"
+    depends on BR2_PACKAGE_BASH
+    depends on BR2_PACKAGE_PYTHON3
+    help
+      Install AIOS-Lite into /opt/aios on the target rootfs.
+      Requires bash and python3.

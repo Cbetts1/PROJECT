@@ -45,3 +45,55 @@ aura_net_wget() {
 
 register_command "net.ping"     "aura_net_ping"
 register_command "net.ifconfig" "aura_net_ifconfig"
+
+# ---------------------------------------------------------------------------
+# vpn_up() — Bring up the WireGuard VPN tunnel
+# ---------------------------------------------------------------------------
+# Usage: vpn_up [interface]   (default: wg-aura, or $AURA_VPN_IFACE)
+#
+vpn_up() {
+    _aura_net_offline_check || return 1
+    local iface="${1:-${AURA_VPN_IFACE:-wg-aura}}"
+    local conf_dir="${OS_ROOT}/etc/aura/vpn"
+    local conf="${conf_dir}/${iface}.conf"
+    if [[ ! -f "${conf}" ]]; then
+        echo "[net] VPN config not found: ${conf}" >&2
+        return 1
+    fi
+    if ! command -v wg-quick &>/dev/null; then
+        echo "[net] wg-quick not found — WireGuard not installed" >&2
+        return 1
+    fi
+    wg-quick up "${conf}"
+}
+
+# ---------------------------------------------------------------------------
+# vpn_down() — Bring down the WireGuard VPN tunnel
+# ---------------------------------------------------------------------------
+# Usage: vpn_down [interface]
+#
+vpn_down() {
+    local iface="${1:-${AURA_VPN_IFACE:-wg-aura}}"
+    local conf="${OS_ROOT}/etc/aura/vpn/${iface}.conf"
+    if command -v wg-quick &>/dev/null && [[ -f "${conf}" ]]; then
+        wg-quick down "${conf}"
+    else
+        echo "[net] Nothing to bring down (wg-quick not found or config missing)" >&2
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# vpn_status() — Show WireGuard interface status
+# ---------------------------------------------------------------------------
+vpn_status() {
+    local iface="${1:-${AURA_VPN_IFACE:-wg-aura}}"
+    if command -v wg &>/dev/null; then
+        wg show "${iface}" 2>/dev/null || echo "[net] VPN interface ${iface} not active"
+    else
+        echo "[net] wg (WireGuard tools) not found"
+    fi
+}
+
+register_command "net.vpn.up"     "vpn_up"
+register_command "net.vpn.down"   "vpn_down"
+register_command "net.vpn.status" "vpn_status"

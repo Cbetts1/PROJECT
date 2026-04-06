@@ -26,6 +26,8 @@ Environment:
 import os
 import sys
 import stat as _stat
+import hashlib
+import hmac
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -35,6 +37,71 @@ from pathlib import Path
 
 _OS_ROOT: Path = Path(os.environ.get("OS_ROOT", "/")).resolve()
 _AURA_LOG: str = "var/log/aura.log"
+_HMAC_LOG: str = "var/log/aura.log.hmac"
+
+# HMAC key: read from OS_ROOT/etc/aura/audit.key (created on first use).
+# The key is never written to the audit log itself.
+_HMAC_KEY_FILE: str = "etc/aura/audit.key"
+
+
+# ---------------------------------------------------------------------------
+# HMAC key management
+# ---------------------------------------------------------------------------
+
+def _get_hmac_key() -> bytes:
+    """Return the HMAC signing key, generating it on first use."""
+    key_path = _OS_ROOT / _HMAC_KEY_FILE
+    try:
+        key_path.parent.mkdir(parents=True, exist_ok=True)
+        if key_path.exists():
+            return key_path.read_bytes()
+        # Generate a 32-byte random key
+        key = os.urandom(32)
+        key_path.write_bytes(key)
+        key_path.chmod(0o600)
+        return key
+    except OSError:
+        # If key file is inaccessible, use a deterministic fallback (no signing)
+        return b""
+
+
+def _hmac_entry(message: str, prev_hmac: str) -> str:
+    """Compute HMAC-SHA256(key, prev_hmac + message) for chained log integrity."""
+    key = _get_hmac_key()
+    if not key:
+        return ""
+    data = (prev_hmac + message).encode("utf-8")
+    return hmac.new(key, data, hashlib.sha256).hexdigest()
+
+
+def _last_hmac() -> str:
+    """Return the last HMAC value from the rolling HMAC chain file."""
+    hmac_path = _OS_ROOT / _HMAC_LOG
+    try:
+        lines = hmac_path.read_text(encoding="utf-8").splitlines()
+        for line in reversed(lines):
+            line = line.strip()
+            if line:
+                # Format: <timestamp> <hmac-hex>
+                parts = line.split()
+                if len(parts) >= 2:
+                    return parts[-1]
+    except OSError:
+        pass
+    return ""
+
+
+def _write_hmac_chain(message: str, entry_hmac: str) -> None:
+    """Append an HMAC chain entry to the rolling HMAC log."""
+    if not entry_hmac:
+        return
+    hmac_path = _OS_ROOT / _HMAC_LOG
+    try:
+        hmac_path.parent.mkdir(parents=True, exist_ok=True)
+        with hmac_path.open("a", encoding="utf-8") as fh:
+            fh.write(f"[{_ts()}] {entry_hmac}\n")
+    except OSError:
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -47,12 +114,17 @@ def _ts() -> str:
 
 
 def _write_aura_log(message: str) -> None:
-    """Append a timestamped line to the AURA audit log (best-effort)."""
+    """Append a timestamped, HMAC-signed line to the AURA audit log (best-effort)."""
     try:
         log_file = _OS_ROOT / _AURA_LOG
         log_file.parent.mkdir(parents=True, exist_ok=True)
+        entry = f"[{_ts()}] [filesystem] {message}\n"
         with log_file.open("a", encoding="utf-8") as fh:
-            fh.write(f"[{_ts()}] [filesystem] {message}\n")
+            fh.write(entry)
+        # Maintain rolling HMAC chain for log integrity verification
+        prev = _last_hmac()
+        entry_hmac = _hmac_entry(entry.rstrip("\n"), prev)
+        _write_hmac_chain(message, entry_hmac)
     except OSError:
         pass  # Log failures must never crash callers
 

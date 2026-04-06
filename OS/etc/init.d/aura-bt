@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# OS/etc/init.d/aura-bt — Bluetooth PAN bridge for AIOS-Lite
+#
+# Sets up a Bluetooth Personal Area Network (PAN) using bluetoothctl / bnep,
+# then mounts the bridge at OS_ROOT/mirror/bluetooth/.
+#
+# Usage:
+#   sh OS/etc/init.d/aura-bt start
+#   sh OS/etc/init.d/aura-bt stop
+#   sh OS/etc/init.d/aura-bt status
+
+set -euo pipefail
+
+OS_ROOT="${OS_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)/OS}"
+BT_MOUNT="${OS_ROOT}/mirror/bluetooth"
+STATE_FILE="${OS_ROOT}/proc/os/bt.state"
+LOG_FILE="${OS_ROOT}/var/log/aura-bt.log"
+
+mkdir -p "${BT_MOUNT}" "$(dirname "${STATE_FILE}")" "$(dirname "${LOG_FILE}")"
+
+log() { printf '[%s] [aura-bt] %s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$*" | tee -a "${LOG_FILE}"; }
+
+# ---------------------------------------------------------------------------
+start_bt() {
+    log "Starting Bluetooth PAN bridge ..."
+
+    if ! command -v bluetoothctl &>/dev/null; then
+        log "WARN: bluetoothctl not found — Bluetooth not available."
+        echo "unavailable" > "${STATE_FILE}"
+        return 0
+    fi
+
+    # Power on the adapter and enable NAP (Network Access Point) server
+    bluetoothctl power on                  >>"${LOG_FILE}" 2>&1 || true
+    bluetoothctl discoverable on           >>"${LOG_FILE}" 2>&1 || true
+    bluetoothctl agent on                  >>"${LOG_FILE}" 2>&1 || true
+
+    # Register NAP server if bt-network / bnep is available
+    if command -v bt-network &>/dev/null; then
+        bt-network -s nap pan0            >>"${LOG_FILE}" 2>&1 &
+        log "bt-network NAP server started"
+    fi
+
+    # Write a discovery info file for the bridge namespace
+    cat > "${BT_MOUNT}/.info" <<INFO
+# AIOS Bluetooth PAN bridge
+# Adapter powered on by aura-bt service
+# Mounts at OS_ROOT/mirror/bluetooth/
+info
+    echo "running" > "${STATE_FILE}"
+    log "Bluetooth PAN bridge started (mount: ${BT_MOUNT})"
+}
+
+stop_bt() {
+    log "Stopping Bluetooth PAN bridge ..."
+    if command -v bluetoothctl &>/dev/null; then
+        bluetoothctl discoverable off >>"${LOG_FILE}" 2>&1 || true
+    fi
+    pkill -f 'bt-network.*nap' 2>/dev/null || true
+    echo "stopped" > "${STATE_FILE}"
+    log "Bluetooth PAN bridge stopped."
+}
+
+status_bt() {
+    local state; state="$(cat "${STATE_FILE}" 2>/dev/null || echo unknown)"
+    echo "[aura-bt] state: ${state}"
+    if command -v bluetoothctl &>/dev/null; then
+        bluetoothctl show 2>/dev/null | grep -E 'Name:|Powered:|Discoverable:' || true
+    fi
+}
+
+# ---------------------------------------------------------------------------
+case "${1:-status}" in
+    start)   start_bt ;;
+    stop)    stop_bt ;;
+    status)  status_bt ;;
+    restart) stop_bt; start_bt ;;
+    *) echo "Usage: $0 {start|stop|restart|status}" >&2; exit 1 ;;
+esac
