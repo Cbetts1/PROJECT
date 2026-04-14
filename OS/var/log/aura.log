@@ -1765,3 +1765,15 @@ cat: write error: Input/output error
 [2026-04-14T03:25:30Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
 [2026-04-14T03:25:31Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
 [2026-04-14T03:25:31Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
+[2026-04-14T03:27:14Z] [filesystem] LIST /home/runner/work/PROJECT/PROJECT/OS/var/log
+[2026-04-14T03:27:14Z] [filesystem] WRITE /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4497.txt
+[2026-04-14T03:27:14Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-test-4497.txt
+[2026-04-14T03:27:14Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4497.txt
+[2026-04-14T03:27:14Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4497.txt
+[2026-04-14T03:27:14Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/tmp/unit-append-4497.txt
+[2026-04-14T03:27:14Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-14T03:27:14Z] [filesystem] APPEND /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-14T03:27:14Z] unit-test marker 4497
+[2026-04-14T03:27:14Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-14T03:27:14Z] [filesystem] READ /home/runner/work/PROJECT/PROJECT/OS/var/log/aura.log
+[2026-04-14T03:27:14Z] [filesystem] STAT /home/runner/work/PROJECT/PROJECT/OS/proc/os.state
